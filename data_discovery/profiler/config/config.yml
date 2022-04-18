@@ -1,0 +1,7 @@
+datasource: kaggle
+datasets:
+- name: Retail Banking-demo-data
+  origin: mock
+  path: /Users/shubhamvashisth/Documents/borealisAI/projects/data_discovery/sample_data/parquet/Retail
+    Banking-demo-data
+  type: parquet
