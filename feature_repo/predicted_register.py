@@ -20,10 +20,10 @@ entity_1 = Entity(name='account_id', value_type=ValueType.STRING, join_key='acco
 feature_view_1 = FeatureView(
 name='predicted_feature_view_1',
 entities=['account_id'],
-ttl=timedelta(weeks=10000),
+ttl=timedelta(weeks=1000),
 online=True,
 batch_source=FileSource(
-path=r'/Users/shubhamvashisth/Documents/borealisAI/projects/data_discovery/sample_data/parquet/Retail Banking-demo-data/completeddisposition.parquet',
+path=r'/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/Retail Banking-demo-data/completeddisposition.parquet',
 event_timestamp_column='timestamp')
 )
 
@@ -32,10 +32,10 @@ entity_2 = Entity(name='district_id', value_type=ValueType.INT64, join_key='dist
 feature_view_2 = FeatureView(
 name='predicted_feature_view_2',
 entities=['district_id'],
-ttl=timedelta(weeks=10000),
+ttl=timedelta(weeks=1000),
 online=True,
 batch_source=FileSource(
-path=r'/Users/shubhamvashisth/Documents/borealisAI/projects/data_discovery/sample_data/parquet/Retail Banking-demo-data/crm_reviews.parquet',
+path=r'/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/Retail Banking-demo-data/crm_reviews.parquet',
 event_timestamp_column='timestamp')
 )
 
@@ -44,10 +44,10 @@ entity_3 = Entity(name='district_id', value_type=ValueType.INT64, join_key='dist
 feature_view_3 = FeatureView(
 name='predicted_feature_view_3',
 entities=['district_id'],
-ttl=timedelta(weeks=10000),
+ttl=timedelta(weeks=1000),
 online=True,
 batch_source=FileSource(
-path=r'/Users/shubhamvashisth/Documents/borealisAI/projects/data_discovery/sample_data/parquet/Retail Banking-demo-data/completeddistrict.parquet',
+path=r'/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/Retail Banking-demo-data/completeddistrict.parquet',
 event_timestamp_column='timestamp')
 )
 
@@ -56,10 +56,10 @@ entity_4 = Entity(name='account_id', value_type=ValueType.STRING, join_key='acco
 feature_view_4 = FeatureView(
 name='predicted_feature_view_4',
 entities=['account_id'],
-ttl=timedelta(weeks=10000),
+ttl=timedelta(weeks=1000),
 online=True,
 batch_source=FileSource(
-path=r'/Users/shubhamvashisth/Documents/borealisAI/projects/data_discovery/sample_data/parquet/Retail Banking-demo-data/completedacct.parquet',
+path=r'/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/Retail Banking-demo-data/completedacct.parquet',
 event_timestamp_column='timestamp')
 )
 
@@ -68,9 +68,9 @@ entity_5 = Entity(name='account_id', value_type=ValueType.STRING, join_key='acco
 feature_view_5 = FeatureView(
 name='predicted_feature_view_5',
 entities=['account_id'],
-ttl=timedelta(weeks=10000),
+ttl=timedelta(weeks=1000),
 online=True,
 batch_source=FileSource(
-path=r'/Users/shubhamvashisth/Documents/borealisAI/projects/data_discovery/sample_data/parquet/Retail Banking-demo-data/completedorder.parquet',
+path=r'/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/Retail Banking-demo-data/completedorder.parquet',
 event_timestamp_column='timestamp')
 )

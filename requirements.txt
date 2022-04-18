@@ -21,3 +21,6 @@ threadpoolctl==3.1.0
 urllib3==1.26.9
 tqdm~=4.63.1
 feast~=0.19.3
+sparqlwrapper~=2.0.0
+zlib~=1.2.11
+matplotlib~=3.5.1

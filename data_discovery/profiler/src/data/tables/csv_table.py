@@ -1,3 +1,4 @@
+import os
 from data.tables.i_table import ITable
 
 
@@ -6,7 +7,7 @@ class CSVTable(ITable):
     def __init__(self, table_name: str, dataset_name: str, dataset_path: str, origin: str):
         self.table_name = table_name
         self.dataset_name = dataset_name
-        self.table_path = dataset_path + '/' + table_name
+        self.table_path = os.path.abspath(dataset_path) + '/' + table_name
         self.origin = origin
 
     def get_table_path(self):

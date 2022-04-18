@@ -1,6 +1,7 @@
 import os
 import yaml
-from tqdm import tqdm
+import SPARQLWrapper.Wrapper
+from SPARQLWrapper import JSON, SPARQLWrapper
 
 
 def refresh_elasticsearch():
@@ -39,7 +40,7 @@ def setup_config(path: str, datasource: str, datatype: str):
     write_to_config(config)
 
 
-def upload_glac(path : str, namespace: str, port=9999):
+def upload_glac(path: str, namespace: str, port=9999):
     command = "curl -D- -H 'Content-Type: application/x-turtle-RDR' --upload-file {} -X POST 'http://localhost:{}/blazegraph/namespace/{}/sparql'".format(
         path, port, namespace)
     print('\n\n• Uploading Glac to blazegraph!\n')
@@ -50,3 +51,21 @@ def drop_glac(namespace: str, port=9999):
     command = "curl --get -X DELETE 'http://localhost:{}/blazegraph/namespace/{}/sparql'".format(port, namespace)
     print('\n• Dropping existing graph hosted on blazegraph!\n')
     os.system(command)
+
+
+def execute_query_blazegraph(sparql: SPARQLWrapper, query: str):
+    sparql.setQuery(query)
+    sparql.setReturnFormat(JSON)
+    return sparql.query().convert()
+
+
+def connect_to_blazegraph(port, namespace):
+    endpoint = 'http://localhost:{}/blazegraph/namespace/'.format(port) + namespace + '/sparql'
+    print('connected to {}'.format(endpoint))
+    return SPARQLWrapper(endpoint)
+
+
+def execute_query_blazegraph(sparql: SPARQLWrapper, query: str):
+    sparql.setQuery(query)
+    sparql.setReturnFormat(JSON)
+    return sparql.query().convert()
