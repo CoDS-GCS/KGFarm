@@ -1,6 +1,6 @@
 import os.path
 import time
-from helpers.helper import time_taken, upload_glac
+from helpers.helper import time_taken, upload_glac, drop_glac
 from rdf_builder import RDFBuilder
 from storage.elasticsearch_client import ElasticsearchClient
 
@@ -61,13 +61,14 @@ def main(output_path=None):
     print("Total time: {0}".format(str(end_all - start_all)))
     print("!!7 " + str(end_all - start_all))
 
-    rdfBuilder.dump_into_file(output_path + 'triples.ttls')
+    rdfBuilder.dump_into_file(output_path + 'glac.ttls')
     print("Graph generated in ", time_taken(start_all, end_all))
 
 
 if __name__ == "__main__":
     path = 'out/'
-    if os.path.exists('out/triples.ttl'):
-        os.remove('out/triples.ttl')
+    if os.path.exists('out/glac.ttls'):
+        os.remove('out/glac.ttls')
     main(path)
-    upload_glac('out/triples.ttls', namespace='glac2')
+    drop_glac(namespace='glac')
+    upload_glac('out/glac.ttls', namespace='glac')

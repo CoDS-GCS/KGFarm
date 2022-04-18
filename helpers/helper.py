@@ -42,5 +42,11 @@ def setup_config(path: str, datasource: str, datatype: str):
 def upload_glac(path : str, namespace: str, port=9999):
     command = "curl -D- -H 'Content-Type: application/x-turtle-RDR' --upload-file {} -X POST 'http://localhost:{}/blazegraph/namespace/{}/sparql'".format(
         path, port, namespace)
-    print('\n• Uploading Glac to blazegraph!\n')
+    print('\n\n• Uploading Glac to blazegraph!\n')
+    os.system(command)
+
+
+def drop_glac(namespace: str, port=9999):
+    command = "curl --get -X DELETE 'http://localhost:{}/blazegraph/namespace/{}/sparql'".format(port, namespace)
+    print('\n• Dropping existing graph hosted on blazegraph!\n')
     os.system(command)
