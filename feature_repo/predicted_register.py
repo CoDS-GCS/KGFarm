@@ -2,7 +2,7 @@
 The Entities & Feature Views were predicted using Discovery operations. Feel free to edit :)
 '''
 from datetime import timedelta
-from feast import Entity, Feature, FeatureView, FileSource, ValueType
+from feast import Entity, FeatureView, FileSource, ValueType
 
 '''
 ####################################################################################################################
