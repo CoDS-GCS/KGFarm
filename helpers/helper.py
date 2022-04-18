@@ -63,9 +63,3 @@ def connect_to_blazegraph(port, namespace):
     endpoint = 'http://localhost:{}/blazegraph/namespace/'.format(port) + namespace + '/sparql'
     print('connected to {}'.format(endpoint))
     return SPARQLWrapper(endpoint)
-
-
-def execute_query_blazegraph(sparql: SPARQLWrapper, query: str):
-    sparql.setQuery(query)
-    sparql.setReturnFormat(JSON)
-    return sparql.query().convert()
