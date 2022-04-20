@@ -1,61 +1,32 @@
 
+Q
+1
+	driver_id	driver id"	driver_idJfeature_repo
+‹¶ş’ˆ’ÿÒ‹¶ş’ˆ’ÿÒ
 E
 %
 __dummy"
 __dummy_idJfeature_repo
-û–÷’°£Ìû–÷’°£Ì
-H
+‹¶ş’˜×‚Ó‹¶ş’˜×‚Ó
+F
 (
 
 account_id"
-account_idJfeature_repo
-û–÷’ğË¤Ìû–÷’ğË¤Ì
-J
+account_idJfeature_repo
+¾¶ş’¸ıÊY¾¶ş’¸ıÊY
+H
 *
-district_id"district_idJfeature_repo
-û–÷’ˆ»§Ìû–÷’ˆ»§Ì1"$e0953f23-6400-461c-8898-a18b7071ae19*º—÷’èòòÖ2
-ä
-predicted_feature_view_4feature_repo
-account_id"
-district_id"
-	frequency"
-
-parseddate"
-year"	
-month"
-day"
-date2€ˆ² :Ë	timestampZƒ€/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/Retail Banking-demo-data/completedacct.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢€/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/Retail Banking-demo-data/completedacct.parquet@4
-û–÷’è•©Ì¹—÷’˜Å¹–
-¸ÅòˆÕù€½‚“2ù
-À
-predicted_feature_view_1feature_repo
-account_id"
-disp_id"
-	client_id"
-type2€ˆ² :Ù	timestampZŠ‡/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/Retail Banking-demo-data/completeddisposition.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢‡/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/Retail Banking-demo-data/completeddisposition.parquet@4
-û–÷’Àº¯Ì¹—÷’ğÛ®¶
-¹ÅòÀœŞ–€½‚“2ï
-¶
-predicted_feature_view_2feature_repodistrict_id"
-date"	
-stars"
-reviews"
-product2€ˆ² :Å	timestampZ€~/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/Retail Banking-demo-data/crm_reviews.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢~/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/Retail Banking-demo-data/crm_reviews.parquet@4
-û–÷’¨¶³Ì¹—÷’˜èÁÄ
-¹Åò°ÏÇ¶€½‚“2”
-Û
-predicted_feature_view_3feature_repodistrict_id"
-city"
-
-state_name"
-state_abbrev"
-
-region"
-division2€ˆ² :Ó	timestampZ‡„/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/Retail Banking-demo-data/completeddistrict.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢„/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/Retail Banking-demo-data/completeddistrict.parquet@4
-û–÷’²·Ì¹—÷’ˆº¶Ò
-¹Åòè¾ÔÄ€½‚“2Œ
+district_id"district_idJfeature_repo
+¾¶ş’È¼ĞY¾¶ş’È¼ĞY1"$203310ca-b33b-494d-afc7-da4296519019*Æ¹ş’ˆüÒî2³
+ú
+driver_hourly_statsfeature_repo	driver_id"
+	conv_rate"
+acc_rate"
+avg_daily_trips2€£:event_timestamp*createdZ^\/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/driver_stats.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢\/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/driver_stats.parquet@4
+‹¶ş’¨Ÿ…ÓÅ¹ş’°›ÌÈ
+Å–ù’è’Æ–€½‚“2‹
 Ó
-predicted_feature_view_5feature_repo
+predicted_feature_view_1feature_repo
 account_id"
 order_id"
 bank_to"
@@ -63,21 +34,23 @@ account_id"
 account_to"
 
 amount"
-k_symbol2€ˆ² :Í	timestampZ„/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/Retail Banking-demo-data/completedorder.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/Retail Banking-demo-data/completedorder.parquet@4
-û–÷’¸ì»Ìº—÷’¸£èÖ
-¹Åò¸èËÒ€½‚“R„
-±
-,feast.infra.online_stores.sqlite.SqliteTable"€
-W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.db%feature_repo_predicted_feature_view_4
+k_symbol2€ˆ² :Í	timestampZ„/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/Retail Banking-demo-data/completedorder.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/Retail Banking-demo-data/completedorder.parquet@3
+¾¶ş’˜¨ÜYÆ¹ş’°ı±×
+Å±Ìò¨çùÈ€½‚“2ï
+¶
+predicted_feature_view_2feature_repodistrict_id"
+date"	
+stars"
+reviews"
+product2€ˆ² :Å	timestampZ€~/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/Retail Banking-demo-data/crm_reviews.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢~/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/Retail Banking-demo-data/crm_reviews.parquet@4
+ç¸ş’Æ¹ş’ˆ Çî
+Æ±Ìòˆè×€½‚“R–
 ±
 ,feast.infra.online_stores.sqlite.SqliteTable"€
 W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.db%feature_repo_predicted_feature_view_1
+«
+,feast.infra.online_stores.sqlite.SqliteTable"{
+W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.db feature_repo_driver_hourly_stats
 ±
 ,feast.infra.online_stores.sqlite.SqliteTable"€
-W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.db%feature_repo_predicted_feature_view_2
-±
-,feast.infra.online_stores.sqlite.SqliteTable"€
-W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.db%feature_repo_predicted_feature_view_3
-±
-,feast.infra.online_stores.sqlite.SqliteTable"€
-W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.db%feature_repo_predicted_feature_view_5
+W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.db%feature_repo_predicted_feature_view_2bevent_timestamp*createdZ^\/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/driver_stats.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢\/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/driver_stats.parquetªfeature_repo

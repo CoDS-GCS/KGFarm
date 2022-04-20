@@ -1,5 +1,6 @@
 import os
 import yaml
+import pandas
 import SPARQLWrapper.Wrapper
 from SPARQLWrapper import JSON, SPARQLWrapper
 
@@ -53,13 +54,23 @@ def drop_glac(namespace: str, port=9999):
     os.system(command)
 
 
+def connect_to_blazegraph(port, namespace, show_status: bool):
+    endpoint = 'http://localhost:{}/blazegraph/namespace/'.format(port) + namespace + '/sparql'
+    if show_status:
+        print('connected to {}'.format(endpoint))
+    return SPARQLWrapper(endpoint)
+
+
 def execute_query_blazegraph(sparql: SPARQLWrapper, query: str):
     sparql.setQuery(query)
     sparql.setReturnFormat(JSON)
     return sparql.query().convert()
 
 
-def connect_to_blazegraph(port, namespace):
-    endpoint = 'http://localhost:{}/blazegraph/namespace/'.format(port) + namespace + '/sparql'
-    print('connected to {}'.format(endpoint))
-    return SPARQLWrapper(endpoint)
+def execute_query(sparql: SPARQLWrapper, query: str):
+    sparql.setQuery(query)
+    sparql.setReturnFormat(JSON)
+    result = sparql.query().convert()
+    df = pandas.DataFrame(result['results']['bindings'])
+    df = df.applymap(lambda x: x['value'])
+    return df

@@ -26,6 +26,13 @@ entity_{} = Entity(name='{}', value_type=ValueType.{}, join_key='{}')
 """
 
 
+def entity_skeleton():
+    return \
+"""
+{} = Entity(name='{}', value_type=ValueType.{}, join_key='{}')
+"""
+
+
 def feature_view():
     return \
 """
