@@ -1,6 +1,0 @@
-datasource: kaggle
-datasets:
-- name: Retail Banking-demo-data
-  origin: mock
-  path: ../../../helpers/sample_data/parquet/Retail Banking-demo-data
-  type: parquet
