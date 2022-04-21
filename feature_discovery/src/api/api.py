@@ -2,13 +2,15 @@ import pandas as pd
 import numpy as np
 from feature_discovery.src.api.template import *
 from helpers.helper import *
-from helpers.feast_templates import entity, entity_skeleton, feature_view, definitions
+from helpers.feast_templates import entity_skeleton, feature_view, definitions
 
+# TODO: populate entities and feature_views while initializing
 
 class KGFarm:
     def __init__(self, blazegraph_port=9999, blazegraph_namespace: str = 'glac', show_connection_status: bool = True):
         self.config = connect_to_blazegraph(blazegraph_port, blazegraph_namespace, show_connection_status)
-
+        self.entities = {}
+        self.feature_views = {}
     # def predict_entities_and_feature_views(self, ttl: int = 1000, thresh=0.70, show_query=False):
     #
     #     def create_file(df_feast: pd.DataFrame, path: str = 'feature_repo/'):
@@ -32,7 +34,7 @@ class KGFarm:
     #     return df
 
     def predict_entities_and_feature_views(self, ttl: int = 1000, path_to_feature_repo: str = 'feature_repo/', show_feature_views: bool = False, show_query: bool = False):
-        entities, entities_df = predict_entities(self.config, show_query)
+        entities, self.feature_views, entities_df = predict_entities(self.config, show_query)
         if os.path.exists(path_to_feature_repo + 'predicted_register.py'):
             os.remove(path_to_feature_repo + 'predicted_register.py')
 
@@ -47,19 +49,28 @@ class KGFarm:
                     f = feature_view().format(count, count, v['name'], ttl, file_source)
                     py_file.write(f)
             py_file.close()
-            print('Predicted entities and feature view(s) File saved at: ', os.path.abspath(path_to_feature_repo) + '/predicted_register.py')
+            print('Predicted entities and feature view(s) File saved at: ', os.path.abspath(path_to_feature_repo) + '/predicted_register.py\n')
 
         if show_feature_views:
             print('Showing predicted Feature views:')
-            entities_df['Feature_view'] = ['feature_view_' + str(i) for i in range(1, np.shape(entities_df)[0]+1)]
             cols = entities_df.columns.tolist()
             cols = cols[-1:] + cols[:-1]
             return entities_df[cols]
 
-    def predict_features(self, table_info:pd.Series, show_query: bool = False):
+    def predict_features(self, table_info: pd.Series, show_query: bool = False):
         table = table_info['table_name']
         dataset = table_info['dataset_name']
-        predict_features(self.config, table, dataset, show_query)
+        # print('table: ', table)
+        joinable_table, cols = predict_features(self.config, table, dataset, show_query)
+        # print('joinable table: ', joinable_table)
+        fv = ''
+        for k, v in self.feature_views.items():
+            if joinable_table == self.feature_views.get(k):
+                fv = k
+        predicted_features = []
+        for c in cols:
+            predicted_features.append(fv+':'+c)
+        return predicted_features
 
 
 if __name__ == "__main__":

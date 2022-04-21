@@ -1,5 +1,5 @@
 from helpers.helper import execute_query_blazegraph, execute_query
-
+import numpy as np
 PREFIXES = """
     PREFIX lac:     <http://www.example.com/lac#>
     PREFIX schema:  <http://schema.org/>
@@ -59,11 +59,13 @@ def predict_entities_and_feature_views(config, thresh, show_query):
 
 def predict_entities(config, show_query):
     query = PREFIXES + """
-    SELECT DISTINCT ?Entity_id ?Entity ?Entity_data_type ?FileSource ?FileSource_path 
+    SELECT DISTINCT ?Entity_id ?Entity ?Entity_data_type ?FileSource ?Joinable_table ?FileSource_path 
     WHERE
     {
       <<?Entity_id  lac:pkfk ?Column_2>>	lac:certainty	?Score	.
       ?Entity_id	schema:name				?Entity					.
+      ?Entity_id	dct:isPartOf			?Joinable_table_id		.
+      ?Joinable_table_id	schema:name		?Joinable_table			.
       ?Column_2	    dct:isPartOf			?Table_id				.	
       ?Table_id	    schema:name				?FileSource				;
                     lac:path                ?FileSource_path        .
@@ -85,20 +87,28 @@ def predict_entities(config, show_query):
         elif datatype == 'T':
             datatype = 'STRING'
         if result['Entity_id']['value'] in entities:
-            file_source = entities.get(result['Entity_id']['value'])['FileSource_path']
-            file_source.append(result['FileSource_path']['value'])
+            file_source_path = entities.get(result['Entity_id']['value'])['FileSource_path']
+            file_source_path.append(result['FileSource_path']['value'])
             entities[result['Entity_id']['value']] = {'name': result['Entity']['value'], 'datatype': datatype,
-                                                      'FileSource_path': file_source}
+                                                      'FileSource_path': file_source_path}
         else:
             entities[result['Entity_id']['value']] = {'name': result['Entity']['value'], 'datatype': datatype,
                                                       'FileSource_path': [result['FileSource_path']['value']]}
 
-    return entities, execute_query(config, query).drop(['Entity_id'], axis=1). \
+    entities_df = execute_query(config, query).drop(['Entity_id'], axis=1). \
         replace(['N', 'T'], ['INT64', 'STRING'])
+    entities_df['Feature_view'] = ['feature_view_' + str(i) for i in range(1, np.shape(entities_df)[0] + 1)]
+
+    feature_views = {}
+    feature_views_raw = entities_df.to_dict('index')
+    for k, v in feature_views_raw.items():
+        feature_views['predicted_' + feature_views_raw.get(k)['Feature_view']] = feature_views_raw.get(k)['FileSource']
+
+    return entities, feature_views, entities_df
 
 
+# TODO: add support for all predicted joinable tables for kgarm.predict_features()
 def predict_features(config, table, dataset, show_query):
-    print('table: ', table)
     query = PREFIXES + """
     SELECT DISTINCT ?Source_table ?Joinable_table (?Column_id as ?Join_key_id)
     WHERE
@@ -111,16 +121,11 @@ def predict_features(config, table, dataset, show_query):
         <<?Column_id		lac:pkfk		?Column_id_2>> lac:certainty	?Score	.
         ?Column_id_2		dct:isPartOf	?Joinable_table_id						.
         ?Joinable_table_id	schema:name		?Joinable_table							
-    } ORDER BY ?Joinable_table """ % (table, dataset)
+    }""" % (table, dataset)
     if show_query:
         print(query)
     df = execute_query(config, query)
-    join_key_id = df['Join_key_id'].iloc[0]
     joinable_table = df['Joinable_table'].iloc[0]
-    print('Joinable table: ', joinable_table)
     get_columns(config, joinable_table, dataset)
-    x = [i for i in get_columns(config, joinable_table, dataset) if i not in get_columns(config, table, dataset)]
-    # a = list(set(df['Column_x'].tolist()))
-    # b = list(set(df['Column_y'].tolist()))
-    # columns_to_join = [i for i in list(set(df['Column_y'].tolist())) if i not in list(set(df['Column_x'].tolist()))]
-    print('difference: ', x)
+    columns_to_join = [i for i in get_columns(config, joinable_table, dataset) if i not in get_columns(config, table, dataset)]
+    return joinable_table, columns_to_join
