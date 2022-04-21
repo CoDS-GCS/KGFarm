@@ -8,6 +8,24 @@ PREFIXES = """
      """
 
 
+def get_columns(config, table, dataset):
+    query = PREFIXES + """
+    SELECT DISTINCT ?Column	
+    WHERE
+    {
+        ?Table_id			schema:name		"%s"				                    .
+        ?Dataset_id			schema:name		"%s"				                    .
+        ?Table_id			dct:isPartOf	?Dataset_id								.
+        ?Column_id			dct:isPartOf	?Table_id								;
+                            schema:name		?Column									.
+    }
+    """ % (table, dataset)
+
+    return execute_query(config, query)['Column'].tolist()
+
+
+
+
 def predict_entities_and_feature_views(config, thresh, show_query):
     query = PREFIXES + """
     SELECT DISTINCT ?Source_table ?Source_column ?Source_column_type ?Source_table_path ?Target_table ?Target_column ?Certainty_score
@@ -41,19 +59,19 @@ def predict_entities_and_feature_views(config, thresh, show_query):
 
 def predict_entities(config, show_query):
     query = PREFIXES + """
-    SELECT DISTINCT ?Entity ?Entity_data_type ?Table ?Table_path ?Column_1
+    SELECT DISTINCT ?Entity_id ?Entity ?Entity_data_type ?FileSource ?FileSource_path 
     WHERE
     {
-        <<?Column_1 lac:pkfk ?Column_2>>	lac:certainty	?Score	.
-        ?Column_1	schema:name				?Entity					.
-        ?Column_1	dct:isPartOf			?Table_id				.	
-        ?Table_id	schema:name				?Table					;
-                    lac:path                ?Table_path             .
-        ?Column_1	schema:type				?Entity_data_type		.	
-        ?Column_1	schema:totalVCount		?Total_values			.
-        ?Column_1	schema:distinctVCount	?Distinct_values		.
-        FILTER(?Total_values = ?Distinct_values)					.
-    } ORDER BY ?Table
+      <<?Entity_id  lac:pkfk ?Column_2>>	lac:certainty	?Score	.
+      ?Entity_id	schema:name				?Entity					.
+      ?Column_2	    dct:isPartOf			?Table_id				.	
+      ?Table_id	    schema:name				?FileSource				;
+                    lac:path                ?FileSource_path        .
+      ?Entity_id	schema:type				?Entity_data_type		.	
+      ?Entity_id	schema:totalVCount		?Total_values			.
+      ?Entity_id	schema:distinctVCount	?Distinct_values		.
+      FILTER(?Total_values = ?Distinct_values)					    .
+    }
     """
     if show_query:
         print(query)
@@ -66,8 +84,43 @@ def predict_entities(config, show_query):
             datatype = 'INT64'
         elif datatype == 'T':
             datatype = 'STRING'
-        entities[result['Column_1']['value']] = {'name': result['Entity']['value'], 'datatype': datatype,
-                                                 'Table': result['Table']['value'],
-                                                 'Table_path': result['Table_path']['value']}
+        if result['Entity_id']['value'] in entities:
+            file_source = entities.get(result['Entity_id']['value'])['FileSource_path']
+            file_source.append(result['FileSource_path']['value'])
+            entities[result['Entity_id']['value']] = {'name': result['Entity']['value'], 'datatype': datatype,
+                                                      'FileSource_path': file_source}
+        else:
+            entities[result['Entity_id']['value']] = {'name': result['Entity']['value'], 'datatype': datatype,
+                                                      'FileSource_path': [result['FileSource_path']['value']]}
 
-    return entities, execute_query(config, query).drop(['Column_1'], axis=1)
+    return entities, execute_query(config, query).drop(['Entity_id'], axis=1). \
+        replace(['N', 'T'], ['INT64', 'STRING'])
+
+
+def predict_features(config, table, dataset, show_query):
+    print('table: ', table)
+    query = PREFIXES + """
+    SELECT DISTINCT ?Source_table ?Joinable_table (?Column_id as ?Join_key_id)
+    WHERE
+    {
+        ?Table_id			schema:name 	"%s"					                .
+        ?Dataset_id			schema:name		"%s"				                    .
+        ?Table_id   		dct:isPartOf 	?Dataset_id								.
+        ?Table_id			schema:name		?Source_table							.
+        ?Column_id			dct:isPartOf	?Table_id								.
+        <<?Column_id		lac:pkfk		?Column_id_2>> lac:certainty	?Score	.
+        ?Column_id_2		dct:isPartOf	?Joinable_table_id						.
+        ?Joinable_table_id	schema:name		?Joinable_table							
+    } ORDER BY ?Joinable_table """ % (table, dataset)
+    if show_query:
+        print(query)
+    df = execute_query(config, query)
+    join_key_id = df['Join_key_id'].iloc[0]
+    joinable_table = df['Joinable_table'].iloc[0]
+    print('Joinable table: ', joinable_table)
+    get_columns(config, joinable_table, dataset)
+    x = [i for i in get_columns(config, joinable_table, dataset) if i not in get_columns(config, table, dataset)]
+    # a = list(set(df['Column_x'].tolist()))
+    # b = list(set(df['Column_y'].tolist()))
+    # columns_to_join = [i for i in list(set(df['Column_y'].tolist())) if i not in list(set(df['Column_x'].tolist()))]
+    print('difference: ', x)

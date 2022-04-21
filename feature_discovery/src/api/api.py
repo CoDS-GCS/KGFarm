@@ -1,5 +1,5 @@
 import pandas as pd
-
+import numpy as np
 from feature_discovery.src.api.template import *
 from helpers.helper import *
 from helpers.feast_templates import entity, entity_skeleton, feature_view, definitions
@@ -31,7 +31,7 @@ class KGFarm:
     #     create_file(df)
     #     return df
 
-    def predict_entities_and_feature_views(self, ttl: int = 1000, path_to_feature_repo: str = 'feature_repo/', show_query: bool = False):
+    def predict_entities_and_feature_views(self, ttl: int = 1000, path_to_feature_repo: str = 'feature_repo/', show_feature_views: bool = False, show_query: bool = False):
         entities, entities_df = predict_entities(self.config, show_query)
         if os.path.exists(path_to_feature_repo + 'predicted_register.py'):
             os.remove(path_to_feature_repo + 'predicted_register.py')
@@ -40,17 +40,29 @@ class KGFarm:
             py_file.write(definitions())
             count = 0
             for k, v in entities.items():
-                count = count + 1
                 e = entity_skeleton().format(v['name'], v['name'], v['datatype'], v['name'])
-                f = feature_view().format(count, count, v['name'], ttl, v['Table_path'])
                 py_file.write(e)
-                py_file.write(f)
+                for file_source in v['FileSource_path']:
+                    count = count + 1
+                    f = feature_view().format(count, count, v['name'], ttl, file_source)
+                    py_file.write(f)
             py_file.close()
             print('Predicted entities and feature view(s) File saved at: ', os.path.abspath(path_to_feature_repo) + '/predicted_register.py')
 
-        return entities_df
+        if show_feature_views:
+            print('Showing predicted Feature views:')
+            entities_df['Feature_view'] = ['feature_view_' + str(i) for i in range(1, np.shape(entities_df)[0]+1)]
+            cols = entities_df.columns.tolist()
+            cols = cols[-1:] + cols[:-1]
+            return entities_df[cols]
+
+    def predict_features(self, table_info:pd.Series, show_query: bool = False):
+        table = table_info['table_name']
+        dataset = table_info['dataset_name']
+        predict_features(self.config, table, dataset, show_query)
 
 
 if __name__ == "__main__":
     kgfarm = KGFarm(show_connection_status=False)
-    kgfarm.predict_entities_and_feature_views(path_to_feature_repo='../../../feature_repo/', show_query=False)
+    df = kgfarm.predict_entities_and_feature_views(path_to_feature_repo='../../../feature_repo/', show_query=False)
+    print(df)
