@@ -1,8 +1,15 @@
 import os
 import yaml
-import pandas
+import pandas as pd
 import SPARQLWrapper.Wrapper
 from SPARQLWrapper import JSON, SPARQLWrapper
+
+PREFIXES = """
+    PREFIX lac:     <http://www.example.com/lac#>
+    PREFIX schema:  <http://schema.org/>
+    PREFIX rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    PREFIX dct:     <http://purl.org/dc/terms/>
+     """
 
 
 def refresh_elasticsearch():
@@ -62,15 +69,38 @@ def connect_to_blazegraph(port, namespace, show_status: bool):
 
 
 def execute_query_blazegraph(sparql: SPARQLWrapper, query: str):
-    sparql.setQuery(query)
+    sparql.setQuery(PREFIXES + query)
     sparql.setReturnFormat(JSON)
     return sparql.query().convert()
 
 
 def execute_query(sparql: SPARQLWrapper, query: str):
-    sparql.setQuery(query)
+    sparql.setQuery(PREFIXES + query)
     sparql.setReturnFormat(JSON)
     result = sparql.query().convert()
-    df = pandas.DataFrame(result['results']['bindings'])
+    df = pd.DataFrame(result['results']['bindings'])
     df = df.applymap(lambda x: x['value'])
+    return df
+
+
+def display_query(query: str):
+    query = PREFIXES + query
+    print(query)
+
+
+def convert_dict_to_dataframe(key, d: dict):
+    df = {}
+    first_col = list(d.keys())
+    columns = list(d[next(iter(d))].keys())
+    for i in range(len(columns)):
+        for k, v in d.items():
+            if columns[i] in df:
+                val = df.get(columns[i])
+                val.append(v[columns[i]])
+                df[columns[i]] = val
+            else:
+                df[columns[i]] = [v[columns[i]]]
+
+    df = pd.DataFrame.from_dict(df)
+    df.insert(loc=0, column=key, value=first_col)
     return df

@@ -1,4 +1,5 @@
 import os
+import random
 import time
 import shutil
 import pandas as pd
@@ -19,7 +20,7 @@ def download_datasets(dataset_ref: str, save_to='sample_data/csv/'):
     for file in os.listdir():
         if file.endswith('.zip'):
             dataset = file.replace('.zip', '')
-    os.mkdir(save_to+dataset)
+    os.mkdir(save_to + dataset)
     shutil.move(dataset + '.zip', save_to + dataset)
 
     os.chdir(save_to + dataset)
@@ -33,18 +34,36 @@ def download_datasets(dataset_ref: str, save_to='sample_data/csv/'):
             os.remove(file)
     return dataset
 
+
 def process_tables(dataset, path_to_tables: str = 'sample_data/csv/'):
     print('Adding random timestamps')
     os.mkdir('../../parquet/{}'.format(dataset))
+
     def get_random_timestamps(n_rows: int = 2, window_size: int = 10):
         random_timestamps = []
         date = dt.datetime.now()
         while n_rows:
             n_rows = n_rows - 1
-            random_date = date - timedelta(days=randrange(window_size+1))
+            random_date = date - timedelta(days=randrange(window_size + 1))
             random_date = random_date.replace(hour=randrange(24), minute=randrange(60), second=randrange(60))
             random_timestamps.append(random_date)
         return random_timestamps
+
+    # add starting tables to dataset
+    for table in ['completeddistrict.csv', 'completedacct.csv']:
+        df = pd.read_csv(table, low_memory=False)
+        original_ids = df[df.columns[0]].tolist()
+        if len(original_ids) >= 100:
+            ids = random.sample(original_ids, int(len(original_ids) * 0.80))
+            size = len(df) - len(ids) + 200
+            ids.extend(random.sample(ids, size))
+
+        else:
+            ids = random.sample(original_ids, int(len(original_ids) * 0.60))
+            size = 100 - len(ids)
+            ids.extend(random.sample(original_ids, size))
+        starting_table = pd.DataFrame(ids, columns=[df.columns[0]])
+        starting_table.to_csv(df.columns[0].replace('_id', '')+'.csv', index=False)
 
     for table in tqdm(os.listdir()):
         df = pd.read_csv(table, low_memory=False)
@@ -57,6 +76,7 @@ def process_tables(dataset, path_to_tables: str = 'sample_data/csv/'):
 
 def main():
     shutil.rmtree('sample_data/csv/retail-bankingdemodata')
+    shutil.rmtree('sample_data/parquet/retail-bankingdemodata')
     start = time.time()
     dataset = download_datasets('kabure/retail-bankingdemodata', 'sample_data/csv/')
     process_tables(dataset)
