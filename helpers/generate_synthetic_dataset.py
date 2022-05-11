@@ -57,13 +57,22 @@ def process_tables(dataset, path_to_tables: str = 'sample_data/csv/'):
             ids = random.sample(original_ids, int(len(original_ids) * 0.80))
             size = len(df) - len(ids) + 200
             ids.extend(random.sample(ids, size))
-
         else:
             ids = random.sample(original_ids, int(len(original_ids) * 0.60))
             size = 100 - len(ids)
             ids.extend(random.sample(original_ids, size))
         starting_table = pd.DataFrame(ids, columns=[df.columns[0]])
         starting_table.to_csv(df.columns[0].replace('_id', '')+'.csv', index=False)
+
+    # add synthetic features
+    df = pd.read_csv('completeddistrict.csv', low_memory=False)
+    rows = len(df)
+    df['avg_sales'] = random.sample(range(500000, 1500000), rows)
+    df['net_growth'] = random.sample(range(3000, 9000), rows)
+    df['return'] = random.sample(range(100, 999), rows)
+    df['n_customer_sat'] = [random.sample(range(1, 5), 1)[0] for i in range(rows)]
+    os.remove('completeddistrict.csv')
+    df.to_csv('completeddistrict.csv', index=False)
 
     for table in tqdm(os.listdir()):
         df = pd.read_csv(table, low_memory=False)

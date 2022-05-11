@@ -1,7 +1,3 @@
-import os
-
-import pandas as pd
-import numpy as np
 from feature_discovery.src.api.template import *
 from helpers.helper import *
 from helpers.feast_templates import entity_skeleton, feature_view_skeleton, definitions
@@ -93,20 +89,18 @@ class KGFarm:
         df = df[['Table', 'Enrich_with', 'Path_to_table', 'File_source_path', 'File_source', 'Dataset', 'Dataset_feature_view']]
         return df.sort_values('Enrich_with')
 
-    # def predict_features(self, table_info: pd.Series, show_query: bool = False):
-    #     table = table_info['table_name']
-    #     dataset = table_info['dataset_name']
-    #     # print('table: ', table)
-    #     joinable_table, cols = predict_features(self.config, table, dataset, show_query)
-    #     # print('joinable table: ', joinable_table)
-    #     fv = ''
-    #     for k, v in self.feature_views.items():
-    #         if joinable_table == self.feature_views.get(k):
-    #             fv = k
-    #     predicted_features = []
-    #     for c in cols:
-    #         predicted_features.append(fv + ':' + c)
-    #     return predicted_features
+    def get_features(self, entity_df: pd.Series, show_query: bool = False):
+        table = entity_df['Table']
+        dataset = entity_df['Dataset']
+        feature_view = entity_df['Enrich_with']
+        entity_df_features = get_columns(self.config, table, dataset, show_query)
+        features = get_columns(self.config, self.feature_views.get(feature_view)['File_source'],
+                               self.feature_views.get(feature_view)['Dataset'], show_query)
+
+        # subtract both feature lists
+        features = ['{}:'.format(feature_view) + feature for feature in features if feature not in entity_df_features]
+
+        return features
 
 
 if __name__ == "__main__":

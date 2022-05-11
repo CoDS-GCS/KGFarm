@@ -1,11 +1,8 @@
 def definitions():
     return \
-"""'''
-The Entities & Feature Views were predicted using Discovery operations. Feel free to edit :)
-'''
+"""# The Entities & Feature Views were predicted using Discovery operations. Feel free to edit :)
 from datetime import timedelta
 from feast import Entity, FeatureView, FileSource, ValueType
-
 '''
 ####################################################################################################################
 Entity: 
@@ -15,15 +12,7 @@ Entity:
 Feature View: 
         A feature view is an object that represents a logical group of feature data as it is found in a data source.
 ####################################################################################################################
-'''
-"""
-
-
-def entity():
-    return \
-"""
-entity_{} = Entity(name='{}', value_type=ValueType.{}, join_key='{}')
-"""
+'''"""
 
 
 def entity_skeleton():
@@ -33,16 +22,16 @@ def entity_skeleton():
 """
 
 
-def feature_view():
+def feature_view_skeleton():
     return \
-"""
-feature_view_{} = FeatureView(
-name='predicted_feature_view_{}',
+        """
+{} = FeatureView(
+name='{}',
 entities=['{}'],
-ttl=timedelta(weeks={}),
+ttl=timedelta(days={}),
 online=True,
 batch_source=FileSource(
 path=r'{}',
-event_timestamp_column='timestamp')
+event_timestamp_column='event_timestamp')
 )
 """

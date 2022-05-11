@@ -1,0 +1,67 @@
+
+F
+&
+	client_id"	client_idJfeature_repo
+ßæğ“øË±Ïßæğ“øË±Ï
+E
+%
+__dummy"
+__dummy_idJfeature_repo
+ßæğ“˜ßµÏßæğ“˜ßµÏ
+H
+(
+
+account_id"
+account_idJfeature_repo
+ßæğ“À¢·Ïßæğ“À¢·Ï
+J
+*
+district_id"district_idJfeature_repo
+ßæğ“˜Ö¸Ïßæğ“˜Ö¸Ï1"$af0d80d9-d969-46d1-93d1-071a4e3e6de9*âæğ“‘ën2ğ
+·
+feature_view_2feature_repo	client_id"
+disp_id"
+
+account_id"
+type2€¸™):Ûevent_timestampZˆ…/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completeddisposition.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢…/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completeddisposition.parquet@4
+ßæğ“¨¡ºÏáæğ“°Ğë
+à®×ê¨ºÕÙ€¶•2Ê
+‘
+feature_view_1feature_repodistrict_id"
+city"
+
+state_name"
+state_abbrev"
+
+region"
+division"
+	avg_sales"
+
+net_growth"
+
+return"
+n_customer_sat2€¸™):Õevent_timestampZ…‚/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completeddistrict.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢‚/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completeddistrict.parquet@4
+ßæğ“š¿Ïáæğ“€–½ÿ
+á®×êÈÖ²ë€¶•2‘
+Ù
+feature_view_3feature_repo
+account_id"
+district_id"
+	frequency"
+
+parseddate"
+year"	
+month"
+day"
+date2€¸™):Ëevent_timestampZ€~/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedacct.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢~/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedacct.parquet@3
+ßæğ“ ÙÄÏâæğ“ğ•ßn
+á®×ê˜ÆÔÿ€¶•Rû
+¦
+,feast.infra.online_stores.sqlite.SqliteTable"v
+W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.dbfeature_repo_feature_view_2
+¦
+,feast.infra.online_stores.sqlite.SqliteTable"v
+W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.dbfeature_repo_feature_view_1
+¦
+,feast.infra.online_stores.sqlite.SqliteTable"v
+W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.dbfeature_repo_feature_view_3
