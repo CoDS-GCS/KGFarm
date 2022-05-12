@@ -51,7 +51,7 @@ def predict_entities(config, show_query):
     return entities
 
 
-def get_enrichment_tables(config, show_query):
+def get_enrichable_tables(config, show_query):
     query = """
     SELECT DISTINCT ?Table ?Entity ?Path_to_table ?Dataset
     WHERE

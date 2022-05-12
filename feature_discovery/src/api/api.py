@@ -77,8 +77,8 @@ class KGFarm:
         if show_feature_views:
             return self.show_feature_views()
 
-    def get_enrichment_tables(self, show_query: bool = False):
-        df = get_enrichment_tables(self.config, show_query)
+    def get_enrichable_tables(self, show_query: bool = False):
+        df = get_enrichable_tables(self.config, show_query)
         df['Enrich_with'] = df['Entity'].apply(lambda x: self.entities_to_feature_views.get(x))
         df['File_source_path'] = df['Enrich_with'].apply(lambda x: self.feature_views.get(x)['File_source_path'])
         df['Dataset_feature_view'] = df['Enrich_with'].apply(lambda x: self.feature_views.get(x)['Dataset'])
