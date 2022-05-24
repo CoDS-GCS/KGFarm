@@ -4,7 +4,7 @@ from helpers.feast_templates import entity_skeleton, feature_view_skeleton, defi
 
 
 class KGFarm:
-    def __init__(self, blazegraph_port=9999, blazegraph_namespace: str = 'glac',
+    def __init__(self, port=5822, database: str = 'kgfarm_dev',
                  path_to_feature_repo: str = 'feature_repo/', show_connection_status: bool = True):
         # remove old feast meta
         if os.path.exists(path_to_feature_repo + 'data/registry.db'):
@@ -15,7 +15,7 @@ class KGFarm:
             os.remove(path_to_feature_repo + 'data/driver_stats.parquet')
 
         self.path_to_feature_repo = path_to_feature_repo
-        self.config = connect_to_blazegraph(blazegraph_port, blazegraph_namespace, show_connection_status)
+        self.config = connect_to_stardog(port, database, show_connection_status)
         self.entities_to_feature_views = {}
         self.entities, self.feature_views = self.__predict_entities_and_feature_views()
 
