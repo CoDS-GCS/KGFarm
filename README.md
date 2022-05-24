@@ -12,7 +12,7 @@ pip install -r requirements.txt
 ```bash
 feast init feature_repo
 ```
-- Start using KGFarm APIs (checkout <code>notebook.ipynb</code>)
+- Start using KGFarm APIs (checkout <code>KGFarm_notebook.ipynb</code>)
 
 ## 🦾 Contributors
 <p float="left">
