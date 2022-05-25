@@ -51,6 +51,24 @@ def predict_entities(config, show_query):
     return entities
 
 
+def get_all_tables(config, show_query):
+    query = """
+    SELECT DISTINCT (?Table_name as ?File_source) (?Table_path as ?File_source_path) (?Dataset_name as ?Dataset)
+    WHERE
+    {
+        ?Table      rdf:type        lac:table       ;
+                    schema:name     ?Table_name     ;
+                    lac:path        ?Table_path     ;
+                    dct:isPartOf    ?Dataset_id     .
+        
+        ?Dataset_id schema:name     ?Dataset_name   .
+    }
+    """
+    if show_query:
+        display_query(query)
+    return execute_query(config, query)
+
+
 def get_enrichable_tables(config, show_query):
     query = """
     SELECT DISTINCT ?Table ?Entity ?Path_to_table ?Dataset
