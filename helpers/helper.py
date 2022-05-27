@@ -7,6 +7,7 @@ import SPARQLWrapper.Wrapper
 from SPARQLWrapper import JSON, SPARQLWrapper
 
 PREFIXES = """
+    PREFIX data:   <http://kglids.org/ontology/data/>
     PREFIX lac:     <http://www.example.com/lac#>
     PREFIX schema:  <http://schema.org/>
     PREFIX rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -76,7 +77,7 @@ def connect_to_stardog(port, db: str, show_status: bool):
         'username': 'admin',
         'password': 'admin'
     }
-    conn = stardog.Connection('kgfarm_dev', **connection_details)
+    conn = stardog.Connection(db, **connection_details)
     if show_status:
         print('connected to Stardog!\nAccess the Stardog UI at: https://cloud.stardog.com/')
     return conn
