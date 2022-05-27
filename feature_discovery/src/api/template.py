@@ -103,3 +103,94 @@ def get_enrichable_tables(config, show_query):
         display_query(query)
 
     return execute_query(config, query)
+#############################################################################
+
+
+def get_INDs(config, show_query: bool = False):
+    query = """
+    SELECT ?A ?B 
+    WHERE
+    {
+    ?B  data:hasInclusionDependency ?A      .  
+    }"""
+    if show_query:
+        display_query(query)
+
+    return execute_query(config, query)
+
+
+def get_distinct_dependent_values(config, show_query: bool = False):
+    query = """
+    SELECT ?A ?B (?Distinct_values/?Total_values AS ?F1)
+    WHERE
+    {   
+        ?B  data:hasInclusionDependency ?A                  .
+        
+        ?A  data:hasTotalValueCount     ?Total_values       ;
+            data:hasDistinctValueCount  ?Distinct_values    .  
+    }"""
+    if show_query:
+        display_query(query)
+
+    return execute_query(config, query)
+
+
+def get_content_similarity(config, show_query: bool = False):
+    query = """
+    SELECT ?A ?B (?Score AS ?F2)
+    WHERE
+    {   
+        ?B  data:hasInclusionDependency ?A                                  .
+        <<?B data:hasContentSimilarity  ?A>>    data:withCertainty  ?Score  .
+    }"""
+    if show_query:
+        display_query(query)
+
+    return execute_query(config, query)
+
+
+def get_column_name_similarity(config, show_query: bool = False):
+    query = """
+    SELECT ?A ?B (?Score AS ?F6)
+    WHERE
+    {   
+        ?B  data:hasInclusionDependency ?A                                  .
+        <<?B data:hasSemanticSimilarity  ?A>>    data:withCertainty  ?Score  .
+    }"""
+    if show_query:
+        display_query(query)
+
+    return execute_query(config, query)
+
+
+def get_typical_name_suffix(config, show_query: bool = False):
+    query = """
+    SELECT ?A ?B ?F9
+    WHERE
+    {
+    ?B  data:hasInclusionDependency ?A      ;
+        schema:name                 ?Name_A .
+    ?A  schema:name                 ?Name_B .
+    
+    BIND(IF(REGEX(?Name_A, 'id$', "i" )||REGEX(?Name_A, 'key$', "i" )||REGEX(?Name_A, 'num_$', "i" ),1,0) as ?F9) .   
+    }"""
+    if show_query:
+        display_query(query)
+
+    return execute_query(config, query)
+
+
+def get_table_size_ratio(config, show_query: bool = False):
+    query = """
+    SELECT ?A ?B  (?Rows_A/?Rows_B AS ?F10)
+    WHERE
+    {
+    ?B  data:hasInclusionDependency ?A      ;
+        data:hasTotalValueCount     ?Rows_A .
+    ?A  data:hasTotalValueCount     ?Rows_B .
+    } 
+    """
+    if show_query:
+        display_query(query)
+
+    return execute_query(config, query)
