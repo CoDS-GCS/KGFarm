@@ -163,6 +163,31 @@ def get_column_name_similarity(config, show_query: bool = False):
     return execute_query(config, query)
 
 
+def get_range(config, show_query: bool = False):
+    query = """
+    PREFIX kglids: <http://kglids.org/ontology/>
+    SELECT ?A ?B ?F8
+    WHERE
+    {
+    ?B  data:hasInclusionDependency ?A      ;
+        schema:name                 ?Name_A .
+    ?A  schema:name                 ?Name_B .
+    ?A  kglids:isPartOf             ?tA.
+    ?B  kglids:isPartOf             ?tB.
+    ?A  data:hasMaxValue            ?maxA .
+    ?A  data:hasMinValue            ?minA .
+    ?B  data:hasMaxValue            ?maxB .
+    ?B  data:hasMinValue            ?minB .
+    
+    BIND(IF((?maxB>=?maxA && ?minB<=?minA),1,0) as ?F8) .
+    FILTER(?tA != ?tB) .   
+    }"""
+    if show_query:
+        display_query(query)
+
+    return execute_query(config, query)
+
+
 def get_typical_name_suffix(config, show_query: bool = False):
     query = """
     SELECT ?A ?B ?F9
@@ -194,3 +219,5 @@ def get_table_size_ratio(config, show_query: bool = False):
         display_query(query)
 
     return execute_query(config, query)
+
+

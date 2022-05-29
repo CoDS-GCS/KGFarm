@@ -1,3 +1,5 @@
+from turtle import pd
+
 from feature_discovery.src.api.template import *
 from helpers.helper import *
 from helpers.feast_templates import entity_skeleton, feature_view_skeleton, definitions
@@ -140,6 +142,27 @@ class KGFarm:
 
         return features
 
+    def get_table_PK(config, table, dataset, show_query):
+        query = """
+        PREFIX kglids: <http://kglids.org/ontology/>
+        select (?c as ?PK)
+        where
+        {
+        ?c schema:name                  ?cname.
+        ?c kglids:isPartOf              ?t.
+        ?t schema:name                  ?tname.
+        ?c data:hasDistinctValueCount   ?distinctValues .
+        ?c data:hasTotalValueCount      ?TotalValues .
+        ?c data:hasMissingValueCount    ?null .
+
+        FILTER(?distinctValues=?TotalValues).
+
+        values ?null {0} .
+        }
+        """ % (table, dataset)
+        if show_query:
+            display_query(query)
+        return execute_query(config, query)['PK'].tolist()
 
 if __name__ == "__main__":
     kgfarm = KGFarm(path_to_feature_repo='../../../feature_repo/', show_connection_status=False)

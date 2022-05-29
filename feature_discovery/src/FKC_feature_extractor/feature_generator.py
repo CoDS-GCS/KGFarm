@@ -75,6 +75,9 @@ def generate_features(conn, ind: pd.DataFrame):
     def generate_F06():
         return get_column_name_similarity(conn)
 
+    def generate_F08():
+        return get_range(conn)
+
     def generate_F09():
         return get_typical_name_suffix(conn)
 
@@ -88,19 +91,21 @@ def generate_features(conn, ind: pd.DataFrame):
                                     generate_F04(),
                                     generate_F05(),
                                     generate_F06(),
+                                    generate_F08(),
                                     generate_F09(),
-                                    generate_F10()])[['A', 'B', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F9', 'F10']]
+                                    generate_F10()])[['A', 'B', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F8', 'F9', 'F10']]
 
 
 def main():
     # This implementation is as per http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.438.9288&rep=rep1&type=pdf
-    conn = connect_to_stardog(port=5820, db='chembl', show_status=True)
+    conn = connect_to_stardog(port=5822, db='chembl', show_status=True)
     # Get all inclusion dependencies (IND) initially
     ind = get_INDs(conn)
     # Generate features for these IND pairs
     features_df = generate_features(conn, ind)
     # print(features_df)
     features_df.to_csv('features.csv')
+    #get_table_PK()
 
 
 if __name__ == "__main__":
