@@ -98,6 +98,7 @@ def generate_features(conn, ind: pd.DataFrame):
 
 def main():
     # This implementation is as per http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.438.9288&rep=rep1&type=pdf
+    # TODO: add a filter for Table_A != Table_B  while retrieving inclusion dependencies for all features
     conn = connect_to_stardog(port=5822, db='chembl', show_status=True)
     # Get all inclusion dependencies (IND) initially
     ind = get_INDs(conn)
@@ -105,7 +106,6 @@ def main():
     features_df = generate_features(conn, ind)
     # print(features_df)
     features_df.to_csv('features.csv')
-    #get_table_PK()
 
 
 if __name__ == "__main__":
