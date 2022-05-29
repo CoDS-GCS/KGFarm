@@ -108,10 +108,18 @@ def get_enrichable_tables(config, show_query):
 
 def get_INDs(config, show_query: bool = False):
     query = """
-    SELECT ?A ?B 
+    SELECT (strbefore(?Foreign_table_name, '.csv') as ?Foreign_table) (?Name_A as ?Foreign_key) ?A (strbefore(?Primary_table_name, '.csv') as ?Primary_table) (?Name_B as ?Primary_key) ?B 
     WHERE
     {
-    ?B  data:hasInclusionDependency ?A      .  
+    ?B          data:hasInclusionDependency ?A                      ;
+                schema:name                 ?Name_B                 ;
+                kglids:isPartOf             ?Table_B                .
+        
+    ?A          kglids:isPartOf             ?Table_A                ;
+                schema:name                 ?Name_A                 .
+        
+    ?Table_B    schema:name                 ?Primary_table_name     .
+    ?Table_A    schema:name                 ?Foreign_table_name     .
     }"""
     if show_query:
         display_query(query)
@@ -165,7 +173,6 @@ def get_column_name_similarity(config, show_query: bool = False):
 
 def get_range(config, show_query: bool = False):
     query = """
-    PREFIX kglids: <http://kglids.org/ontology/>
     SELECT ?A ?B ?F8
     WHERE
     {

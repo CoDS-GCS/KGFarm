@@ -1,3 +1,5 @@
+import os
+
 from feature_discovery.src.api.template import *
 from helpers.helper import connect_to_stardog
 from tqdm import tqdm
@@ -18,7 +20,7 @@ def generate_features(conn, ind: pd.DataFrame):
 
     def normalize(vector: list):
         max_value = max(vector)
-        return list(map(lambda x: x/max_value, vector))
+        return list(map(lambda x: x / max_value, vector))
 
     def generate_F01():
         return get_distinct_dependent_values(conn)
@@ -84,7 +86,6 @@ def generate_features(conn, ind: pd.DataFrame):
     def generate_F10():
         return get_table_size_ratio(conn)
 
-    generate_F04()
     return aggregate_features(ind, [generate_F01(),
                                     generate_F02(),
                                     generate_F03(),
@@ -93,7 +94,35 @@ def generate_features(conn, ind: pd.DataFrame):
                                     generate_F06(),
                                     generate_F08(),
                                     generate_F09(),
-                                    generate_F10()])[['A', 'B', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F8', 'F9', 'F10']]
+                                    generate_F10()])[['Foreign_table', 'Foreign_key', 'Primary_table',
+                                                      'Primary_key', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F8',
+                                                      'F9', 'F10']]
+
+
+def add_labels(features_df: pd.DataFrame, path_to_groundtruth: str = '../../../helpers/groundtruth/chembl_pkfk.csv'):
+    groundtruth = pd.read_csv(path_to_groundtruth).drop(columns=['PK - Section', 'To', 'FK - Section'], axis=1)
+    processed_groundtruth = []
+    for k, v in groundtruth.to_dict('index').items():
+        primary_table = v['PK - Table']
+        primary_key = v['PK - ColName']
+        foreign_table = v[r'FK - Table']
+        foreign_key = v['FK - ColName']
+        processed_groundtruth.append((foreign_table, foreign_key, primary_table, primary_key))
+
+    labels = []
+    for k, v in features_df.to_dict('index').items():
+        if (v['Foreign_table'], v['Foreign_key'], v['Primary_table'], v['Primary_key']) in processed_groundtruth:
+            labels.append(1)
+        else:
+            labels.append(0)
+
+    features_df['Has_pk_fk_relation'] = labels
+    return features_df
+
+
+def export_csv(features_df: pd.DataFrame, save_as: str = 'features.csv'):
+    features_df.drop(columns=['Foreign_table', 'Foreign_key', 'Primary_table', 'Primary_key'], axis=1, inplace=True)
+    features_df.to_csv(save_as)
 
 
 def main():
@@ -104,8 +133,10 @@ def main():
     ind = get_INDs(conn)
     # Generate features for these IND pairs
     features_df = generate_features(conn, ind)
-    # print(features_df)
-    features_df.to_csv('features.csv')
+    # Add labels / target using true mappings
+    features_df = add_labels(features_df)
+    # Export features in the needed format
+    export_csv(features_df)
 
 
 if __name__ == "__main__":
