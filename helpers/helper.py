@@ -79,7 +79,7 @@ def connect_to_stardog(port, db: str, show_status: bool):
     }
     conn = stardog.Connection(db, **connection_details)
     if show_status:
-        print('connected to Stardog!\nAccess the Stardog UI at: https://cloud.stardog.com/')
+        print('Connected to Stardog!\nAccess the Stardog UI at: https://cloud.stardog.com/')
     return conn
 
 
