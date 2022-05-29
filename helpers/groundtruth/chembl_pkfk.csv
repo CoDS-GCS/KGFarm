@@ -1,0 +1,33 @@
+﻿PK - Section,PK - Table,PK - ColName,To,FK - Section,FK - Table,FK - ColName
+Drug Metabolism,Metabolism,MET_ID,,Drug Metabolism,Metabolism_refs,MET_ID
+Target Information,Target_dictionary,TID,,Drug Metabolism,Metabolism,ENZYMe_TID
+Mechanism annotation,drug_mechanism,mec_id,,Mechanism annotation,mechanism_refs,mec_id
+Mechanism annotation,action_type,action_type,,Mechanism annotation,drug_mechanism,action_type
+Mechanism annotation,drug_indication,drugind_id,,Mechanism annotation,indication_refs,drugind_id
+Target Information,Target_dictionary,TID,,Mechanism annotation,drug_mechanism,TID
+Binding_site information,binding_sites,site_id,,Mechanism annotation,drug_mechanism,site_id
+Binding_site information,binding_sites,site_id,,Mechanism annotation,predicted_binding_domains,site_id
+Binding_site information,binding_sites,site_id,,Binding_site information,site_components,site_id
+Binding_site information,domains,domain_id,,Binding_site information,site_components,domain_id
+Binding_site information,domains,domain_id,,Binding_site information,components_domains,domain_id
+Target Information,Target_dictionary,TID,,Binding_site information,binding_sites,tid
+Target Information,component_sequences,component_id,,Binding_site information,site_components,component_id
+Target Information,component_sequences,component_id,,Binding_site information,component_domains,component_id
+Target Information,target_type,target_type,,Target Information,Target_dictionary,target_type
+Target Information,Target_dictionary,TID,,Target Information,target_components,tid
+Target Information,Target_dictionary,TID,,Target Information,target_relations,tid
+Target Information,component_sequences,component_id,,Target Information,target_components,component_id
+Target Information,component_sequences,component_id,,Target Information,component_go,component_id
+Target Information,go_classification,go_id,,Target Information,component_go,go_id
+Target Information,component_sequences,component_id,,Target Information,component_synonyms,component_id
+Target Information,component_sequences,component_id,,Target Information,component_class,component_id
+Target Information,protein_classification,protein_class_id,,Target Information,component_class,protein_class_id
+Target Information,protein_classification,protein_class_id,,Target Information,protein_class_synonyms,protein_class_id
+Approved Drug Data,ATC_classification,level 5,,Approved Drug Data,molecule_ATC_classification,level 5
+Approved Drug Data,hrac_classification,hrac_class_id,,Approved Drug Data,molecule_hrac_classification,hrac_class_id
+Approved Drug Data,irac_classification,irac_class_id,,Approved Drug Data,molecule_irac_classification,irac_class_id
+Approved Drug Data,frac_classification,frac_class_id,,Approved Drug Data,molecule_frac_classification,frac_class_id
+Approved Drug Data,products,product_id,,Approved Drug Data,formulations,product_id
+Approved Drug Data,products,product_id,,Approved Drug Data,product_patents,product_id
+Approved Drug Data,patent_use_codes,patent_use_code,,Approved Drug Data,product_patents,patent_use_code
+Approved Drug Data,ATC_classification,level 5,,Approved Drug Data,defined_daily_dose,atc_code
