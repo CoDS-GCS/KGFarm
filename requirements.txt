@@ -149,3 +149,5 @@ webencodings==0.5.1
 websockets==10.3
 widgetsnbextension @ file:///opt/concourse/worker/volumes/live/b79a6318-0a66-44c8-744e-87eba0d202e8/volume/widgetsnbextension_1645009378090/work
 zipp==3.8.0
+
+seaborn~=0.11.2
