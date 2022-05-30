@@ -1,3 +1,5 @@
+import pandas as pd
+
 from feature_discovery.src.api.template import *
 from helpers.helper import *
 from helpers.feast_templates import entity_skeleton, feature_view_skeleton, definitions
@@ -79,9 +81,25 @@ class KGFarm:
         else:
             return convert_dict_to_dataframe('Feature_view', self.feature_views).dropna()
 
+    def drop_feature_view(self, drop: list):
+        if len(drop) == 0:
+            print('Nothing to drop')
+            return
+        else:
+            print('Dropped ', end='')
+            for feature_view_to_be_dropped in drop:
+                feature_view = feature_view_to_be_dropped['Feature_view']
+                drop_status = self.feature_views.pop(feature_view, 'None')
+                if drop_status == 'None':
+                    print('unsuccessful!\n')
+                    raise ValueError(feature_view, ' not found!')
+                else:
+                    print(feature_view, end=' ')
+            return self.show_feature_views()
+
     # writes to file the predicted feature views and entities
-    def predict_feature_views(self, ttl: int = 10,
-                              show_feature_views: bool = False):
+    def finalize_feature_views(self, ttl: int = 10,
+                               show_feature_views: bool = False):
         if os.path.exists(self.path_to_feature_repo + 'predicted_register.py'):
             os.remove(self.path_to_feature_repo + 'predicted_register.py')
         if os.path.exists(self.path_to_feature_repo + 'example.py'):
@@ -102,7 +120,8 @@ class KGFarm:
             # write all feature views
             for feature_view, v in tqdm(self.feature_views.items()):
                 if v['Entity']:
-                    feature_view = feature_view_skeleton().format(feature_view, feature_view, "'"+v['Entity'] + "'", ttl,
+                    feature_view = feature_view_skeleton().format(feature_view, feature_view, "'" + v['Entity'] + "'",
+                                                                  ttl,
                                                                   v['File_source_path'])
                 else:
                     feature_view = feature_view_skeleton().format(feature_view, feature_view, '', ttl,
