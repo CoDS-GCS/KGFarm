@@ -4,29 +4,30 @@
 ![design](https://user-images.githubusercontent.com/40717058/162835808-3f99b48f-78f6-44c8-a431-88a09da43d7c.png)
 
 ## ⚡ Quick Start
-- Installing dependencies
+1. Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
-- Setup feature repository using feast
+2. Setup feature repository using feast
 ```bash
 feast init feature_repo
 ```
-- Connect to the [Stardog](https://www.stardog.com/) engine
+3. Connect to the [Stardog](https://www.stardog.com/) engine
 ```bash
 stardog-admin server start
 ```
-- Start using KGFarm APIs (checkout <code>KGFarm_notebook.ipynb</code>)
+4. Start using KGFarm APIs (checkout <code>KGFarm_notebook.ipynb</code>)
 
-## 📋 Roadmap
-* [X] Automate [Feature view](https://docs.feast.dev/getting-started/concepts/feature-view) generation
-* [x] Predict [Entity](https://docs.feast.dev/v/v0.6-branch/user-guide/entities) consisting of a single join key
+## 🚧 Functionality and Roadmap
+* [X] Automate generation of [Feature views without Entities](https://docs.feast.dev/getting-started/concepts/feature-view#feature-views-without-entities)
+* [X] Automate [Feature view](https://docs.feast.dev/getting-started/concepts/feature-view) generation for single [Entity](https://docs.feast.dev/v/v0.6-branch/user-guide/entities)
+* [ ] Automate [Feature view](https://docs.feast.dev/getting-started/concepts/feature-view) generation for multiple [Entities](https://docs.feast.dev/v/v0.6-branch/user-guide/entities)
+* [x] Predict [Entities](https://docs.feast.dev/v/v0.6-branch/user-guide/entities) 
 * [x] Predict Features for [Model training](https://docs.feast.dev/getting-started/quickstart#step-4-generating-training-data)
 * [ ] Predict [Feature service](https://docs.feast.dev/getting-started/concepts/feature-service)
-* [ ] Predict Composite keys for Joins
 * [ ] Predict feature transformations
-* [ ] Recommend Semantically similar features
-* [ ] Recommend similar features by Content
+* [ ] Recommend semantically similar features
+* [ ] Recommend similar features by content
 * [ ] Detect Feature bias
 
 ## 🦾 Contributors
