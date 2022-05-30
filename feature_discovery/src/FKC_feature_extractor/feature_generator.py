@@ -86,6 +86,7 @@ def generate_features(conn, ind: pd.DataFrame):
     def generate_F10():
         return get_table_size_ratio(conn)
 
+    print('generating features')
     return aggregate_features(ind, [generate_F01(),
                                     generate_F02(),
                                     generate_F03(),
@@ -123,9 +124,10 @@ def add_labels(features_df: pd.DataFrame, path_to_groundtruth: str = '../../../h
 def export_csv(features_df: pd.DataFrame, save_as: str = 'features.csv'):
     features_df.drop(columns=['Foreign_table', 'Foreign_key', 'Primary_table', 'Primary_key'], axis=1, inplace=True)
     features_df.to_csv(save_as)
+    return features_df
 
 
-def main():
+def generate():
     # This implementation is as per http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.438.9288&rep=rep1&type=pdf
     # TODO: add a filter for Table_A != Table_B  while retrieving inclusion dependencies for all features
     conn = connect_to_stardog(port=5822, db='chembl', show_status=True)
@@ -136,8 +138,7 @@ def main():
     # Add labels / target using true mappings
     features_df = add_labels(features_df)
     # Export features in the needed format
-    export_csv(features_df)
+    return export_csv(features_df)
 
-
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     generate()
