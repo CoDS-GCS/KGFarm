@@ -116,23 +116,3 @@ batch_source=FileSource(
 path=r'/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/district.parquet',
 event_timestamp_column='event_timestamp')
 )
-
-feature_view_11 = FeatureView(
-name='feature_view_11',
-entities=[],
-ttl=timedelta(days=30),
-online=True,
-batch_source=FileSource(
-path=r'/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedorder.parquet',
-event_timestamp_column='event_timestamp')
-)
-
-feature_view_12 = FeatureView(
-name='feature_view_12',
-entities=[],
-ttl=timedelta(days=30),
-online=True,
-batch_source=FileSource(
-path=r'/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedcard.parquet',
-event_timestamp_column='event_timestamp')
-)
