@@ -18,7 +18,8 @@ stardog-admin server start
 ```
 4. Start using KGFarm APIs (checkout <code>KGFarm_notebook.ipynb</code>)
 
-## 🚧 Functionality and Roadmap
+## 🚧 Roadmap
+- <b>List of deliverables for KGFarm version 0.1</b> [🔗](https://docs.google.com/document/d/1z9n8v5FEOXx7q0pQAeHG6nAyvu21I7Zf3qq4WGkwS08/edit?usp=sharing)
 * [X] Automate generation of [Feature views without Entities](https://docs.feast.dev/getting-started/concepts/feature-view#feature-views-without-entities)
 * [X] Automate [Feature view](https://docs.feast.dev/getting-started/concepts/feature-view) generation for single [Entity](https://docs.feast.dev/v/v0.6-branch/user-guide/entities)
 * [ ] Automate [Feature view](https://docs.feast.dev/getting-started/concepts/feature-view) generation for multiple [Entities](https://docs.feast.dev/v/v0.6-branch/user-guide/entities)
