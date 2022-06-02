@@ -1,5 +1,3 @@
-import os
-
 from feature_discovery.src.api.template import *
 from helpers.helper import connect_to_stardog
 from tqdm import tqdm
