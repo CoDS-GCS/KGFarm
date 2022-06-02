@@ -7,12 +7,12 @@ import SPARQLWrapper.Wrapper
 from SPARQLWrapper import JSON, SPARQLWrapper
 
 PREFIXES = """
-    PREFIX kglids: <http://kglids.org/ontology/>
-    PREFIX data:   <http://kglids.org/ontology/data/>
-    PREFIX lac:     <http://www.example.com/lac#>
-    PREFIX schema:  <http://schema.org/>
-    PREFIX rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    PREFIX dct:     <http://purl.org/dc/terms/>
+    PREFIX kglids:      <http://kglids.org/ontology/>
+    PREFIX data:        <http://kglids.org/ontology/data/>
+    PREFIX schema:      <http://schema.org/>
+    PREFIX rdf:         <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    PREFIX rdfs:        <http://www.w3.org/2000/01/rdf-schema#>
+    PREFIX pipeline:    <http://kglids.org/ontology/pipeline/>
      """
 
 

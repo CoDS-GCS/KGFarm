@@ -8,11 +8,10 @@ def get_columns(config, table, dataset, show_query):
     {
         ?Table_id			schema:name		"%s"				                    .
         ?Dataset_id			schema:name		"%s"				                    .
-        ?Table_id			dct:isPartOf	?Dataset_id								.
-        ?Column_id			dct:isPartOf	?Table_id								;
+        ?Table_id			kglids:isPartOf	?Dataset_id								.
+        ?Column_id			kglids:isPartOf	?Table_id								;
                             schema:name		?Column									.
-    }
-    """ % (table, dataset)
+    }""" % (table, dataset)
     if show_query:
         display_query(query)
     return execute_query(config, query)['Column'].tolist()
@@ -20,35 +19,32 @@ def get_columns(config, table, dataset, show_query):
 
 def predict_entities(config, show_query):
     query = """
-    SELECT DISTINCT ?Entity ?Entity_data_type ?File_source ?File_source_path ?Dataset
+        SELECT DISTINCT ?Entity ?Entity_data_type ?File_source ?File_source_path ?Dataset
     WHERE
     {
-      <<?Entity_id 	lac:pkfk ?column_id_1>> lac:certainty ?score	.
-      ?Entity_id	schema:totalVCount		?Total_values			;
-      				schema:distinctVCount	?Distinct_values		;
-                    schema:name				?Entity					;
-      				schema:type				?Entity_data_type		.
+      <<?Entity_id 	data:hasPrimaryKeyForeignKeySimilarity  ?column_id_1>> data:withCertainty  ?score  .
+      ?Entity_id	data:hasTotalValueCount                 ?Total_values			;
+      				data:hasDistinctValueCount	            ?Distinct_values		;
+                    schema:name				                ?Entity					;
+      				data:hasDataType			            ?data_type		        .
       
-      FILTER(?Total_values = ?Distinct_values)					    .
+      BIND(IF(REGEX(?data_type, 'N'),'INT64','STRING') as ?Entity_data_type) . 
       
-      ?column_id_1	dct:isPartOf			?Joinable_table_id		.
-      #             schema:name             ?Foreign_key            .
+      FILTER(?Total_values = ?Distinct_values)					    
       
-      # FILTER(?Entity = ?Foreign_key)       
+      ?column_id_1	kglids:isPartOf			                ?Joinable_table_id		.       
       
-      ?Entity_id	dct:isPartOf			?Table_id				.
-      ?Table_id     schema:name             ?File_source            ;
-                    lac:path				?File_source_path       ;
-                    dct:isPartOf            ?Dataset_id             .
+      ?Entity_id	kglids:isPartOf			                ?Table_id				.
+      ?Table_id     schema:name                             ?File_source            ;
+                    data:hasFilePath				        ?File_source_path       ;
+                    kglids:isPartOf                         ?Dataset_id             .
       
-      ?Dataset_id   schema:name             ?Dataset               .
+      ?Dataset_id   schema:name                             ?Dataset                .
     }"""
     if show_query:
         display_query(query)
 
-    entities = execute_query(config, query). \
-        replace(['N', 'T'], ['INT64', 'STRING'])
-    return entities
+    return execute_query(config, query)
 
 
 def get_all_tables(config, show_query):
@@ -56,14 +52,13 @@ def get_all_tables(config, show_query):
     SELECT DISTINCT (?Table_name as ?File_source) (?Table_path as ?File_source_path) (?Dataset_name as ?Dataset)
     WHERE
     {
-        ?Table      rdf:type        lac:table       ;
-                    schema:name     ?Table_name     ;
-                    lac:path        ?Table_path     ;
-                    dct:isPartOf    ?Dataset_id     .
+        ?Table      rdf:type                kglids:Table    ;
+                    schema:name             ?Table_name     ;
+                    data:hasFilePath        ?Table_path     ;
+                    kglids:isPartOf         ?Dataset_id     .
         
-        ?Dataset_id schema:name     ?Dataset_name   .
-    }
-    """
+        ?Dataset_id schema:name             ?Dataset_name   .
+    }"""
     if show_query:
         display_query(query)
     return execute_query(config, query)
@@ -74,31 +69,27 @@ def get_enrichable_tables(config, show_query):
     SELECT DISTINCT ?Table ?Entity ?Path_to_table ?Dataset
     WHERE
     {
-      <<?Entity_id 			lac:pkfk ?column_id_1>> lac:certainty ?Score	.
-      ?Entity_id			schema:totalVCount		?Total_values			;
-      						schema:distinctVCount	?Distinct_values		;
-                    		schema:name				?Entity					;
-      						schema:type				?Entity_data_type		;
-                    		dct:isPartOf			?Table_id				.
+      <<?Entity_id 			data:hasPrimaryKeyForeignKeySimilarity  ?column_id_1>> data:withCertainty ?Score	.
+      ?Entity_id			data:hasTotalValueCount		            ?Total_values			;
+      						data:hasDistinctValueCount              ?Distinct_values		;
+                    		schema:name				                ?Entity					;
+      						data:hasDataType		                ?Entity_data_type		;
+                    	    kglids:isPartOf			                ?Table_id				.
       
-      FILTER(?Total_values = ?Distinct_values)					    		.
+      FILTER(?Total_values = ?Distinct_values)					    		
       	
-      ?Table_id     		schema:name             ?File_source            ;
-      						lac:path				?File_source_path       .
+      ?Table_id     		schema:name                             ?File_source            ;
+      						data:hasFilePath				        ?File_source_path       .
       
-      ?column_id_1			dct:isPartOf			?Joinable_table_id		.
-      #                      schema:name             ?Foreign_key           .
+      ?column_id_1			kglids:isPartOf			                ?Joinable_table_id		.
       
-      # FILTER(?Entity = ?Foreign_key)                                      .
-      
-      ?Joinable_table_id	schema:name				?Table      			;
-                            lac:path				?Path_to_table			;
-                            dct:isPartOf            ?Dataset_id             .
+      ?Joinable_table_id	schema:name				                ?Table      			;
+                            data:hasFilePath				        ?Path_to_table			;
+                            kglids:isPartOf                         ?Dataset_id             .
                 
-      ?Dataset_id           schema:name             ?Dataset                .            
-      FILTER(?Table_id != ?Joinable_table_id)					    		.
-    } ORDER BY DESC (?Entity)
-    """
+      ?Dataset_id           schema:name                             ?Dataset                .            
+      FILTER(?Table_id != ?Joinable_table_id)					    		
+    } ORDER BY DESC (?Entity) """
     if show_query:
         display_query(query)
 
@@ -220,8 +211,7 @@ def get_table_size_ratio(config, show_query: bool = False):
     ?B  data:hasInclusionDependency ?A      ;
         data:hasTotalValueCount     ?Rows_A .
     ?A  data:hasTotalValueCount     ?Rows_B .
-    } 
-    """
+    }"""
     if show_query:
         display_query(query)
 

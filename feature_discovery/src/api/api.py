@@ -7,8 +7,8 @@ from tqdm import tqdm
 
 
 class KGFarm:
-    def __init__(self, port=5820, database: str = 'kgfarm_dev',
-                 path_to_feature_repo: str = 'feature_repo/', show_connection_status: bool = True):
+    def __init__(self, port: object = 5820, database: str = 'kgfarm_dev',
+                 path_to_feature_repo: str = 'feature_repo/', show_connection_status: bool = True) -> object:
         # remove old feast meta
         if os.path.exists(path_to_feature_repo + 'data/registry.db'):
             os.remove(path_to_feature_repo + 'data/registry.db')
@@ -144,7 +144,7 @@ class KGFarm:
         # df = df[df.columns.tolist()[-1:] + df.columns.tolist()[:-1]]
         df = df[['Table', 'Enrich_with', 'Path_to_table', 'File_source_path', 'File_source', 'Dataset',
                  'Dataset_feature_view']]
-        return df.sort_values('Enrich_with')
+        return df.sort_values('Enrich_with').reset_index(drop=True)
 
     def get_features(self, entity_df: pd.Series, show_query: bool = False):
         table = entity_df['Table']
@@ -160,7 +160,7 @@ class KGFarm:
         return features
 
 
-if __name__ == "__main__":
-    kgfarm = KGFarm(path_to_feature_repo='../../../feature_repo/', show_connection_status=False)
+# if __name__ == "__main__":
+    # kgfarm = KGFarm(path_to_feature_repo='../../../feature_repo/', show_connection_status=False)
     # print(kgfarm.predict_feature_views(ttl=10, show_feature_views=True))
     # print(kgfarm.get_enrichment_tables())
