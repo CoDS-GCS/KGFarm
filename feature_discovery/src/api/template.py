@@ -94,7 +94,18 @@ def get_enrichable_tables(config, show_query):
         display_query(query)
 
     return execute_query(config, query)
+
+
+def get_table_ids(config):
+    query = """
+    SELECT DISTINCT ?Table_id
+    WHERE
+    {
+      ?Table_id rdf:type  kglids:Table  .
+    } """
+    return execute_query(config, query)
 #############################################################################
+# FKC Extractor
 
 
 def get_INDs(config, show_query: bool = False):
