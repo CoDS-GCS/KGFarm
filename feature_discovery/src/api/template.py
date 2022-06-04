@@ -104,8 +104,33 @@ def get_table_ids(config):
       ?Table_id rdf:type  kglids:Table  .
     } """
     return execute_query(config, query)
-#############################################################################
-# FKC Extractor
+
+
+def get_entities(config):
+    query = """ 
+    SELECT DISTINCT ?Candidate_entity_name ?Candidate_entity_dtype ?File_source (?distinct_values/?total_values as ?Score) ?Candidate_entity_id ?Table_id
+    WHERE
+    {
+        ?Candidate_entity_id    rdf:type                    kglids:Column           ;   
+                                schema:name                 ?Candidate_entity_name  ;
+                                kglids:isPartOf             ?Table_id               ;
+                                data:hasTotalValueCount     ?total_values           ;
+                                data:hasDistinctValueCount  ?distinct_values        ;
+                                data:hasMissingValueCount   ?missing_values         ;
+                                data:hasDataType            ?Type                   .  
+                                
+        ?Table_id               schema:name                 ?File_source            .  
+    
+        FILTER(?missing_values = 0)                     # i.e. no missing values                               
+        FILTER(?distinct_values/?total_values >= 0.95)  # high uniqueness         
+        FILTER(?Type != 'T_date')                       # avoid timestamps            
+    
+        # convert dtype in feast format
+        BIND(IF(REGEX(?Type, 'N'),'INT64','STRING') as ?Candidate_entity_dtype)  
+    } ORDER BY DESC(?Score)"""
+    return execute_query(config, query)
+
+# --------------------------------------------FKC Extractor-------------------------------------------------------------
 
 
 def get_INDs(config, show_query: bool = False):
@@ -227,5 +252,3 @@ def get_table_size_ratio(config, show_query: bool = False):
         display_query(query)
 
     return execute_query(config, query)
-
-
