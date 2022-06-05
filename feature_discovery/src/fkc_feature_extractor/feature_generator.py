@@ -98,13 +98,14 @@ def generate_features(conn, ind: pd.DataFrame):
                                                       'F9', 'F10']]
 
 
-def add_labels(features_df: pd.DataFrame, path_to_groundtruth: str = '../../../helpers/groundtruth/chembl_pkfk.csv'):
-    groundtruth = pd.read_csv(path_to_groundtruth).drop(columns=['PK - Section', 'To', 'FK - Section'], axis=1)
+def add_labels(features_df: pd.DataFrame, database: str):
+    path_to_groundtruth = '../../../helpers/groundtruth/{}_pkfk.csv'.format(database)
+    groundtruth = pd.read_csv(path_to_groundtruth)
     processed_groundtruth = []
     for k, v in groundtruth.to_dict('index').items():
         primary_table = v['PK - Table']
         primary_key = v['PK - ColName']
-        foreign_table = v[r'FK - Table']
+        foreign_table = v['FK - Table']
         foreign_key = v['FK - ColName']
         processed_groundtruth.append((foreign_table, foreign_key, primary_table, primary_key))
 
@@ -119,24 +120,26 @@ def add_labels(features_df: pd.DataFrame, path_to_groundtruth: str = '../../../h
     return features_df
 
 
-def export_csv(features_df: pd.DataFrame, save_as: str = 'features.csv'):
-    features_df.drop(columns=['Foreign_table', 'Foreign_key', 'Primary_table', 'Primary_key'], axis=1, inplace=True)
-    features_df.to_csv(save_as)
+def export_csv(features_df: pd.DataFrame, save_as: str):
+    features_df.to_csv(save_as + '_features.csv')
     return features_df
 
 
-def generate():
+def generate(database: str, export_features: bool = False):
     # This implementation is as per http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.438.9288&rep=rep1&type=pdf
     # TODO: add a filter for Table_A != Table_B  while retrieving inclusion dependencies for all features
-    conn = connect_to_stardog(port=5822, db='chembl', show_status=True)
+    conn = connect_to_stardog(port=5822, db=database, show_status=True)
     # Get all inclusion dependencies (IND) initially
     ind = get_INDs(conn)
     # Generate features for these IND pairs
     features_df = generate_features(conn, ind)
     # Add labels / target using true mappings
-    features_df = add_labels(features_df)
-    # Export features in the needed format
-    return export_csv(features_df)
+    features_df = add_labels(features_df, database)
+    features_df.drop(columns=['Foreign_table', 'Foreign_key', 'Primary_table', 'Primary_key'], axis=1, inplace=True)
+    # Export csv
+    if export_features:
+        export_csv(features_df, database)
+    return features_df
 
 # if __name__ == "__main__":
-#     generate()
+#     generate(database='TPC-H')
