@@ -1,4 +1,4 @@
-﻿PK - Section, PK - Table, PK - ColName,To,FK - Section,FK - Table,FK - ColName 
+﻿PK - Section,PK - Table,PK - ColName,To,FK - Section,FK - Table,FK - ColName
 ,actors.csv,actorid,,,movies2actors.csv,actorid
 ,movies.csv,movieid,,,movies2actors.csv,movieid
 ,movies.csv,movieid,,,movies2directors.csv,movieid

@@ -1,4 +1,4 @@
-﻿PK - Section, PK - Table, PK - ColName,To,FK - Section,FK - Table,FK - ColName 
+﻿PK - Section,PK - Table,PK - ColName,To,FK - Section,FK - Table,FK - ColName
 ,orders.csv, O_ORDERKEY,,,lineitem.csv,L_ORDERKEY
 ,customer.csv, C_CUSTKEY,,,orders.csv,O_CUSTKEY
 ,nation.csv, N_NATIONKEY,,,customer.csv,C_NATIONKEY
