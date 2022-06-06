@@ -1,8 +1,8 @@
-FK - ColName ,FK - Table, PK - ColName, PK - Table
-L_ORDERKEY, LINEITEM, O_ORDERKEY, ORDERS
-O_CUSTKEY, ORDERS, C_CUSTKEY, CUSTOMER
-C_NATIONKEY, CUSTOMER, N_NATIONKEY, NATION
-PS_SUPPKEY, PARTSUPP, S_SUPPKEY, SUPPLIER
-PS_PARTKEY, PARTSUPP, P_PARTKEY, PART
-S_NATIONKEY, SUPPLIER, N_NATIONKEY, NATION
-N_REGIONKEY, NATION, R_REGIONKEY, REGION
+﻿PK - Section, PK - Table, PK - ColName,To,FK - Section,FK - Table,FK - ColName 
+,orders.csv, O_ORDERKEY,,,lineitem.csv,L_ORDERKEY
+,customer.csv, C_CUSTKEY,,,orders.csv,O_CUSTKEY
+,nation.csv, N_NATIONKEY,,,customer.csv,C_NATIONKEY
+,supplier.csv, S_SUPPKEY,,,partsupp.csv,PS_SUPPKEY
+,part.csv, P_PARTKEY,,,partsupp.csv,PS_PARTKEY
+,nation.csv, N_NATIONKEY,,,supplier.csv,S_NATIONKEY
+,region.csv, R_REGIONKEY,,,nation.csv,N_REGIONKEY
