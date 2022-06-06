@@ -10,7 +10,9 @@ class Builder:
         self.config = connect_to_stardog(port, database, show_connection_status)
         self.output_path = output_path
         self.graph = open(output_path, 'w')
-        self.ontology = {'kgfarm': 'http://kgfarm.com/ontology/'}
+        self.ontology = {'kgfarm': 'http://kgfarm.com/ontology/',
+                         'featureView': 'http://kgfarm.com/ontology/featureView/',
+                         'entity': 'http://kgfarm.com/ontology/entity/'}
         self.triple_format = '<{}> <{}> "{}".'
         self.triples = set()
         self.table_to_feature_view = {}
@@ -28,24 +30,26 @@ class Builder:
             feature_view_count = feature_view_count + 1
             self.triples.add(self.triple_format.format(
                 table_id,
-                self.ontology.get('kgfarm') + 'name',
+                self.ontology.get('featureView') + 'name',
                 'Feature view {}'.format(feature_view_count)))
             self.table_to_feature_view[table_id] = 'Feature view {}'.format(feature_view_count)
         self.dump_triples()
 
     def annotate_entities(self):
-        triple_format = '<{}> <{}> <{}>.'
+        triple_format = '<{}> <{}> <{}>'
         self.graph.write('\n# Entities\n')
         entities = get_entities(self.config)
-
         for entity_info in entities.to_dict('index').values():
-            entity_name = (entity_info['Candidate_entity_name'] + '_' + entity_info['File_source']).\
+            entity_name = (entity_info['Candidate_entity_name'] + '_' + entity_info['File_source']). \
                 replace('id', '').replace('.parquet', '')
 
             table_id = entity_info['Table_id']
             column_id = entity_info['Candidate_entity_id']
-            self.triples.add(self.triple_format.format(column_id, self.ontology.get('kgfarm') + 'name', entity_name))
-            self.triples.add(triple_format.format(table_id, self.ontology.get('kgfarm')+'uses', column_id))
+            uniqueness_ratio = entity_info['Score']
+            self.triples.add(self.triple_format.format(column_id, self.ontology.get('entity') + 'name', entity_name))
+            self.triples.add('<<' + triple_format.format(table_id, self.ontology.get('kgfarm') + 'uses',
+                                                         column_id) + '>> <' + self.ontology.get(
+                'kgfarm') + 'confidence>' + ' "{}"^^xsd:double.'.format(str(uniqueness_ratio)))
         self.dump_triples()
 
 
@@ -58,6 +62,7 @@ def main():
     print('• uploading new graph to database')
     os.system('stardog data remove --all kgfarm_test')
     os.system('stardog data add --format turtle kgfarm_test Farm.nq')
+    os.system('stardog data add --format turtle kgfarm_test ../../../helpers/sample_data/graph/LiDS.nq')
 
 
 if __name__ == "__main__":
