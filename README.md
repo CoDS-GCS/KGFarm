@@ -19,7 +19,7 @@ stardog-admin server start
 4. Start using KGFarm APIs (checkout <code>KGFarm_notebook.ipynb</code>)
 
 ## 🚧 Roadmap
-- <b>List of deliverables for KGFarm version 0.1</b> [🔗](https://docs.google.com/document/d/1M_iWqk0YUscxXPl3UKJ0m83NAXdVOhVbUXnbKry4dSQ/edit#heading=h.flxu6q5t6n5w)
+- <b>List of deliverables for KGFarm version 0.1</b> [🔗](https://docs.google.com/presentation/d/14JigzSty4pwJaTXSNbo-SYZBcSaTqanlC4ETbGJVbTU/edit?usp=sharing)
 * [X] Automate generation of [Feature views without Entities](https://docs.feast.dev/getting-started/concepts/feature-view#feature-views-without-entities)
 * [X] Automate [Feature view](https://docs.feast.dev/getting-started/concepts/feature-view) generation for single [Entity](https://docs.feast.dev/v/v0.6-branch/user-guide/entities)
 * [ ] Automate [Feature view](https://docs.feast.dev/getting-started/concepts/feature-view) generation for multiple [Entities](https://docs.feast.dev/v/v0.6-branch/user-guide/entities)
@@ -30,6 +30,11 @@ stardog-admin server start
 * [ ] Recommend semantically similar features
 * [ ] Recommend similar features by content
 * [ ] Detect Feature bias
+
+## 📗 Useful resources
+- [Feature discovery slides](https://docs.google.com/presentation/d/14JigzSty4pwJaTXSNbo-SYZBcSaTqanlC4ETbGJVbTU/edit?usp=sharing)
+- [Research objectives](https://docs.google.com/document/d/1M_iWqk0YUscxXPl3UKJ0m83NAXdVOhVbUXnbKry4dSQ/edit?usp=sharing)
+- [Feature discovery mitacs proposal](https://docs.google.com/document/d/1fWrp-IS9ZkKcOavcGDTr3cYx05xQag-H-PuFApZn1AY/edit?usp=sharing)
 
 ## 🦾 Contributors
 <p float="left">
