@@ -1,4 +1,3 @@
-import os
 from time import time
 from helpers.helper import *
 from feature_discovery.src.api.template import *
@@ -55,11 +54,11 @@ class Builder:
 
 def main():
     start = time()
-    builder = Builder(port=5820, database='kgfarm_dev')
+    builder = Builder(port=5820, database='kgfarm_dev', show_connection_status=True)
     builder.annotate_feature_views()
     builder.annotate_entities()
-    print('\n• graph generated in :', time_taken(start, time()))
-    print('• uploading new graph to database')
+    print('\n• Farm graph generated in :', time_taken(start, time()))
+    print('• uploading new graph to database\n')
     os.system('stardog data remove --all kgfarm_test')
     os.system('stardog data add --format turtle kgfarm_test Farm.nq')
     os.system('stardog data add --format turtle kgfarm_test ../../../helpers/sample_data/graph/LiDS.nq')
