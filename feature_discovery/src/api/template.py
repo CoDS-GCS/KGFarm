@@ -134,7 +134,7 @@ def get_entities(config):
 def get_pkfk_relations(config):
     query = """
     # SELECT DISTINCT ?Primary_table ?Primary_column ?Foreign_table ?Foreign_column ?Pkfk_score (?Distinct_values/?Total_values as ?Primary_key_uniqueness_ratio) ?Primary_table_id ?Primary_column_id ?Foreign_table_id ?Foreign_column_id
-    SELECT DISTINCT ?Primary_table_id ?Primary_column_id
+    SELECT DISTINCT ?Primary_table_id ?Primary_column_id  (?Distinct_values/?Total_values as ?Primary_key_uniqueness_ratio) ?Primary_table ?Primary_column
     WHERE
     {
         <<?Primary_column_id    data:hasPrimaryKeyForeignKeySimilarity  ?Foreign_column_id>> data:withCertainty  ?Pkfk_score  .
