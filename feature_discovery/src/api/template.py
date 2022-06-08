@@ -130,6 +130,28 @@ def get_entities(config):
     } ORDER BY DESC(?Score)"""
     return execute_query(config, query)
 
+
+def get_pkfk_relations(config):
+    query = """
+    # SELECT DISTINCT ?Primary_table ?Primary_column ?Foreign_table ?Foreign_column ?Pkfk_score (?Distinct_values/?Total_values as ?Primary_key_uniqueness_ratio) ?Primary_table_id ?Primary_column_id ?Foreign_table_id ?Foreign_column_id
+    SELECT DISTINCT ?Primary_table_id ?Primary_column_id
+    WHERE
+    {
+        <<?Primary_column_id    data:hasPrimaryKeyForeignKeySimilarity  ?Foreign_column_id>> data:withCertainty  ?Pkfk_score  .
+    
+        ?Primary_column_id      schema:name                 ?Primary_column     ;
+                                kglids:isPartOf             ?Primary_table_id   ;
+                                data:hasTotalValueCount     ?Total_values       ;
+                                data:hasDistinctValueCount  ?Distinct_values    . 
+        
+        ?Foreign_column_id      schema:name                 ?Foreign_column     ;
+                                kglids:isPartOf             ?Foreign_table_id   .
+        
+        ?Foreign_table_id       schema:name                 ?Foreign_table      .
+        ?Primary_table_id       schema:name                 ?Primary_table      .
+    }"""
+    return execute_query(config, query)
+
 # --------------------------------------------FKC Extractor-------------------------------------------------------------
 
 
