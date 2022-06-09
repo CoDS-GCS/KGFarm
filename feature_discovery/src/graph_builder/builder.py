@@ -3,9 +3,7 @@ from datetime import datetime
 from helpers.helper import *
 from feature_discovery.src.api.template import *
 
-
 # TODO: unify template headers
-# TODO: add a generic method for annotating entities and mapping in both scenarios
 
 
 class Builder:
@@ -25,9 +23,18 @@ class Builder:
         self.column_to_entity = {}
         self.unmapped_tables = set()
 
-    def dump_triples(self):
+    def __dump_triples(self):
         self.graph.write('\n'.join(self.triples))
         self.triples = set()
+
+    def __annotate_entity_and_feature_view_mapping(self, column_id, entity_name, table_id, uniqueness_ratio):
+        triple_format = '<{}> <{}> <{}>'
+        # triple for entity name -> physical column id : entity name
+        self.triples.add(self.triple_format.format(column_id, self.ontology.get('entity') + 'name', entity_name))
+        # triple for feature view - entity mapping -> physical table id : column id
+        self.triples.add('<<' + triple_format.format(table_id, self.ontology.get('kgfarm') + 'uses',
+                                                     column_id) + '>> <' + self.ontology.get(
+            'kgfarm') + 'confidence>' + ' "{}"^^xsd:double.'.format(str(uniqueness_ratio)))
 
     # does one-to-one mapping of table -> feature view
     def annotate_feature_views(self):
@@ -41,10 +48,9 @@ class Builder:
                 self.ontology.get('featureView') + 'name',
                 'Feature view {}'.format(feature_view_count)))
             self.table_to_feature_view[table_id] = 'Feature view {}'.format(feature_view_count)
-        self.dump_triples()
+        self.__dump_triples()
 
     def annotate_entity_mapping(self):
-        triple_format = '<{}> <{}> <{}>'
         self.graph.write('\n# 2. Entities and feature view - entity mappings \n')
         entities = get_entities(self.config)
         mapped_tables = set()
@@ -56,21 +62,16 @@ class Builder:
             column_id = entity_info['Candidate_entity_id']
             uniqueness_ratio = entity_info['Score']
 
-            # triple for entity name -> physical column id : entity name
-            self.triples.add(self.triple_format.format(column_id, self.ontology.get('entity') + 'name', entity_name))
-            # triple for feature view - entity mapping -> physical table id : column id
-            self.triples.add('<<' + triple_format.format(table_id, self.ontology.get('kgfarm') + 'uses',
-                                                         column_id) + '>> <' + self.ontology.get(
-                'kgfarm') + 'confidence>' + ' "{}"^^xsd:double.'.format(str(uniqueness_ratio)))
+            self.__annotate_entity_and_feature_view_mapping(column_id, entity_name,
+                                                            table_id, uniqueness_ratio)
             self.column_to_entity[column_id] = entity_name
             mapped_tables.add(table_id)
 
         all_tables = set(list(self.table_to_feature_view.keys()))
         self.unmapped_tables = all_tables.difference(mapped_tables)
-        self.dump_triples()
+        self.__dump_triples()
 
     def annotate_unmapped_feature_views(self):
-        triple_format = '<{}> <{}> <{}>'
         pkfk_relations = get_pkfk_relations(self.config)
         # filter relationships to the ones that were left unmapped
         pkfk_relations = pkfk_relations[pkfk_relations.Primary_table_id.isin(self.unmapped_tables)]
@@ -82,22 +83,18 @@ class Builder:
             column_id = unmapped_feature_view['Primary_column_id']
             uniqueness_ratio = unmapped_feature_view['Primary_key_uniqueness_ratio']
 
-            # triple for entity name -> physical column id : entity name
-            self.triples.add(self.triple_format.format(column_id, self.ontology.get('entity') + 'name', entity_name))
-            # triple for feature view - entity mapping -> physical table id : column id
-            self.triples.add('<<' + triple_format.format(table_id, self.ontology.get('kgfarm') + 'uses',
-                                                         column_id) + '>> <' + self.ontology.get(
-                'kgfarm') + 'confidence>' + ' "{}"^^xsd:double.'.format(str(uniqueness_ratio)))
+            self.__annotate_entity_and_feature_view_mapping(column_id, entity_name,
+                                                            table_id, uniqueness_ratio)
             self.column_to_entity[column_id] = entity_name
             self.unmapped_tables.remove(table_id)
-        self.dump_triples()
+        self.__dump_triples()
 
     def summarize_graph(self):
         feature_views_generated = len(self.table_to_feature_view.values())
         entities_generated = len(self.column_to_entity.values())
         print('\n• {} summary\n\t- Total feature view(s) generated: {}'
-              '\n\t- Total entities generated: {}\n\t- Feature view(s) with no entity: {}'
-              .format(self.output_path, feature_views_generated, entities_generated, len(self.unmapped_tables)))
+              '\n\t- Total entities generated: {}\n\t- Feature view(s) with no entity: {} / {}'
+              .format(self.output_path, feature_views_generated, entities_generated, len(self.unmapped_tables), feature_views_generated))
 
 
 def generate_farm_graph():
