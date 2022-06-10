@@ -28,13 +28,33 @@ class Builder:
 
     def __annotate_default_entity(self, table_id):
         triple_format = '<{}> <{}> <{}>'
-        if len(self.default_entities) == 1:
+        if len(self.default_entities) == 1:  # table with single entity detected
             column_id = list(self.default_entities.keys())[0]
             uniqueness_ratio = self.default_entities.get(column_id)
 
-            self.triples.add('<<' + triple_format.format(table_id, self.ontology.get('kgfarm') + 'hasDefaultEntity',
-                                                         column_id) + '>> <' + self.ontology.get(
-                'kgfarm') + 'confidence>' + ' "{}"^^xsd:double.'.format(str(uniqueness_ratio)))
+        else:  # table with multiple entities detected
+            uniqueness_ratios = list(self.default_entities.values())
+            uniqueness_ratio = max(uniqueness_ratios)
+            if uniqueness_ratios.count(uniqueness_ratio) == 1:  # table with single maximum entity
+                column_id = list(self.default_entities.keys())[list(self.default_entities.values()) \
+                    .index(uniqueness_ratio)]
+            else:  # table with multiple entities having equal uniqueness ratio
+                candidate_column_ids = set()
+                max_number_of_relations = 0
+                column_id = None
+                for candidate_column_id, uniqueness in self.default_entities.items():
+                    if uniqueness == uniqueness_ratio:
+                        candidate_column_ids.add(candidate_column_id)
+                        n_relations = int(get_number_of_relations(self.config,
+                                                                  candidate_column_id)[0]['Number_of_relations'][
+                                              'value'])
+                        if max_number_of_relations < n_relations:
+                            column_id = candidate_column_id
+                            max_number_of_relations = n_relations
+
+        self.triples.add('<<' + triple_format.format(table_id, self.ontology.get('kgfarm') + 'hasDefaultEntity',
+                                                     column_id) + '>> <' + self.ontology.get(
+            'kgfarm') + 'confidence>' + ' "{}"^^xsd:double.'.format(str(uniqueness_ratio)))
 
     def __annotate_entity_and_feature_view_mapping(self, column_id, entity_name, table_id, uniqueness_ratio):
         triple_format = '<{}> <{}> <{}>'
@@ -74,7 +94,7 @@ class Builder:
             uniqueness_ratio = entity_info['Primary_key_uniqueness_ratio']
 
             if table_id != table_to_process:
-                self.__annotate_default_entity(table_id)
+                self.__annotate_default_entity(table_to_process)
                 table_to_process = table_id
                 self.default_entities = {}
 

@@ -131,6 +131,17 @@ def detect_entities(config):
     return execute_query(config, query)
 
 
+def get_number_of_relations(config, column_id: str):
+    query = """
+    SELECT (COUNT(?relation) as ?Number_of_relations)
+    WHERE
+    {
+        <<<%s> ?relation ?column_id>> data:withCertainty ?Score.
+    }
+    """ % column_id
+    return execute_query(config, query, return_type='json')
+
+
 def get_pkfk_relations(config):
     query = """
     # SELECT DISTINCT ?Primary_table ?Primary_column ?Foreign_table ?Foreign_column ?Pkfk_score (?Distinct_values/?Total_values as ?Primary_key_uniqueness_ratio) ?Primary_table_id ?Primary_column_id ?Foreign_table_id ?Foreign_column_id
