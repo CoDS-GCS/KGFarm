@@ -127,7 +127,7 @@ def detect_entities(config):
     
         # convert dtype in feast format
         BIND(IF(REGEX(?Type, 'N'),'INT64','STRING') as ?Candidate_entity_dtype)  
-    } ORDER BY DESC(?Score)"""
+    } ORDER BY DESC(?Primary_table_id)"""
     return execute_query(config, query)
 
 

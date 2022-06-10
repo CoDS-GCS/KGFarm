@@ -3,8 +3,6 @@ from datetime import datetime
 from helpers.helper import *
 from feature_discovery.src.api.template import *
 
-# TODO: unify template headers
-
 
 class Builder:
     def __init__(self, output_path: str = 'Farm.nq', port: int = 5820, database: str = 'kgfarm_dev',
@@ -22,10 +20,21 @@ class Builder:
         self.table_to_feature_view = {}
         self.column_to_entity = {}
         self.unmapped_tables = set()
+        self.default_entities = {}
 
     def __dump_triples(self):
         self.graph.write('\n'.join(self.triples))
         self.triples = set()
+
+    def __annotate_default_entity(self, table_id):
+        triple_format = '<{}> <{}> <{}>'
+        if len(self.default_entities) == 1:
+            column_id = list(self.default_entities.keys())[0]
+            uniqueness_ratio = self.default_entities.get(column_id)
+
+            self.triples.add('<<' + triple_format.format(table_id, self.ontology.get('kgfarm') + 'hasDefaultEntity',
+                                                         column_id) + '>> <' + self.ontology.get(
+                'kgfarm') + 'confidence>' + ' "{}"^^xsd:double.'.format(str(uniqueness_ratio)))
 
     def __annotate_entity_and_feature_view_mapping(self, column_id, entity_name, table_id, uniqueness_ratio):
         triple_format = '<{}> <{}> <{}>'
@@ -54,19 +63,28 @@ class Builder:
         self.graph.write('\n# 2. Entities and feature view - entity mappings \n')
         entities = detect_entities(self.config)
         mapped_tables = set()
+
+        # take the first table
+        table_to_process = list(entities.to_dict('index').values())[0]['Primary_table_id']
         for entity_info in entities.to_dict('index').values():
             entity_name = (entity_info['Primary_column'] + '_' + entity_info['Primary_table']). \
                 replace('id', '').replace('.parquet', '')
-
             table_id = entity_info['Primary_table_id']
             column_id = entity_info['Primary_column_id']
             uniqueness_ratio = entity_info['Primary_key_uniqueness_ratio']
+
+            if table_id != table_to_process:
+                self.__annotate_default_entity(table_id)
+                table_to_process = table_id
+                self.default_entities = {}
+
+            self.default_entities[column_id] = uniqueness_ratio
 
             self.__annotate_entity_and_feature_view_mapping(column_id, entity_name,
                                                             table_id, uniqueness_ratio)
             self.column_to_entity[column_id] = entity_name
             mapped_tables.add(table_id)
-
+        self.__annotate_default_entity(table_to_process)
         all_tables = set(list(self.table_to_feature_view.keys()))
         self.unmapped_tables = all_tables.difference(mapped_tables)
         self.__dump_triples()
@@ -94,7 +112,8 @@ class Builder:
         entities_generated = len(self.column_to_entity.values())
         print('\n• {} summary\n\t- Total feature view(s) generated: {}'
               '\n\t- Total entities generated: {}\n\t- Feature view(s) with no entity: {} / {}'
-              .format(self.output_path, feature_views_generated, entities_generated, len(self.unmapped_tables), feature_views_generated))
+              .format(self.output_path, feature_views_generated, entities_generated, len(self.unmapped_tables),
+                      feature_views_generated))
 
 
 def generate_farm_graph():
