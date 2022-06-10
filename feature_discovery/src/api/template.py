@@ -106,9 +106,9 @@ def get_table_ids(config):
     return execute_query(config, query)
 
 
-def get_entities(config):
+def detect_entities(config):
     query = """ 
-    SELECT DISTINCT ?Candidate_entity_name ?Candidate_entity_dtype ?File_source (?distinct_values/?total_values as ?Score) ?Candidate_entity_id ?Table_id
+    SELECT DISTINCT (?Candidate_entity_name as ?Primary_column) ?Candidate_entity_dtype (?File_source as ?Primary_table) (?distinct_values/?total_values as ?Primary_key_uniqueness_ratio) (?Candidate_entity_id as ?Primary_column_id) (?Table_id as ?Primary_table_id)
     WHERE
     {
         ?Candidate_entity_id    rdf:type                    kglids:Column           ;   

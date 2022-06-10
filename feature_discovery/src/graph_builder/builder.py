@@ -52,15 +52,15 @@ class Builder:
 
     def annotate_entity_mapping(self):
         self.graph.write('\n# 2. Entities and feature view - entity mappings \n')
-        entities = get_entities(self.config)
+        entities = detect_entities(self.config)
         mapped_tables = set()
         for entity_info in entities.to_dict('index').values():
-            entity_name = (entity_info['Candidate_entity_name'] + '_' + entity_info['File_source']). \
+            entity_name = (entity_info['Primary_column'] + '_' + entity_info['Primary_table']). \
                 replace('id', '').replace('.parquet', '')
 
-            table_id = entity_info['Table_id']
-            column_id = entity_info['Candidate_entity_id']
-            uniqueness_ratio = entity_info['Score']
+            table_id = entity_info['Primary_table_id']
+            column_id = entity_info['Primary_column_id']
+            uniqueness_ratio = entity_info['Primary_key_uniqueness_ratio']
 
             self.__annotate_entity_and_feature_view_mapping(column_id, entity_name,
                                                             table_id, uniqueness_ratio)
