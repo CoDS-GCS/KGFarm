@@ -1,8 +1,10 @@
-import time
+from time import time
 from tqdm import tqdm
 from datetime import datetime
 from helpers.helper import *
 from feature_discovery.src.api.template import *
+
+# TODO: refactor KGFarm builder
 
 
 class Builder:
@@ -142,14 +144,13 @@ class Builder:
 
 
 def generate_farm_graph():
-    start = time.time()
+    start = time()
     builder = Builder(port=5820, database='kgfarm_dev', show_connection_status=True)
     builder.annotate_feature_views()
     builder.annotate_entity_mapping()
     builder.annotate_unmapped_feature_views()
-    time.sleep(1)
-    print('\n• Farm graph generated successfully\n\t- Time taken: {}\n\t- Saved at: {}'.
-          format(time_taken(start, time.time()), os.path.abspath(builder.output_path)))
+    print('\n• Farm graph generated successfully!\n\t- Time taken: {}\n\t- Saved at: {}'.
+          format(time_taken(start, time()), os.path.abspath(builder.output_path)))
     builder.summarize_graph()
 
 
