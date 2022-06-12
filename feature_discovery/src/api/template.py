@@ -94,7 +94,76 @@ def get_enrichable_tables(config, show_query):
         display_query(query)
 
     return execute_query(config, query)
-#############################################################################
+
+
+def get_table_ids(config):
+    query = """
+    SELECT DISTINCT ?Table_id
+    WHERE
+    {
+      ?Table_id rdf:type  kglids:Table  .
+    } """
+    return execute_query(config, query)
+
+
+def detect_entities(config):
+    query = """ 
+    SELECT DISTINCT (?Candidate_entity_name as ?Primary_column) ?Candidate_entity_dtype (?File_source as ?Primary_table) (?distinct_values/?total_values as ?Primary_key_uniqueness_ratio) (?Candidate_entity_id as ?Primary_column_id) (?Table_id as ?Primary_table_id)
+    WHERE
+    {
+        ?Candidate_entity_id    rdf:type                    kglids:Column           ;   
+                                schema:name                 ?Candidate_entity_name  ;
+                                kglids:isPartOf             ?Table_id               ;
+                                data:hasTotalValueCount     ?total_values           ;
+                                data:hasDistinctValueCount  ?distinct_values        ;
+                                data:hasMissingValueCount   ?missing_values         ;
+                                data:hasDataType            ?Type                   .  
+                                
+        ?Table_id               schema:name                 ?File_source            .  
+    
+        FILTER(?missing_values = 0)                     # i.e. no missing values                               
+        FILTER(?distinct_values/?total_values >= 0.95)  # high uniqueness         
+        FILTER(?Type != 'T_date')                       # avoid timestamps            
+    
+        # convert dtype in feast format
+        BIND(IF(REGEX(?Type, 'N'),'INT64','STRING') as ?Candidate_entity_dtype)  
+    } ORDER BY DESC(?Primary_table_id)"""
+    return execute_query(config, query)
+
+
+def get_number_of_relations(config, column_id: str):
+    query = """
+    SELECT (COUNT(?relation) as ?Number_of_relations)
+    WHERE
+    {
+        <<<%s> ?relation ?column_id>> data:withCertainty ?Score.
+    }
+    """ % column_id
+    return execute_query(config, query, return_type='json')
+
+
+def get_pkfk_relations(config):
+    query = """
+    # SELECT DISTINCT ?Primary_table ?Primary_column ?Foreign_table ?Foreign_column ?Pkfk_score (?Distinct_values/?Total_values as ?Primary_key_uniqueness_ratio) ?Primary_table_id ?Primary_column_id ?Foreign_table_id ?Foreign_column_id
+    SELECT DISTINCT ?Primary_table_id ?Primary_column_id  (?Distinct_values/?Total_values as ?Primary_key_uniqueness_ratio) ?Primary_table ?Primary_column
+    WHERE
+    {
+        <<?Primary_column_id    data:hasPrimaryKeyForeignKeySimilarity  ?Foreign_column_id>> data:withCertainty  ?Pkfk_score  .
+    
+        ?Primary_column_id      schema:name                 ?Primary_column     ;
+                                kglids:isPartOf             ?Primary_table_id   ;
+                                data:hasTotalValueCount     ?Total_values       ;
+                                data:hasDistinctValueCount  ?Distinct_values    . 
+        
+        ?Foreign_column_id      schema:name                 ?Foreign_column     ;
+                                kglids:isPartOf             ?Foreign_table_id   .
+        
+        ?Foreign_table_id       schema:name                 ?Foreign_table      .
+        ?Primary_table_id       schema:name                 ?Primary_table      .
+    }"""
+    return execute_query(config, query)
+
+# --------------------------------------------FKC Extractor-------------------------------------------------------------
 
 
 def get_INDs(config, show_query: bool = False):
@@ -216,5 +285,3 @@ def get_table_size_ratio(config, show_query: bool = False):
         display_query(query)
 
     return execute_query(config, query)
-
-

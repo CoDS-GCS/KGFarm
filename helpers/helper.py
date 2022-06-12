@@ -7,6 +7,7 @@ import SPARQLWrapper.Wrapper
 from SPARQLWrapper import JSON, SPARQLWrapper
 
 PREFIXES = """
+    PREFIX kgfarm:      <http://kgfarm.com/ontology/>
     PREFIX kglids:      <http://kglids.org/ontology/>
     PREFIX data:        <http://kglids.org/ontology/data/>
     PREFIX schema:      <http://schema.org/>
