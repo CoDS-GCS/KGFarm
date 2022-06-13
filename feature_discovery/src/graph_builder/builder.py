@@ -4,6 +4,7 @@ from datetime import datetime
 from helpers.helper import *
 from feature_discovery.src.api.template import *
 
+
 # TODO: refactor KGFarm builder
 
 
@@ -74,7 +75,7 @@ class Builder:
         print('\n• Annotating feature views')
         self.graph.write('# 1. Feature Views, one-to-one mapping with tables \n')
         table_ids = get_table_ids(self.config)['Table_id'].tolist()
-        feature_view_count = 0
+        feature_view_count = 000
         for table_id in tqdm(table_ids):
             feature_view_count = feature_view_count + 1
             self.triples.add(self.triple_format.format(
@@ -132,6 +133,11 @@ class Builder:
                                                             table_id, uniqueness_ratio, 'hasMultipleEntities')
             self.column_to_entity[column_id] = entity_name
             self.unmapped_tables.remove(table_id)
+
+        # TODO: look for better ways in annotating feature views without entity
+        for table_id in self.unmapped_tables:
+            self.triples.add(self.triple_format.format(table_id, self.ontology.get('kgfarm') + 'hasNoEntity', 0))
+
         self.__dump_triples()
 
     def summarize_graph(self):
