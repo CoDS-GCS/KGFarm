@@ -81,8 +81,8 @@ class Builder:
             self.triples.add(self.triple_format.format(
                 table_id,
                 self.ontology.get('featureView') + 'name',
-                'Feature view {}'.format(feature_view_count)))
-            self.table_to_feature_view[table_id] = 'Feature view {}'.format(feature_view_count)
+                'Feature_view_{}'.format(feature_view_count)))
+            self.table_to_feature_view[table_id] = 'Feature_view_{}'.format(feature_view_count)
         self.__dump_triples()
 
     def annotate_entity_mapping(self):

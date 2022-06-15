@@ -17,6 +17,86 @@ def get_columns(config, table, dataset, show_query):
     return execute_query(config, query)['Column'].tolist()
 
 
+def get_default_entities(config, show_query):
+    query = """
+    SELECT ?Entity_name ?Entity_data_type ?Physical_column (?Table as ?Physical_table) (?Score as ?Uniqueness_ratio)
+    {
+    <<?Table_id kgfarm:hasDefaultEntity ?Entity_id>>    kgfarm:confidence   ?Score  .
+    ?Entity_id  entity:name         ?Entity_name                                    ;
+                schema:name         ?Physical_column                                ;
+                data:hasDataType    ?Physical_column_data_type                      .
+    ?Table_id   schema:name         ?Table                                          ;
+                featureView:name    ?Feature_view                                   .
+    
+    BIND(IF(REGEX(?Physical_column_data_type, 'N'),'INT64','STRING') as ?Entity_data_type)
+    }"""
+    if show_query:
+        display_query(query)
+
+    return execute_query(config, query)
+
+
+def get_multiple_entities(config, show_query):
+    query = """
+    SELECT ?Entity_name ?Entity_data_type ?Physical_column (?Table as ?Physical_table) (?Score as ?Uniqueness_ratio)
+    {
+    <<?Table_id kgfarm:hasMultipleEntities ?Entity_id>>    kgfarm:confidence   ?Score  .
+    ?Entity_id  entity:name         ?Entity_name                                    ;
+                schema:name         ?Physical_column                                ;
+                data:hasDataType    ?Physical_column_data_type                      .
+    ?Table_id   schema:name         ?Table                                          ;
+                featureView:name    ?Feature_view                                   .
+
+    BIND(IF(REGEX(?Physical_column_data_type, 'N'),'INT64','STRING') as ?Entity_data_type)
+    }"""
+    if show_query:
+        display_query(query)
+
+    return execute_query(config, query)
+
+
+def get_feature_views(config, show_query):
+    query = """
+    SELECT ?Feature_view (?Entity_name as ?Entity) ?Entity_data_type ?Physical_column ?Physical_column_data_type  ?Physical_table ?File_source (?Score as ?Uniqueness_ratio)
+    {
+        {       
+            <<?Table_id kgfarm:hasDefaultEntity ?Entity_id>>    kgfarm:confidence   ?Score  .
+        }
+        UNION
+        {
+            <<?Table_id kgfarm:hasMultipleEntities ?Entity_id>>    kgfarm:confidence   ?Score  .
+        }
+        
+        ?Entity_id      entity:name         ?Entity_name                        ;
+                        data:hasDataType    ?Physical_column_data_type          ;  
+                        schema:name         ?Physical_column                    .
+        
+        ?Table_id       featureView:name    ?Feature_view                       ;
+                        data:hasFilePath    ?File_source                        ;
+                        schema:name         ?Physical_table                     .
+        
+        BIND(IF(REGEX(?Physical_column_data_type, 'N'),'INT64','STRING') as ?Entity_data_type)
+    } ORDER BY ?Feature_view"""
+    if show_query:
+        display_query(query)
+    return execute_query(config, query)
+
+
+def get_feature_views_without_entities(config, show_query):
+    query = """
+    SELECT ?Feature_view ?Physical_table ?File_source 
+    WHERE
+    {
+        ?Table_id   kgfarm:hasNoEntity  ?Uniqueness_ratio           ;
+                    featureView:name    ?Feature_view               ;
+                    data:hasFilePath    ?File_source                ;
+                    schema:name         ?Physical_table             .
+    }"""
+    if show_query:
+        display_query(query)
+    return execute_query(config, query)
+
+
 def predict_entities(config, show_query):
     query = """
         SELECT DISTINCT ?Entity ?Entity_data_type ?File_source ?File_source_path ?Dataset
@@ -95,6 +175,7 @@ def get_enrichable_tables(config, show_query):
 
     return execute_query(config, query)
 
+# --------------------------------------------Farm Builder-------------------------------------------------------------
 
 def get_table_ids(config):
     query = """
