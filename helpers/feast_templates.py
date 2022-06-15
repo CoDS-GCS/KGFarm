@@ -27,7 +27,7 @@ def feature_view_skeleton():
         """
 {} = FeatureView(
 name='{}',
-entities=[{}],
+entities={},
 ttl=timedelta(days={}),
 online=True,
 batch_source=FileSource(
