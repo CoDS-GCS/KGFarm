@@ -1,7 +1,7 @@
 from helpers.helper import execute_query, display_query
 
 
-def get_columns(config, table, dataset, show_query):
+def get_columns(config, table, dataset):
     query = """
     SELECT DISTINCT ?Column	
     WHERE
@@ -12,8 +12,6 @@ def get_columns(config, table, dataset, show_query):
         ?Column_id			kglids:isPartOf	?Table_id								;
                             schema:name		?Column									.
     }""" % (table, dataset)
-    if show_query:
-        display_query(query)
     return execute_query(config, query)['Column'].tolist()
 
 
@@ -146,34 +144,50 @@ def get_all_tables(config, show_query):
 
 def get_enrichable_tables(config, show_query):
     query = """
-    SELECT DISTINCT ?Table ?Entity ?Path_to_table ?Dataset
+SELECT DISTINCT ?Table ?Enrich_with ?Confidence_score ?Physical_joinable_table ?Table_path ?File_source ?Dataset ?Dataset_feature_view
     WHERE
     {
-      <<?Entity_id 			data:hasPrimaryKeyForeignKeySimilarity  ?column_id_1>> data:withCertainty ?Score	.
-      ?Entity_id			data:hasTotalValueCount		            ?Total_values			;
-      						data:hasDistinctValueCount              ?Distinct_values		;
-                    		schema:name				                ?Entity					;
-      						data:hasDataType		                ?Entity_data_type		;
-                    	    kglids:isPartOf			                ?Table_id				.
-      
-      FILTER(?Total_values = ?Distinct_values)					    		
-      	
-      ?Table_id     		schema:name                             ?File_source            ;
-      						data:hasFilePath				        ?File_source_path       .
-      
-      ?column_id_1			kglids:isPartOf			                ?Joinable_table_id		.
-      
-      ?Joinable_table_id	schema:name				                ?Table      			;
-                            data:hasFilePath				        ?Path_to_table			;
-                            kglids:isPartOf                         ?Dataset_id             .
-                
-      ?Dataset_id           schema:name                             ?Dataset                .            
-      FILTER(?Table_id != ?Joinable_table_id)					    		
-    } ORDER BY DESC (?Entity) """
+        # {
+        <<?Primary_column_id        data:hasPrimaryKeyForeignKeySimilarity          ?Foreign_column_id>> data:withCertainty ?Confidence_score	.
+        # }
+        # UNION
+        # {
+        #  <<?Primary_column_id       data:hasDeepPrimaryKeyForeignKeySimilarity      ?Foreign_column_id>> data:withCertainty ?Confidence_score	. 
+        #  FILTER(?Confidence_score >=1.0)
+        #}
+        
+        ?Primary_column_id	        kglids:isPartOf			                    ?Primary_table_id	                        ;
+                                    entity:name                                 ?Entity                                     . 
+        {
+        ?Primary_table_id           kgfarm:hasDefaultEntity                     ?Primary_column_id                          .
+        }
+        UNION
+        {
+        ?Primary_table_id           kgfarm:hasMultipleEntities                  ?Primary_column_id                          .   
+        }
+        
+        ?Primary_table_id           featureView:name                            ?Enrich_with                                 ;
+                                    schema:name                                 ?Physical_joinable_table                    ;
+                                    data:hasFilePath                            ?File_source                                ;
+                                    kglids:isPartOf                             ?Dataset_feature_view_id                    .
+        
+        ?Dataset_feature_view_id    schema:name                                 ?Dataset_feature_view                       .
+        
+        
+        ?Foreign_column_id          kglids:isPartOf                             ?Foreign_table_id                           .
+        
+        ?Foreign_table_id           schema:name                                 ?Table                                      ;
+                                    data:hasFilePath                            ?Table_path                                 ;
+                                    kglids:isPartOf                             ?Dataset_id                                 .
+                                
+        ?Dataset_id                 schema:name                                 ?Dataset                                    .                                        
+                                
+    } ORDER BY DESC(?Confidence_score)"""
     if show_query:
         display_query(query)
 
     return execute_query(config, query)
+
 
 # --------------------------------------------Farm Builder-------------------------------------------------------------
 

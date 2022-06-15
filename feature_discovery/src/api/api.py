@@ -110,7 +110,8 @@ class KGFarm:
         return convert_dict_to_dataframe('Entity', self.entities)
 
     def show_feature_views(self):
-        return convert_dict_to_dataframe('Feature_view', self.feature_views).sort_values(by=['Feature_view'])
+        return convert_dict_to_dataframe('Feature_view', self.feature_views).\
+            sort_values(by=['Feature_view']).reset_index(drop=True)
 
     def drop_feature_view(self, drop: list):
         if len(drop) == 0:
@@ -170,30 +171,18 @@ class KGFarm:
               os.path.abspath(self.path_to_feature_repo) + '/' + save_as)
 
     def get_enrichable_tables(self, show_query: bool = False):
-        df = get_enrichable_tables(self.config, show_query)
-        df['Enrich_with'] = df['Entity'].apply(lambda x: self.entities_to_feature_views.get(x))
-        df['File_source_path'] = df['Enrich_with'].apply(lambda x: self.feature_views.get(x)['File_source_path'])
-        df['Dataset_feature_view'] = df['Enrich_with'].apply(lambda x: self.feature_views.get(x)['Dataset'])
-        df['File_source'] = df['Enrich_with'].apply(lambda x: self.feature_views.get(x)['File_source'])
-        df = df.drop('Entity', axis=1)
-        # rearrange columns
-        # df = df[df.columns.tolist()[-1:] + df.columns.tolist()[:-1]]
-        df = df[['Table', 'Enrich_with', 'Path_to_table', 'File_source_path', 'File_source', 'Dataset',
-                 'Dataset_feature_view']]
-        return df.sort_values('Enrich_with').reset_index(drop=True)
+        return get_enrichable_tables(self.config, show_query)
 
-    def get_features(self, entity_df: pd.Series, show_query: bool = False):
-        table = entity_df['Table']
-        dataset = entity_df['Dataset']
+    def get_features(self, entity_df: pd.Series):
         feature_view = entity_df['Enrich_with']
-        entity_df_features = get_columns(self.config, table, dataset, show_query)
-        features = get_columns(self.config, self.feature_views.get(feature_view)['File_source'],
-                               self.feature_views.get(feature_view)['Dataset'], show_query)
+        # features in entity dataframe
+        entity_df_features = get_columns(self.config, entity_df['Table'], entity_df['Dataset'])
+        # features in feature view table
+        feature_view_features = get_columns(self.config, entity_df['Physical_joinable_table'],
+                               entity_df['Dataset_feature_view'])
 
-        # subtract both feature lists
-        features = ['{}:'.format(feature_view) + feature for feature in features if feature not in entity_df_features]
-
-        return features
+        # take difference
+        return ['{}:'.format(feature_view) + feature for feature in feature_view_features if feature not in entity_df_features]
 
 
 if __name__ == "__main__":
