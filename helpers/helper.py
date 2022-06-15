@@ -8,6 +8,8 @@ from SPARQLWrapper import JSON, SPARQLWrapper
 
 PREFIXES = """
     PREFIX kgfarm:      <http://kgfarm.com/ontology/>
+    PREFIX featureView: <http://kgfarm.com/ontology/featureView/>
+    PREFIX entity:      <http://kgfarm.com/ontology/entity/>
     PREFIX kglids:      <http://kglids.org/ontology/>
     PREFIX data:        <http://kglids.org/ontology/data/>
     PREFIX schema:      <http://schema.org/>
