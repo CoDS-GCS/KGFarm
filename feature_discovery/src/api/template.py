@@ -189,8 +189,8 @@ def get_table_ids(config):
 
 def detect_entities(config):
     query = """ 
-    SELECT DISTINCT (?Candidate_entity_name as ?Primary_column) ?Candidate_entity_dtype (?File_source as ?Primary_table) (?distinct_values/?total_values as ?Primary_key_uniqueness_ratio) (?Candidate_entity_id as ?Primary_column_id) (?Table_id as ?Primary_table_id)
-    WHERE
+SELECT DISTINCT (?Candidate_entity_name as ?Primary_column) ?Candidate_entity_dtype (?File_source as ?Primary_table) (?distinct_values/?total_values as ?Primary_key_uniqueness_ratio) (?Candidate_entity_id as ?Primary_column_id) (?Table_id as ?Primary_table_id) #?Total_number_of_columns
+WHERE
     {
         ?Candidate_entity_id    rdf:type                    kglids:Column           ;   
                                 schema:name                 ?Candidate_entity_name  ;
@@ -200,14 +200,28 @@ def detect_entities(config):
                                 data:hasMissingValueCount   ?missing_values         ;
                                 data:hasDataType            ?Type                   .  
                                 
-        ?Table_id               schema:name                 ?File_source            .  
-    
+        ?Table_id               schema:name                 ?File_source            ; 
+                                kglids:isPartOf             ?All_columns            .
+        
+                
+        
         FILTER(?missing_values = 0)                     # i.e. no missing values                               
         FILTER(?distinct_values/?total_values >= 0.95)  # high uniqueness         
         FILTER(?Type != 'T_date')                       # avoid timestamps            
     
         # convert dtype in feast format
         BIND(IF(REGEX(?Type, 'N'),'INT64','STRING') as ?Candidate_entity_dtype)  
+        {
+            SELECT ?Table_id (COUNT(?all_columns) as ?Total_number_of_columns)
+            WHERE
+            {
+                ?Table_id       rdf:type        kglids:Table    .
+                ?all_columns    kglids:isPartOf ?Table_id       .
+
+            } GROUP BY ?Table_id
+        }
+
+        FILTER(?Total_number_of_columns > 2)
     } ORDER BY DESC(?Primary_table_id)"""
     return execute_query(config, query)
 
@@ -225,7 +239,6 @@ def get_number_of_relations(config, column_id: str):
 
 def get_pkfk_relations(config):
     query = """
-    # SELECT DISTINCT ?Primary_table ?Primary_column ?Foreign_table ?Foreign_column ?Pkfk_score (?Distinct_values/?Total_values as ?Primary_key_uniqueness_ratio) ?Primary_table_id ?Primary_column_id ?Foreign_table_id ?Foreign_column_id
     SELECT DISTINCT ?Primary_table_id ?Primary_column_id  (?Distinct_values/?Total_values as ?Primary_key_uniqueness_ratio) ?Primary_table ?Primary_column
     WHERE
     {
@@ -241,6 +254,17 @@ def get_pkfk_relations(config):
         
         ?Foreign_table_id       schema:name                 ?Foreign_table      .
         ?Primary_table_id       schema:name                 ?Primary_table      .
+        {
+            SELECT (?Table_id as ?Primary_table_id) (COUNT(?all_columns) as ?Total_number_of_columns)
+            WHERE
+            {
+                ?Table_id       rdf:type        kglids:Table    .
+                ?all_columns    kglids:isPartOf ?Table_id       .
+
+            } GROUP BY ?Table_id
+        }
+
+        FILTER (?Total_number_of_columns > 2)
     }"""
     return execute_query(config, query)
 
