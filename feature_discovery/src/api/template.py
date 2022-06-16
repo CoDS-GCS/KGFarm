@@ -144,7 +144,7 @@ def get_all_tables(config, show_query):
 
 def get_enrichable_tables(config, show_query):
     query = """
-SELECT DISTINCT ?Table ?Enrich_with ?Confidence_score ?Physical_joinable_table ?Table_path ?File_source ?Dataset ?Dataset_feature_view
+    SELECT DISTINCT ?Table ?Enrich_with ?Confidence_score ?Physical_joinable_table ?Table_path ?File_source ?Dataset ?Dataset_feature_view
     WHERE
     {
         # {
@@ -157,7 +157,8 @@ SELECT DISTINCT ?Table ?Enrich_with ?Confidence_score ?Physical_joinable_table ?
         #}
         
         ?Primary_column_id	        kglids:isPartOf			                    ?Primary_table_id	                        ;
-                                    entity:name                                 ?Entity                                     . 
+                                    entity:name                                 ?Entity                                     ; 
+                                    schema:name                                 ?join_key_name                              .    
         {
         ?Primary_table_id           kgfarm:hasDefaultEntity                     ?Primary_column_id                          .
         }
@@ -174,7 +175,8 @@ SELECT DISTINCT ?Table ?Enrich_with ?Confidence_score ?Physical_joinable_table ?
         ?Dataset_feature_view_id    schema:name                                 ?Dataset_feature_view                       .
         
         
-        ?Foreign_column_id          kglids:isPartOf                             ?Foreign_table_id                           .
+        ?Foreign_column_id          kglids:isPartOf                             ?Foreign_table_id                           ;
+                                    schema:name                                 ?join_key_name                              .
         
         ?Foreign_table_id           schema:name                                 ?Table                                      ;
                                     data:hasFilePath                            ?Table_path                                 ;
@@ -242,11 +244,16 @@ WHERE
 
 def get_number_of_relations(config, column_id: str):
     query = """
-    SELECT (COUNT(?relation) as ?Number_of_relations)
-    WHERE
-    {
-        <<<%s> ?relation ?column_id>> data:withCertainty ?Score.
-    }
+SELECT (COUNT(?All_columns) as ?Number_of_relations)
+WHERE
+{
+    <%s> schema:name ?Column_name               .
+    
+    ?All_columns    schema:name ?Column_name    .
+    
+    ?All_columns    data:hasPrimaryKeyForeignKeySimilarity  ?Foreign_column .
+}    
+
     """ % column_id
     return execute_query(config, query, return_type='json')
 
@@ -261,7 +268,10 @@ def get_pkfk_relations(config):
         ?Primary_column_id      schema:name                 ?Primary_column     ;
                                 kglids:isPartOf             ?Primary_table_id   ;
                                 data:hasTotalValueCount     ?Total_values       ;
-                                data:hasDistinctValueCount  ?Distinct_values    . 
+                                data:hasDistinctValueCount  ?Distinct_values    ;
+                                data:hasMissingValueCount   ?Missing_values     .
+
+        FILTER(?Missing_values = 0) 
         
         ?Foreign_column_id      schema:name                 ?Foreign_column     ;
                                 kglids:isPartOf             ?Foreign_table_id   .

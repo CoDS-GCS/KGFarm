@@ -50,9 +50,9 @@ class Builder:
                     if uniqueness == uniqueness_ratio:
                         candidate_column_ids.add(candidate_column_id)
                         n_relations = int(get_number_of_relations(self.config,
-                                                                  candidate_column_id)[0]['Number_of_relations'][
+                                                                   candidate_column_id)[0]['Number_of_relations'][
                                               'value'])
-                        if max_number_of_relations < n_relations:
+                        if max_number_of_relations <= n_relations:
                             column_id = candidate_column_id
                             max_number_of_relations = n_relations
 
@@ -119,9 +119,10 @@ class Builder:
     def annotate_unmapped_feature_views(self):
         print('• Annotating unmapped feature views')
         pkfk_relations = get_pkfk_relations(self.config)
+        print(len(pkfk_relations))
         # filter relationships to the ones that were left unmapped
         pkfk_relations = pkfk_relations[pkfk_relations.Primary_table_id.isin(self.unmapped_tables)]
-
+        print(len(pkfk_relations))
         for unmapped_feature_view in tqdm(pkfk_relations.to_dict('index').values()):
             entity_name = (unmapped_feature_view['Primary_column'] + '_' + unmapped_feature_view['Primary_table']). \
                 replace('id', '').replace('.parquet', '')
@@ -144,9 +145,9 @@ class Builder:
         feature_views_generated = len(self.table_to_feature_view.values())
         entities_generated = len(self.column_to_entity.values())
         print('\n• {} summary\n\t- Total feature view(s) generated: {}'
-              '\n\t- Total entities generated: {}\n\t- Feature view(s) with no entity: {} / {}'
+              '\n\t- Total entities generated: {}\n\t- Feature view(s) with no entity: {} / {}\n\t- Farm graph size: {} KB'
               .format(self.output_path, feature_views_generated, entities_generated, len(self.unmapped_tables),
-                      feature_views_generated))
+                      feature_views_generated, os.path.getsize(self.output_path)*0.001))
 
 
 def generate_farm_graph():
