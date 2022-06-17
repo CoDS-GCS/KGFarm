@@ -21,9 +21,9 @@ class KGFarm:
         self.config = connect_to_stardog(port, database, show_connection_status)
         self.entities = {}
         self.feature_views = {}
-        # self.entities_to_feature_views = {}
+        # Need to maintain these because we do not update the KG
+        self.__dropped_feature_views = set()
         self.__get_entities_and_feature_views()
-        # self.entities, self.feature_views = self.__predict_entities_and_feature_views()
 
     def __get_entities_and_feature_views(self, show_query: bool = False):
         def format_entities(entities):
@@ -39,13 +39,15 @@ class KGFarm:
         # load feature views with one or more entities
         for feature_view_info in get_feature_views(self.config, show_query). \
                 to_dict('index').values():
-            if feature_view_info['Feature_view'] in self.feature_views:
-                pass
-                print('Multiple keys detected')
-                # entities = self.feature_views[feature_view_info['Feature_view']]['Entity']
-                # entities.extend([feature_view_info['Entity']])
-                # self.feature_views[feature_view_info['Feature_view']] =
-            else:
+            if feature_view_info['Feature_view'] in self.feature_views:  # multiple entity
+                entities = self.feature_views[feature_view_info['Feature_view']]['Entity']
+                entities.extend([feature_view_info['Entity']])
+                self.feature_views[feature_view_info['Feature_view']] = {'Entity': entities,
+                                                                         'Physical_table': feature_view_info[
+                                                                             'Physical_table'],
+                                                                         'File_source': feature_view_info[
+                                                                             'File_source']}
+            else:  # single entity
                 self.feature_views[feature_view_info['Feature_view']] = {'Entity': [feature_view_info['Entity']],
                                                                          'Physical_table': feature_view_info[
                                                                              'Physical_table'],
@@ -58,59 +60,11 @@ class KGFarm:
                                                                          'Physical_table'],
                                                                      'File_source': feature_view_info['File_source']}
 
-    def __predict_entities_and_feature_views(self, ttl: int = 10, show_query: bool = False):
-        entities = {}
-        feature_views = {}
-        # get entities (here entity = primary key extracted from KG)
-        entities_df = predict_entities(self.config, show_query)
-
-        # add feature_views corresponding to each entity
-        entities_df.insert(loc=0, column='Feature_view',
-                           value=list('feature_view_' + str(i) for i in range(1, len(entities_df) + 1)))
-
-        # convert to dictionary
-        for k, v in entities_df.to_dict('index').items():
-            entities[v['Entity']] = {'Entity_data_type': v['Entity_data_type']}
-
-            feature_views[v['Feature_view']] = {'Entity': v['Entity'], 'Entity_data_type': v['Entity_data_type'],
-                                                'Time_to_leave': ttl,
-                                                'File_source': v['File_source'],
-                                                'File_source_path': v['File_source_path'],
-                                                'Dataset': v['Dataset']}
-            self.entities_to_feature_views[v['Entity']] = v['Feature_view']
-
-        # add feature views with entities
-        # 1. get all tables
-        # 2. get tables for which entities exist ()
-        # 3. take difference
-        # 4. add feature view id for the result from step 3
-        # 5. add these feature views to the global feature view dictionary
-        all_tables = get_all_tables(self.config, show_query=False)
-        file_source_with_entities = entities_df['File_source'].tolist()
-        feature_views_without_entities = all_tables[
-            ~all_tables.File_source.isin(file_source_with_entities)].reset_index(
-            drop=True)
-        number_of_feature_views = len(feature_views)
-        feature_views_without_entities.insert(loc=0, column='Feature_view',
-                                              value=list('feature_view_' + str(i + number_of_feature_views) for i in
-                                                         range(1, len(feature_views_without_entities) + 1)))
-
-        for k, v in feature_views_without_entities.to_dict('index').items():
-            feature_views[v['Feature_view']] = {'Entity': None,
-                                                'Entity_data_type': None,
-                                                'Time_to_leave': ttl,
-                                                'File_source': v['File_source'],
-                                                'File_source_path': v['File_source_path'],
-                                                'Dataset': v['Dataset']}
-
-        return entities, feature_views
-        # return feature_views_without_entities
-
     def show_entities(self):
         return convert_dict_to_dataframe('Entity', self.entities)
 
     def show_feature_views(self):
-        return convert_dict_to_dataframe('Feature_view', self.feature_views).\
+        return convert_dict_to_dataframe('Feature_view', self.feature_views). \
             sort_values(by=['Feature_view']).reset_index(drop=True)
 
     def drop_feature_view(self, drop: list):
@@ -122,6 +76,7 @@ class KGFarm:
             for feature_view_to_be_dropped in drop:
                 feature_view = feature_view_to_be_dropped['Feature_view']
                 drop_status = self.feature_views.pop(feature_view, 'None')
+                self.__dropped_feature_views.add(feature_view)
                 if drop_status == 'None':
                     print('unsuccessful!\n')
                     raise ValueError(feature_view, ' not found!')
@@ -151,14 +106,14 @@ class KGFarm:
             # write all feature views
             for feature_view, feature_view_info in tqdm(self.feature_views.items()):
                 if feature_view_info['Entity']:  # feature view with one or multiple entities
-                    feature_view = feature_view_skeleton().\
+                    feature_view = feature_view_skeleton(). \
                         format(feature_view,
                                feature_view,
                                feature_view_info['Entity'],
                                ttl,
                                feature_view_info['File_source'])
                 else:  # feature views with no entity
-                    feature_view = feature_view_skeleton().\
+                    feature_view = feature_view_skeleton(). \
                         format(feature_view,
                                feature_view,
                                [],
@@ -171,7 +126,9 @@ class KGFarm:
               os.path.abspath(self.path_to_feature_repo) + '/' + save_as)
 
     def get_enrichable_tables(self, show_query: bool = False):
-        return get_enrichable_tables(self.config, show_query)
+        enrichable_tables = get_enrichable_tables(self.config, show_query)
+        enrichable_tables = enrichable_tables[~enrichable_tables['Enrich_with'].isin(self.__dropped_feature_views)]
+        return enrichable_tables.sort_values(by=['Table', 'Confidence_score', 'Enrich_with'], ascending=False).reset_index(drop=True)
 
     def get_features(self, entity_df: pd.Series):
         feature_view = entity_df['Enrich_with']
@@ -179,10 +136,11 @@ class KGFarm:
         entity_df_features = get_columns(self.config, entity_df['Table'], entity_df['Dataset'])
         # features in feature view table
         feature_view_features = get_columns(self.config, entity_df['Physical_joinable_table'],
-                               entity_df['Dataset_feature_view'])
+                                            entity_df['Dataset_feature_view'])
 
         # take difference
-        return ['{}:'.format(feature_view) + feature for feature in feature_view_features if feature not in entity_df_features]
+        return ['{}:'.format(feature_view) + feature for feature in feature_view_features if
+                feature not in entity_df_features]
 
 
 if __name__ == "__main__":
