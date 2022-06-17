@@ -16,16 +16,21 @@ feast init feature_repo
 ```bash
 stardog-admin server start
 ```
-4. Start using KGFarm APIs (checkout <code>KGFarm_notebook.ipynb</code>)
+4. Run KGFarm's [<code>graph_builder</code>](https://github.com/CoDS-GCS/KGFarm/blob/main/feature_discovery/src/graph_builder/builder.py)
+```bash
+cd feature_discovery/src/graph_builder
+python builder.py
+```
+5. Start using KGFarm APIs (checkout [<code>KGFarm_notebook.ipynb</code>](https://github.com/CoDS-GCS/KGFarm/blob/main/KGFarm_notebook.ipynb))
 
 ## 🚧 Roadmap
 - <b>List of deliverables for KGFarm version 0.1</b> [🔗](https://docs.google.com/presentation/d/14JigzSty4pwJaTXSNbo-SYZBcSaTqanlC4ETbGJVbTU/edit?usp=sharing)
-* [X] Automate generation of [Feature views without Entities](https://docs.feast.dev/getting-started/concepts/feature-view#feature-views-without-entities)
-* [X] Automate [Feature view](https://docs.feast.dev/getting-started/concepts/feature-view) generation for single [Entity](https://docs.feast.dev/v/v0.6-branch/user-guide/entities)
-* [ ] Automate [Feature view](https://docs.feast.dev/getting-started/concepts/feature-view) generation for multiple [Entities](https://docs.feast.dev/v/v0.6-branch/user-guide/entities)
 * [x] Predict [Entities](https://docs.feast.dev/v/v0.6-branch/user-guide/entities) 
+* [X] Predict [Feature views without Entities](https://docs.feast.dev/getting-started/concepts/feature-view#feature-views-without-entities)
+* [X] Predict [Feature view](https://docs.feast.dev/getting-started/concepts/feature-view) with single [Entity](https://docs.feast.dev/v/v0.6-branch/user-guide/entities)
+* [X] Predict [Feature view](https://docs.feast.dev/getting-started/concepts/feature-view) with multiple [Entities](https://docs.feast.dev/v/v0.6-branch/user-guide/entities)
 * [x] Predict Features for [Model training](https://docs.feast.dev/getting-started/quickstart#step-4-generating-training-data)
-* [ ] Predict [Feature service](https://docs.feast.dev/getting-started/concepts/feature-service)
+* [ ] Support for [Entity aliasing](https://docs.feast.dev/getting-started/concepts/feature-view#entity-aliasing)
 * [ ] Predict feature transformations
 * [ ] Recommend semantically similar features
 * [ ] Recommend similar features by content
