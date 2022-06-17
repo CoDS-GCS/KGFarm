@@ -1,78 +1,78 @@
 ,district_id,city,state_name,state_abbrev,region,division,avg_sales,net_growth,return,n_customer_sat,event_timestamp
-0,1,New York City,New York,NY,Northeast,Middle Atlantic,1009007,4087,387,1,2022-05-06 00:00:04.318371
-1,2,Jacksonville,Florida,FL,South,South Atlantic,753920,8044,275,1,2022-05-04 07:59:52.318371
-2,3,Columbus,Ohio,OH,Midwest,East North Central,958201,7277,265,4,2022-05-09 21:51:06.318371
-3,4,Charlotte,North Carolina,NC,South,South Atlantic,757503,5043,195,4,2022-05-08 10:49:22.318371
-4,5,Indianapolis,Indiana,IN,Northeast,East North Central,604136,6885,804,3,2022-05-04 16:23:59.318371
-5,6,Seattle,Washington,WA,West,Pacific,615615,7247,116,4,2022-05-01 00:12:27.318371
-6,7,Denver,Colorado,CO,West,Mountain,947696,7632,736,1,2022-05-02 05:37:56.318371
-7,8,Washington,District of Columbia,DC,South,South Atlantic,926057,7266,227,1,2022-05-04 15:12:07.318371
-8,9,Boston,Massachusetts,MA,Northeast,New England,894179,8337,870,3,2022-05-08 06:37:15.318371
-9,10,Detroit,Michigan,MI,Midwest,East North Central,1382449,4938,123,4,2022-05-08 21:46:34.318371
-10,11,Nashville,Tennessee,TN,South,East South Central,621761,7720,445,2,2022-05-06 20:38:15.318371
-11,12,Portland,Oregon,OR,West,Pacific,771743,3415,149,2,2022-04-30 02:21:17.318371
-12,13,Oklahoma City,Oklahoma,OK,South,West South Central,682924,8960,699,1,2022-05-10 07:36:51.318371
-13,14,Las Vegas,Nevada,NV,West,Mountain,1463408,7330,291,3,2022-05-01 19:56:37.318371
-14,15,Louisville,Kentucky,KY,South,East South Central,565009,4702,260,2,2022-04-30 03:25:58.318371
-15,16,Baltimore,Maryland,MD,South,South Atlantic,690311,5917,534,4,2022-05-08 18:51:21.318371
-16,17,Milwaukee,Wisconsin,WI,Midwest,East North Central,1001755,8131,764,4,2022-05-04 13:18:16.318371
-17,18,Albuquerque,New Mexico,NM,West,Mountain,834831,6398,761,3,2022-05-03 21:34:57.318371
-18,19,Atlanta,Georgia,GA,South,South Atlantic,945214,5216,713,4,2022-05-01 08:22:10.318371
-19,20,Kansas City,Missouri,MO,Midwest,West North Central,623940,6265,164,3,2022-05-07 05:58:58.318371
-20,21,Omaha,Nebraska,NE,Midwest,West North Central,613378,8868,407,1,2022-05-05 11:42:43.318371
-21,22,Virginia Beach,Virginia,VA,South,South Atlantic,848613,5691,600,1,2022-05-03 07:57:20.318371
-22,23,Minneapolis,Minnesota,MN,Midwest,West North Central,1219079,5725,788,3,2022-05-10 03:32:32.318371
-23,24,New Orleans,Louisiana,LA,South,West South Central,905752,6488,969,2,2022-05-07 19:46:34.318371
-24,25,Wichita,Kansas,KS,Midwest,West North Central,760659,6490,295,1,2022-05-09 11:33:02.318371
-25,26,Honolulu,Hawaii,HI,West,Pacific,944342,8426,296,3,2022-05-01 05:25:10.318371
-26,27,San Antonio,Texas,TX,South,West South Central,910285,8888,560,4,2022-05-05 11:33:07.318371
-27,28,Anchorage,Alaska,AK,West,Pacific,925181,6728,172,3,2022-05-05 06:58:22.318371
-28,29,Newark,New Jersey,NJ,Northeast,Middle Atlantic,1332983,5772,406,3,2022-05-10 07:39:42.318371
-29,30,Boise,Idaho,ID,West,Mountain,681753,3100,396,1,2022-05-03 12:24:46.318371
-30,31,Des Moines,Iowa,IA,Midwest,West North Central,1081473,8189,973,3,2022-05-07 06:20:11.318371
-31,32,Birmingham,Alabama,AL,South,East South Central,1265794,8422,161,4,2022-05-01 08:01:40.318371
-32,33,Salt Lake City,Utah,UT,West,Mountain,1204448,3101,913,3,2022-05-10 12:15:08.318371
-33,34,Little Rock,Arkansas,AR,South,West South Central,928308,3084,368,4,2022-05-05 21:11:21.318371
-34,35,Sioux Falls,South Dakota,SD,Midwest,West North Central,751312,3126,474,2,2022-05-02 22:27:32.318371
-35,36,Providence,Rhode Island,RI,Northeast,New England,770266,7189,330,2,2022-04-30 09:21:15.318371
-36,37,Jackson,Mississippi,MS,South,East South Central,1156566,7263,995,3,2022-05-01 08:26:04.318371
-37,38,Bridgeport,Connecticut,CT,Northeast,New England,1234563,4793,892,4,2022-05-09 08:54:34.318371
-38,39,Charleston,South Carolina,SC,South,South Atlantic,619361,8947,131,3,2022-05-04 21:55:49.318371
-39,40,Fargo,North Dakota,ND,Midwest,West North Central,942927,4332,129,1,2022-04-30 00:43:42.318371
-40,41,Manchester,New Hampshire,NH,Northeast,New England,810819,3525,984,2,2022-05-05 14:30:45.318371
-41,42,Billings,Montana,MT,West,Mountain,716687,7566,768,3,2022-05-04 04:15:35.318371
-42,43,Wilmington,Delaware,DE,South,South Atlantic,749858,5292,800,2,2022-05-09 13:05:54.318371
-43,44,Portland,Maine,ME,Northeast,New England,1019887,6727,213,2,2022-05-05 19:59:52.318371
-44,45,Cheyenne,Wyoming,WY,West,Mountain,1229245,6931,411,4,2022-05-04 23:28:04.318371
-45,46,San Diego,California,CA,West,Pacific,733215,3595,206,4,2022-05-09 01:21:59.318371
-46,47,Charleston,West Virginia,WV,South,South Atlantic,1492331,5538,481,2,2022-05-06 21:54:15.318371
-47,48,Worcester,Massachusetts,MA,Northeast,New England,1332141,7688,735,1,2022-05-09 21:50:03.318371
-48,49,Burlington,Vermont,VT,Northeast,New England,933613,5519,507,3,2022-04-30 10:44:39.318371
-49,50,Buffalo,New York,NY,Northeast,Middle Atlantic,942223,7678,503,4,2022-05-01 00:33:14.318371
-50,51,Springfield,Massachusetts,MA,Northeast,New England,1426001,5437,316,4,2022-05-02 14:15:28.318371
-51,52,New Haven,Connecticut,CT,Northeast,New England,603372,4308,777,2,2022-05-09 07:48:53.318371
-52,53,Hartford,Connecticut,CT,Northeast,New England,1451999,3006,872,1,2022-05-09 01:44:19.318371
-53,54,Houston,Texas,TX,South,West South Central,810866,7812,113,4,2022-05-07 16:39:03.318371
-54,55,Lowell,Massachusetts,MA,Northeast,New England,942492,4367,409,1,2022-05-04 07:14:31.318371
-55,56,Cambridge,Massachusetts,MA,Northeast,New England,959326,6132,405,4,2022-05-02 17:41:58.318371
-56,57,New Bedford,Massachusetts,MA,Northeast,New England,1016178,8737,663,1,2022-05-02 01:38:32.318371
-57,58,Brockton,Massachusetts,MA,Northeast,New England,1226144,6923,661,1,2022-05-03 16:40:38.318371
-58,59,Quincy,Massachusetts,MA,Northeast,New England,511291,4593,987,2,2022-05-08 11:51:24.318371
-59,60,Lynn,Massachusetts,MA,Northeast,New England,571493,7838,724,2,2022-05-07 03:41:07.318371
-60,61,Fall River,Massachusetts,MA,Northeast,New England,1283596,4563,457,3,2022-05-02 01:05:15.318371
-61,62,Nashua,New Hampshire,NH,Northeast,New England,1166618,7420,771,4,2022-05-01 10:03:00.318371
-62,63,Norwalk,Connecticut,CT,Northeast,New England,981752,7758,935,4,2022-05-10 22:01:23.318371
-63,64,Phoenix,Arizona,AZ,West,Mountain,1309975,8492,952,4,2022-05-01 20:31:35.318371
-64,65,Newton,Massachusetts,MA,Northeast,New England,1273374,6375,329,4,2022-05-09 08:31:38.318371
-65,66,Warwick,Rhode Island,RI,Northeast,New England,1354796,7121,839,4,2022-04-30 18:09:14.318371
-66,67,Danbury,Connecticut,CT,Northeast,New England,1215736,4794,740,1,2022-05-04 21:46:13.318371
-67,68,Cranston,Rhode Island,RI,Northeast,New England,1455933,5311,590,3,2022-05-10 01:18:33.318371
-68,69,Lawrence,Massachusetts,MA,Northeast,New England,634424,3445,539,1,2022-05-07 13:52:52.318371
-69,70,Los Angeles,California,CA,West,Pacific,538970,6233,749,4,2022-05-07 11:03:53.318371
-70,71,Somerville,Massachusetts,MA,Northeast,New England,1260957,6190,408,4,2022-05-04 15:59:04.318371
-71,72,Philadelphia,Pennsylvania,PA,Northeast,Middle Atlantic,1277037,4442,435,2,2022-05-07 03:46:45.318371
-72,73,New Britain,Connecticut,CT,Northeast,New England,500595,8110,572,4,2022-05-02 09:33:19.318371
-73,74,Chicago,Illinois,IL,Northeast,East North Central,1416774,6153,914,3,2022-05-02 01:21:00.318371
-74,75,Rochester,New York,NY,Northeast,Middle Atlantic,791230,8498,912,2,2022-05-06 14:17:34.318371
-75,76,Yonkers,New York,NY,Northeast,Middle Atlantic,972674,3731,204,4,2022-05-09 22:12:27.318371
-76,77,Syracuse,New York,NY,Northeast,Middle Atlantic,724953,4481,825,3,2022-05-05 06:23:17.318371
+0,1,New York City,New York,NY,Northeast,Middle Atlantic,622914,7817,390,3,2022-06-12 09:58:17.847533
+1,2,Jacksonville,Florida,FL,South,South Atlantic,1458710,6123,228,3,2022-06-08 15:53:06.847533
+2,3,Columbus,Ohio,OH,Midwest,East North Central,564010,8833,144,1,2022-06-12 19:10:58.847533
+3,4,Charlotte,North Carolina,NC,South,South Atlantic,1485713,4093,599,1,2022-06-16 18:50:57.847533
+4,5,Indianapolis,Indiana,IN,Northeast,East North Central,691557,5395,237,4,2022-06-11 23:06:13.847533
+5,6,Seattle,Washington,WA,West,Pacific,985545,8385,401,4,2022-06-17 12:52:36.847533
+6,7,Denver,Colorado,CO,West,Mountain,684144,8010,523,2,2022-06-07 09:12:21.847533
+7,8,Washington,District of Columbia,DC,South,South Atlantic,1011999,5654,317,2,2022-06-10 00:33:44.847533
+8,9,Boston,Massachusetts,MA,Northeast,New England,1368557,5482,499,1,2022-06-09 21:14:58.847533
+9,10,Detroit,Michigan,MI,Midwest,East North Central,962730,6808,204,4,2022-06-07 22:39:10.847533
+10,11,Nashville,Tennessee,TN,South,East South Central,1164081,6293,705,3,2022-06-11 12:04:47.847533
+11,12,Portland,Oregon,OR,West,Pacific,864726,7522,751,2,2022-06-14 15:46:52.847533
+12,13,Oklahoma City,Oklahoma,OK,South,West South Central,1485163,3094,585,3,2022-06-17 19:32:29.847533
+13,14,Las Vegas,Nevada,NV,West,Mountain,1116174,6080,963,1,2022-06-10 15:43:07.847533
+14,15,Louisville,Kentucky,KY,South,East South Central,1088835,4064,269,3,2022-06-10 05:45:51.847533
+15,16,Baltimore,Maryland,MD,South,South Atlantic,606884,6996,123,2,2022-06-16 10:56:23.847533
+16,17,Milwaukee,Wisconsin,WI,Midwest,East North Central,1405500,3585,356,1,2022-06-12 21:23:35.847533
+17,18,Albuquerque,New Mexico,NM,West,Mountain,1416912,7058,472,1,2022-06-08 11:09:25.847533
+18,19,Atlanta,Georgia,GA,South,South Atlantic,1245012,7167,869,1,2022-06-17 00:13:31.847533
+19,20,Kansas City,Missouri,MO,Midwest,West North Central,1025927,5277,171,2,2022-06-10 16:51:30.847533
+20,21,Omaha,Nebraska,NE,Midwest,West North Central,1263892,3839,500,4,2022-06-08 10:29:41.847533
+21,22,Virginia Beach,Virginia,VA,South,South Atlantic,1340716,4813,464,2,2022-06-08 19:37:40.847533
+22,23,Minneapolis,Minnesota,MN,Midwest,West North Central,693983,3492,876,1,2022-06-15 08:18:36.847533
+23,24,New Orleans,Louisiana,LA,South,West South Central,1344369,4073,707,4,2022-06-10 16:38:59.847533
+24,25,Wichita,Kansas,KS,Midwest,West North Central,1077135,5298,747,1,2022-06-12 13:00:44.847533
+25,26,Honolulu,Hawaii,HI,West,Pacific,692885,4224,898,1,2022-06-10 10:18:42.847533
+26,27,San Antonio,Texas,TX,South,West South Central,903832,5503,250,3,2022-06-13 15:33:47.847533
+27,28,Anchorage,Alaska,AK,West,Pacific,1265531,7246,505,2,2022-06-17 07:19:42.847533
+28,29,Newark,New Jersey,NJ,Northeast,Middle Atlantic,606843,5544,474,1,2022-06-15 17:43:44.847533
+29,30,Boise,Idaho,ID,West,Mountain,1396370,7329,811,2,2022-06-11 00:08:36.847533
+30,31,Des Moines,Iowa,IA,Midwest,West North Central,1155136,8299,170,4,2022-06-12 01:12:15.847533
+31,32,Birmingham,Alabama,AL,South,East South Central,1145161,6719,690,1,2022-06-15 14:15:15.847533
+32,33,Salt Lake City,Utah,UT,West,Mountain,1067431,8043,535,4,2022-06-07 06:50:51.847533
+33,34,Little Rock,Arkansas,AR,South,West South Central,903764,4792,193,2,2022-06-08 08:11:22.847533
+34,35,Sioux Falls,South Dakota,SD,Midwest,West North Central,1418615,3236,370,4,2022-06-14 16:20:14.847533
+35,36,Providence,Rhode Island,RI,Northeast,New England,740025,8367,641,2,2022-06-13 02:06:50.847533
+36,37,Jackson,Mississippi,MS,South,East South Central,1476205,6574,392,4,2022-06-17 00:46:39.847533
+37,38,Bridgeport,Connecticut,CT,Northeast,New England,1106325,5190,596,2,2022-06-15 18:34:35.847533
+38,39,Charleston,South Carolina,SC,South,South Atlantic,1240557,5697,956,4,2022-06-09 17:00:03.847533
+39,40,Fargo,North Dakota,ND,Midwest,West North Central,756837,4620,280,4,2022-06-10 12:16:23.847533
+40,41,Manchester,New Hampshire,NH,Northeast,New England,527017,7463,931,3,2022-06-17 04:45:04.847533
+41,42,Billings,Montana,MT,West,Mountain,1164317,7412,670,1,2022-06-13 18:35:36.847533
+42,43,Wilmington,Delaware,DE,South,South Atlantic,585026,6228,540,1,2022-06-08 10:01:19.847533
+43,44,Portland,Maine,ME,Northeast,New England,738343,7640,939,3,2022-06-11 02:33:48.847533
+44,45,Cheyenne,Wyoming,WY,West,Mountain,1315211,7842,354,4,2022-06-15 00:11:18.847533
+45,46,San Diego,California,CA,West,Pacific,679139,5441,151,3,2022-06-12 01:35:06.847533
+46,47,Charleston,West Virginia,WV,South,South Atlantic,1388418,4493,971,3,2022-06-12 12:02:26.847533
+47,48,Worcester,Massachusetts,MA,Northeast,New England,1442354,4455,125,3,2022-06-12 00:57:32.847533
+48,49,Burlington,Vermont,VT,Northeast,New England,877370,6067,699,4,2022-06-13 10:28:02.847533
+49,50,Buffalo,New York,NY,Northeast,Middle Atlantic,786662,5680,802,2,2022-06-07 08:20:42.847533
+50,51,Springfield,Massachusetts,MA,Northeast,New England,675421,6911,563,3,2022-06-09 09:26:25.847533
+51,52,New Haven,Connecticut,CT,Northeast,New England,856544,8482,361,1,2022-06-14 13:49:11.847533
+52,53,Hartford,Connecticut,CT,Northeast,New England,895989,6856,244,1,2022-06-14 23:09:54.847533
+53,54,Houston,Texas,TX,South,West South Central,1422893,5425,891,4,2022-06-08 03:05:12.847533
+54,55,Lowell,Massachusetts,MA,Northeast,New England,1212582,8280,267,1,2022-06-07 17:37:05.847533
+55,56,Cambridge,Massachusetts,MA,Northeast,New England,636140,4810,155,4,2022-06-17 17:27:18.847533
+56,57,New Bedford,Massachusetts,MA,Northeast,New England,899092,6873,536,3,2022-06-07 02:45:35.847533
+57,58,Brockton,Massachusetts,MA,Northeast,New England,843710,3086,173,3,2022-06-17 01:27:38.847533
+58,59,Quincy,Massachusetts,MA,Northeast,New England,1314499,3180,803,2,2022-06-07 20:41:39.847533
+59,60,Lynn,Massachusetts,MA,Northeast,New England,1031467,5527,461,1,2022-06-14 06:29:19.847533
+60,61,Fall River,Massachusetts,MA,Northeast,New England,513062,8622,618,3,2022-06-11 06:14:48.847533
+61,62,Nashua,New Hampshire,NH,Northeast,New England,1224480,8897,556,2,2022-06-07 04:58:25.847533
+62,63,Norwalk,Connecticut,CT,Northeast,New England,746565,5718,262,2,2022-06-17 11:49:50.847533
+63,64,Phoenix,Arizona,AZ,West,Mountain,1037073,7581,538,2,2022-06-14 23:06:39.847533
+64,65,Newton,Massachusetts,MA,Northeast,New England,1332696,5596,274,3,2022-06-11 15:27:43.847533
+65,66,Warwick,Rhode Island,RI,Northeast,New England,711023,7241,628,3,2022-06-11 20:37:50.847533
+66,67,Danbury,Connecticut,CT,Northeast,New England,639113,5070,806,1,2022-06-17 03:47:35.847533
+67,68,Cranston,Rhode Island,RI,Northeast,New England,1092983,5929,532,3,2022-06-14 08:59:38.847533
+68,69,Lawrence,Massachusetts,MA,Northeast,New England,1192001,3315,680,2,2022-06-15 12:40:14.847533
+69,70,Los Angeles,California,CA,West,Pacific,611957,5496,577,1,2022-06-11 00:13:34.847533
+70,71,Somerville,Massachusetts,MA,Northeast,New England,752889,8556,216,3,2022-06-17 04:01:35.847533
+71,72,Philadelphia,Pennsylvania,PA,Northeast,Middle Atlantic,790263,3325,756,2,2022-06-09 07:38:44.847533
+72,73,New Britain,Connecticut,CT,Northeast,New England,782490,8418,307,1,2022-06-10 21:19:14.847533
+73,74,Chicago,Illinois,IL,Northeast,East North Central,651889,3843,180,2,2022-06-15 19:45:35.847533
+74,75,Rochester,New York,NY,Northeast,Middle Atlantic,1344871,4103,294,4,2022-06-17 08:28:35.847533
+75,76,Yonkers,New York,NY,Northeast,Middle Atlantic,508276,5526,430,4,2022-06-09 07:04:09.847533
+76,77,Syracuse,New York,NY,Northeast,Middle Atlantic,1309192,5447,997,1,2022-06-12 14:49:39.847533
