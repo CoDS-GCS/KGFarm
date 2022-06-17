@@ -1,5 +1,6 @@
 from helpers.helper import execute_query, display_query
 
+
 # --------------------------------------------KGFarm APIs---------------------------------------------------------------
 
 def get_columns(config, table, dataset):
@@ -192,7 +193,7 @@ def get_enrichable_tables(config, show_query):
     return execute_query(config, query)
 
 
-# --------------------------------------------Farm Builder-------------------------------------------------------------
+# --------------------------------------------Farm Builder--------------------------------------------------------------
 
 def get_table_ids(config):
     query = """
@@ -292,6 +293,7 @@ def get_pkfk_relations(config):
         FILTER (?Total_number_of_columns > 2)
     }"""
     return execute_query(config, query)
+
 
 # --------------------------------------------FKC Extractor-------------------------------------------------------------
 

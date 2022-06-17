@@ -1,5 +1,3 @@
-import pandas as pd
-
 from feature_discovery.src.api.template import *
 from helpers.helper import *
 from helpers.feast_templates import entity_skeleton, feature_view_skeleton, definitions
@@ -40,9 +38,9 @@ class KGFarm:
         for feature_view_info in get_feature_views(self.config, show_query). \
                 to_dict('index').values():
             if feature_view_info['Feature_view'] in self.feature_views:  # multiple entity
-                entities = self.feature_views[feature_view_info['Feature_view']]['Entity']
-                entities.extend([feature_view_info['Entity']])
-                self.feature_views[feature_view_info['Feature_view']] = {'Entity': entities,
+                entity_to_update = self.feature_views[feature_view_info['Feature_view']]['Entity']
+                entity_to_update.extend([feature_view_info['Entity']])
+                self.feature_views[feature_view_info['Feature_view']] = {'Entity': entity_to_update,
                                                                          'Physical_table': feature_view_info[
                                                                              'Physical_table'],
                                                                          'File_source': feature_view_info[
@@ -126,18 +124,19 @@ class KGFarm:
               os.path.abspath(self.path_to_feature_repo) + '/' + save_as)
 
     def get_enrichable_tables(self, show_query: bool = False):
+        # TODO: gather information on how get_historical_features() work with feature view with multiple entities.
         enrichable_tables = get_enrichable_tables(self.config, show_query)
         enrichable_tables = enrichable_tables[~enrichable_tables['Enrich_with'].isin(self.__dropped_feature_views)]
         return enrichable_tables.sort_values(by=['Table', 'Confidence_score', 'Enrich_with'], ascending=False).reset_index(drop=True)
 
     def get_features(self, entity_df: pd.Series):
+        # TODO: add support for fetching features that originate from multiple feature views at once.
         feature_view = entity_df['Enrich_with']
         # features in entity dataframe
         entity_df_features = get_columns(self.config, entity_df['Table'], entity_df['Dataset'])
         # features in feature view table
         feature_view_features = get_columns(self.config, entity_df['Physical_joinable_table'],
                                             entity_df['Dataset_feature_view'])
-
         # take difference
         return ['{}:'.format(feature_view) + feature for feature in feature_view_features if
                 feature not in entity_df_features]
