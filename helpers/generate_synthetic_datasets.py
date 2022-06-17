@@ -49,30 +49,57 @@ def process_tables(dataset, path_to_tables: str = 'sample_data/csv/'):
             random_timestamps.append(random_date)
         return random_timestamps
 
-    # add starting tables to dataset
-    for table in ['completeddistrict.csv', 'completedacct.csv']:
-        df = pd.read_csv(table, low_memory=False)
-        original_ids = df[df.columns[0]].tolist()
-        if len(original_ids) >= 100:
-            ids = random.sample(original_ids, int(len(original_ids) * 0.80))
-            size = len(df) - len(ids) + 200
-            ids.extend(random.sample(ids, size))
-        else:
-            ids = random.sample(original_ids, int(len(original_ids) * 0.60))
-            size = 100 - len(ids)
-            ids.extend(random.sample(original_ids, size))
-        starting_table = pd.DataFrame(ids, columns=[df.columns[0]])
-        starting_table.to_csv(df.columns[0].replace('_id', '')+'.csv', index=False)
+    # add starting tables to dataset (account.csv and district.csv)
+    def add_starting_datasets():
+        for specific_table in ['completeddistrict.csv', 'completedacct.csv']:
+            new_df = pd.read_csv(specific_table, low_memory=False)
+            original_ids = new_df[new_df.columns[0]].tolist()
+            if len(original_ids) >= 100:
+                ids = random.sample(original_ids, int(len(original_ids) * 0.80))
+                size = len(new_df) - len(ids) + 200
+                ids.extend(random.sample(ids, size))
+            else:
+                ids = random.sample(original_ids, int(len(original_ids) * 0.60))
+                size = 100 - len(ids)
+                ids.extend(random.sample(original_ids, size))
+            starting_table = pd.DataFrame(ids, columns=[new_df.columns[0]])
+            # add custom name
+            starting_table.to_csv(new_df.columns[0].replace('_id', '')+'.csv', index=False)
+        client_ids = pd.read_csv('crm_call_center_logs.csv')['rand_client'].tolist()
+        client_ids = [int(x) for x in client_ids if str(x) != 'nan']
+
+        other_client_ids = pd.read_csv('completeddisposition.csv')['client_id']
+        client_ids = client_ids + list(set(other_client_ids) - set(client_ids))
+        client_ids = list(set(client_ids))
+        pd.DataFrame(list(zip(client_ids)),
+                              columns=['client_id']).to_csv('client.csv', index=False)
+
+
 
     # add synthetic features
-    df = pd.read_csv('completeddistrict.csv', low_memory=False)
-    rows = len(df)
-    df['avg_sales'] = random.sample(range(500000, 1500000), rows)
-    df['net_growth'] = random.sample(range(3000, 9000), rows)
-    df['return'] = random.sample(range(100, 999), rows)
-    df['n_customer_sat'] = [random.sample(range(1, 5), 1)[0] for i in range(rows)]
-    os.remove('completeddistrict.csv')
-    df.to_csv('completeddistrict.csv', index=False)
+    def add_synthetic_features():
+        new_df = pd.read_csv('completeddistrict.csv', low_memory=False)
+        rows = len(new_df)
+        new_df['avg_sales'] = random.sample(range(500000, 1500000), rows)
+        new_df['net_growth'] = random.sample(range(3000, 9000), rows)
+        new_df['return'] = random.sample(range(100, 999), rows)
+        new_df['n_customer_sat'] = [random.sample(range(1, 5), 1)[0] for i in range(rows)]
+        new_df.to_csv('completeddistrict.csv', index=False)
+
+    # add a use-case for multiple entities
+    def add_table_with_multiple_entities():
+        account_ids = pd.read_csv('account.csv')['account_id'].tolist()
+        size = len(account_ids)
+        client_ids = random.sample(pd.read_csv('client.csv')['client_id'].to_list()*2, size)
+        province = random.sample(['British Columbia', 'Quebec', 'Ontario', 'Newfoundland & Labrador', 'Alberta']*5000, size)
+        new_df = pd.DataFrame(list(zip(client_ids, account_ids, province, ['Canada']*size)),
+                              columns=['client_id', 'account_id', 'province', 'country'])
+        new_df.to_csv('month_summary.csv', index=False)
+
+    add_starting_datasets()
+    add_synthetic_features()
+    add_table_with_multiple_entities()
+    # convert to parquet
 
     for table in tqdm(os.listdir()):
         df = pd.read_csv(table, low_memory=False)
@@ -84,8 +111,10 @@ def process_tables(dataset, path_to_tables: str = 'sample_data/csv/'):
 
 
 def main():
-    shutil.rmtree('sample_data/csv/retail-bankingdemodata')
-    shutil.rmtree('sample_data/parquet/retail-bankingdemodata')
+    if os.path.exists('sample_data/csv/retail-bankingdemodata'):
+        shutil.rmtree('sample_data/csv/retail-bankingdemodata')
+    if os.path.exists('sample_data/parquet/retail-bankingdemodata'):
+        shutil.rmtree('sample_data/parquet/retail-bankingdemodata')
     start = time.time()
     dataset = download_datasets('kabure/retail-bankingdemodata', 'sample_data/csv/')
     process_tables(dataset)
