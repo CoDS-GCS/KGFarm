@@ -5,9 +5,6 @@ from helpers.helper import *
 from feature_discovery.src.api.template import *
 
 
-# TODO: refactor KGFarm builder
-
-
 class Builder:
     def __init__(self, output_path: str = 'Farm.nq', port: int = 5820, database: str = 'kgfarm_dev',
                  show_connection_status: bool = False):
@@ -15,11 +12,20 @@ class Builder:
         self.output_path = output_path
         self.graph = open(output_path, 'w')
         self.graph.write('# Farm Graph generated on ' + str(datetime.now()) + '\n')
+
+        # TODO: revise Farm ontology
         self.ontology = {'kgfarm': 'http://kgfarm.com/ontology/',
                          'featureView': 'http://kgfarm.com/ontology/featureView/',
                          'entity': 'http://kgfarm.com/ontology/entity/'}
 
+        # TODO: refactor triple formatting for all 3 triple types used.
+        """
+        1. <> <> "".
+        2. <> <> <>.
+        3. <<<> <> <>>> certainty "".
+        """
         self.triple_format = '<{}> <{}> "{}".'
+
         self.triples = set()
         self.table_to_feature_view = {}
         self.column_to_entity = {}
@@ -139,7 +145,7 @@ class Builder:
             else:
                 self.tables_with_multiple_entities.add(table_id)
 
-        # TODO: look for better ways in annotating feature views without entity
+        # TODO: look for better ways of annotating feature views without entity
         for table_id in self.unmapped_tables:
             self.triples.add(self.triple_format.format(table_id, self.ontology.get('kgfarm') + 'hasNoEntity', 0))
 
@@ -152,15 +158,18 @@ class Builder:
         feature_views_with_no_entity = len(self.unmapped_tables)
         feature_view_with_single_entity = total_feature_views_generated - feature_views_with_multiple_entities_generated - feature_views_with_no_entity
 
-        # TODO: add info about how many entities are backup entities, default and multiple
+        # TODO: add info about how many entities are backup entities, default and multiple in graph summary
 
         # entity info
         total_entities_generated = len(self.column_to_entity.values())
 
+        graph_size = os.path.getsize(self.output_path)*0.001
+
         print('\n• {} summary\n\t- Total entities generated: {}\n\t- Total feature views generated: {}'
               '\n\t- Feature view breakdown:\n\t\t-> Feature view with single entity: {} / {}'
               '\n\t\t-> Feature view with multiple entities: {} / {}'
-              '\n\t\t-> Feature view with no entity: {} / {}'.
+              '\n\t\t-> Feature view with no entity: {} / {}'
+              '\n\t- Graph size: {} KB'.
             format(self.output_path,
                    total_entities_generated,
                    total_feature_views_generated,
@@ -169,7 +178,8 @@ class Builder:
                    feature_views_with_multiple_entities_generated,
                    total_feature_views_generated,
                    feature_views_with_no_entity,
-                   total_feature_views_generated))
+                   total_feature_views_generated,
+                   graph_size))
 
 
 def generate_farm_graph():
