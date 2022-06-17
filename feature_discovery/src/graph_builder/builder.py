@@ -24,6 +24,7 @@ class Builder:
         self.table_to_feature_view = {}
         self.column_to_entity = {}
         self.unmapped_tables = set()
+        self.tables_with_multiple_entities = set()
         self.direct_entity_table_mapping = {}
 
     def __dump_triples(self):
@@ -50,7 +51,7 @@ class Builder:
                     if uniqueness == uniqueness_ratio:
                         candidate_column_ids.add(candidate_column_id)
                         n_relations = int(get_number_of_relations(self.config,
-                                                                   candidate_column_id)[0]['Number_of_relations'][
+                                                                  candidate_column_id)[0]['Number_of_relations'][
                                               'value'])
                         if max_number_of_relations <= n_relations:
                             column_id = candidate_column_id
@@ -119,10 +120,9 @@ class Builder:
     def annotate_unmapped_feature_views(self):
         print('• Annotating unmapped feature views')
         pkfk_relations = get_pkfk_relations(self.config)
-        print(len(pkfk_relations))
         # filter relationships to the ones that were left unmapped
         pkfk_relations = pkfk_relations[pkfk_relations.Primary_table_id.isin(self.unmapped_tables)]
-        print(len(pkfk_relations))
+
         for unmapped_feature_view in tqdm(pkfk_relations.to_dict('index').values()):
             entity_name = (unmapped_feature_view['Primary_column'] + '_' + unmapped_feature_view['Primary_table']). \
                 replace('id', '').replace('.parquet', '')
@@ -133,7 +133,11 @@ class Builder:
             self.__annotate_entity_and_feature_view_mapping(column_id, entity_name,
                                                             table_id, uniqueness_ratio, 'hasMultipleEntities')
             self.column_to_entity[column_id] = entity_name
-            self.unmapped_tables.remove(table_id)
+            # if table_id is absent from self.unmapped_tables that means that table_id has multiple entities
+            if table_id in self.unmapped_tables:
+                self.unmapped_tables.remove(table_id)
+            else:
+                self.tables_with_multiple_entities.add(table_id)
 
         # TODO: look for better ways in annotating feature views without entity
         for table_id in self.unmapped_tables:
@@ -142,12 +146,30 @@ class Builder:
         self.__dump_triples()
 
     def summarize_graph(self):
-        feature_views_generated = len(self.table_to_feature_view.values())
-        entities_generated = len(self.column_to_entity.values())
-        print('\n• {} summary\n\t- Total feature view(s) generated: {}'
-              '\n\t- Total entities generated: {}\n\t- Feature view(s) with no entity: {} / {}\n\t- Farm graph size: {} KB'
-              .format(self.output_path, feature_views_generated, entities_generated, len(self.unmapped_tables),
-                      feature_views_generated, os.path.getsize(self.output_path)*0.001))
+        # feature view info
+        total_feature_views_generated = len(self.table_to_feature_view.values())
+        feature_views_with_multiple_entities_generated = len(self.tables_with_multiple_entities)
+        feature_views_with_no_entity = len(self.unmapped_tables)
+        feature_view_with_single_entity = total_feature_views_generated - feature_views_with_multiple_entities_generated - feature_views_with_no_entity
+
+        # TODO: add info about how many entities are backup entities, default and multiple
+
+        # entity info
+        total_entities_generated = len(self.column_to_entity.values())
+
+        print('\n• {} summary\n\t- Total entities generated: {}\n\t- Total feature views generated: {}'
+              '\n\t- Feature view breakdown:\n\t\t-> Feature view with single entity: {} / {}'
+              '\n\t\t-> Feature view with multiple entities: {} / {}'
+              '\n\t\t-> Feature view with no entity: {} / {}'.
+            format(self.output_path,
+                   total_entities_generated,
+                   total_feature_views_generated,
+                   feature_view_with_single_entity,
+                   total_feature_views_generated,
+                   feature_views_with_multiple_entities_generated,
+                   total_feature_views_generated,
+                   feature_views_with_no_entity,
+                   total_feature_views_generated))
 
 
 def generate_farm_graph():
