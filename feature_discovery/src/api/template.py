@@ -97,53 +97,6 @@ def get_feature_views_without_entities(config, show_query):
     return execute_query(config, query)
 
 
-def predict_entities(config, show_query):
-    query = """
-        SELECT DISTINCT ?Entity ?Entity_data_type ?File_source ?File_source_path ?Dataset
-    WHERE
-    {
-      <<?Entity_id 	data:hasPrimaryKeyForeignKeySimilarity  ?column_id_1>> data:withCertainty  ?score  .
-      ?Entity_id	data:hasTotalValueCount                 ?Total_values			;
-      				data:hasDistinctValueCount	            ?Distinct_values		;
-                    schema:name				                ?Entity					;
-      				data:hasDataType			            ?data_type		        .
-      
-      BIND(IF(REGEX(?data_type, 'N'),'INT64','STRING') as ?Entity_data_type) . 
-      
-      FILTER(?Total_values = ?Distinct_values)					    
-      
-      ?column_id_1	kglids:isPartOf			                ?Joinable_table_id		.       
-      
-      ?Entity_id	kglids:isPartOf			                ?Table_id				.
-      ?Table_id     schema:name                             ?File_source            ;
-                    data:hasFilePath				        ?File_source_path       ;
-                    kglids:isPartOf                         ?Dataset_id             .
-      
-      ?Dataset_id   schema:name                             ?Dataset                .
-    }"""
-    if show_query:
-        display_query(query)
-
-    return execute_query(config, query)
-
-
-def get_all_tables(config, show_query):
-    query = """
-    SELECT DISTINCT (?Table_name as ?File_source) (?Table_path as ?File_source_path) (?Dataset_name as ?Dataset)
-    WHERE
-    {
-        ?Table      rdf:type                kglids:Table    ;
-                    schema:name             ?Table_name     ;
-                    data:hasFilePath        ?Table_path     ;
-                    kglids:isPartOf         ?Dataset_id     .
-        
-        ?Dataset_id schema:name             ?Dataset_name   .
-    }"""
-    if show_query:
-        display_query(query)
-    return execute_query(config, query)
-
-
 def get_enrichable_tables(config, show_query):
     query = """
     SELECT DISTINCT ?Table ?Enrich_with ?Confidence_score ?Physical_joinable_table ?Table_path ?File_source ?Dataset ?Dataset_feature_view
@@ -192,6 +145,28 @@ def get_enrichable_tables(config, show_query):
 
     return execute_query(config, query)
 
+
+def get_optional_entities(config, show_query):
+    query = """
+    SELECT ?Optional_entity ?Entity_data_type ?Physical_column ?Physical_table (?Score as ?Uniqueness_ratio) ?Feature_view
+    WHERE
+    {
+        FILTER NOT EXISTS { ?Table_id kgfarm:hasDefaultEntity ?Column_id}           .
+        FILTER NOT EXISTS { ?Table_id kgfarm:hasMultipleEntities ?Column_id }       .
+        <<?Table_id kgfarm:hasEntity ?Column_id>>    kgfarm:confidence   ?Score     .
+        ?Column_id  entity:name         ?Entity_name                                ;
+                    data:hasDataType    ?Physical_column_data_type                  ;  
+                    schema:name         ?Physical_column                            .
+        ?Table_id   featureView:name    ?Feature_view                               ;
+                    schema:name         ?Physical_table                             .
+         
+        BIND(IF(REGEX(?Physical_column_data_type, 'N'),'INT64','STRING') as ?Entity_data_type)
+        BIND(CONCAT("[", STR(?Entity_name), "]") AS ?Optional_entity ) 
+    } ORDER BY ?Feature_view DESC (?Uniqueness_ratio)
+    """
+    if show_query:
+        display_query(query)
+    return execute_query(config, query)
 
 # --------------------------------------------Farm Builder--------------------------------------------------------------
 

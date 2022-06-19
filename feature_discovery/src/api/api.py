@@ -1,3 +1,5 @@
+import pandas as pd
+
 from feature_discovery.src.api.template import *
 from helpers.helper import *
 from helpers.feast_templates import entity_skeleton, feature_view_skeleton, definitions
@@ -17,7 +19,7 @@ class KGFarm:
 
         self.path_to_feature_repo = path_to_feature_repo
         self.config = connect_to_stardog(port, database, show_connection_status)
-        self.entities = {}
+        self.entities = {}  # for now needed for populating entity metadata while generating register .py file
         self.feature_views = {}
         # Need to maintain these because we do not update the KG
         self.__dropped_feature_views = set()
@@ -81,6 +83,22 @@ class KGFarm:
                 else:
                     print(feature_view, end=' ')
             return self.show_feature_views()
+
+    def get_optional_entities(self, show_query: bool = False):
+        return get_optional_entities(self.config, show_query)
+
+    def update_entity(self, entity_to_update_info: pd.Series):
+        feature_view = entity_to_update_info['Feature_view']
+        entity = entity_to_update_info['Optional_entity'].replace('[', '').replace(']', '')
+        feature_view_to_be_updated = self.feature_views.get(feature_view)
+        feature_view_to_be_updated['Entity'] = [entity]
+        # add optional entity info to finalized set of entities
+        self.entities[entity] = {'Entity_data_type': entity_to_update_info['Entity_data_type'],
+                                                             'Physical_column': entity_to_update_info['Physical_column'],
+                                                             'Physical_table': entity_to_update_info['Physical_table'],
+                                                             'Uniqueness_ratio': entity_to_update_info['Uniqueness_ratio']}
+        print("{} Updated!\n{} now uses '{}' entity".format(feature_view, feature_view, entity))
+        return self.show_feature_views()
 
     # writes to file the predicted feature views and entities
     def finalize_feature_views(self, ttl: int = 30, save_as: str = 'predicted_register.py'):
