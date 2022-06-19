@@ -31,9 +31,11 @@ account__month_summary = Entity(name='account__month_summary', value_type=ValueT
 
 client__month_summary = Entity(name='client__month_summary', value_type=ValueType.INT64, join_key='client_id')
 
+social_luxuryloanportfolio = Entity(name='social_luxuryloanportfolio', value_type=ValueType.STRING, join_key='social')
+
 Feature_view_1 = FeatureView(
 name='Feature_view_1',
-entities=['loan__luxuryloanportfolio'],
+entities=['social_luxuryloanportfolio'],
 ttl=timedelta(days=30),
 online=True,
 batch_source=FileSource(
