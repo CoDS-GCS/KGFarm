@@ -8,7 +8,7 @@
 ```bash
 pip install -r requirements.txt
 ```
-2. Setup feature repository using feast
+2. Setup [<code>feature repository</code>]((https://github.com/CoDS-GCS/KGFarm/tree/main/feature_repo)) using [feast](https://feast.dev/)
 ```bash
 feast init feature_repo
 ```
