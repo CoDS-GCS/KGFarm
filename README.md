@@ -16,7 +16,9 @@ feast init feature_repo
 ```bash
 stardog-admin server start
 ```
-4. Run KGFarm's [<code>graph_builder</code>](https://github.com/CoDS-GCS/KGFarm/blob/main/feature_discovery/src/graph_builder/builder.py)
+4. Run KGFarm's [<code>graph_builder</code>](https://github.com/CoDS-GCS/KGFarm/blob/main/feature_discovery/src/graph_builder/builder.py):<br/>
+generates [<code>Farm.nq</code>](https://github.com/CoDS-GCS/KGFarm/blob/main/feature_discovery/src/graph_builder/Farm.nq) and uploads it to the [stardog server](https://cloud.stardog.com/)
+
 ```bash
 cd feature_discovery/src/graph_builder
 python builder.py
