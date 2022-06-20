@@ -87,17 +87,18 @@ class KGFarm:
     def get_optional_entities(self, show_query: bool = False):
         return get_optional_entities(self.config, show_query)
 
-    def update_entity(self, entity_to_update_info: pd.Series):
-        feature_view = entity_to_update_info['Feature_view']
-        entity = entity_to_update_info['Optional_entity'].replace('[', '').replace(']', '')
-        feature_view_to_be_updated = self.feature_views.get(feature_view)
-        feature_view_to_be_updated['Entity'] = [entity]
-        # add optional entity info to finalized set of entities
-        self.entities[entity] = {'Entity_data_type': entity_to_update_info['Entity_data_type'],
-                                                             'Physical_column': entity_to_update_info['Physical_column'],
-                                                             'Physical_table': entity_to_update_info['Physical_table'],
-                                                             'Uniqueness_ratio': entity_to_update_info['Uniqueness_ratio']}
-        print("{} Updated!\n{} now uses '{}' entity".format(feature_view, feature_view, entity))
+    def update_entity(self, entity_to_update_info: list):
+        for update_info in tqdm(entity_to_update_info):
+            feature_view = update_info['Feature_view']
+            entity = update_info['Optional_entity'].replace('[', '').replace(']', '')
+            feature_view_to_be_updated = self.feature_views.get(feature_view)
+            feature_view_to_be_updated['Entity'] = [entity]
+            # add optional entity info to finalized set of entities
+            self.entities[entity] = {'Entity_data_type': update_info['Entity_data_type'],
+                                                                 'Physical_column': update_info['Physical_column'],
+                                                                 'Physical_table': update_info['Physical_table'],
+                                                                 'Uniqueness_ratio': update_info['Uniqueness_ratio']}
+            print("{} Updated! {} now uses '{}' entity".format(feature_view, feature_view, entity))
         return self.show_feature_views()
 
     # writes to file the predicted feature views and entities
