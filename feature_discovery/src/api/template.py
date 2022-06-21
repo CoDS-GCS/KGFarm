@@ -98,8 +98,10 @@ def get_enrichable_tables(config, show_query):
 
 
 def get_INDs(config, show_query: bool = False):
+    #SELECT (?Foreign_table_name as ?Foreign_table) (?Name_A as ?Foreign_key) ?A (?Primary_table_name as ?Primary_table) (?Name_B as ?Primary_key) ?B
+
     query = """
-    SELECT (strbefore(?Foreign_table_name, '.csv') as ?Foreign_table) (?Name_A as ?Foreign_key) ?A (strbefore(?Primary_table_name, '.csv') as ?Primary_table) (?Name_B as ?Primary_key) ?B 
+    SELECT(strbefore(?Foreign_table_name, '.csv') as ?Foreign_table) (?Name_A as ?Foreign_key) ?A(strbefore(?Primary_table_name, '.csv') as ?Primary_table) (?Name_B as ?Primary_key) ?B
     WHERE
     {
     ?B          data:hasInclusionDependency ?A                      ;

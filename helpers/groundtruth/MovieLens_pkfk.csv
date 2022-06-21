@@ -1,6 +1,7 @@
 ﻿PK - Section,PK - Table,PK - ColName,To,FK - Section,FK - Table,FK - ColName
-,actors.csv,actorid,,,movies2actors.csv,actorid
-,movies.csv,movieid,,,movies2actors.csv,movieid
-,movies.csv,movieid,,,movies2directors.csv,movieid
-,movies.csv,movieid,,,u2base.csv,movieid
-,users.csv,userid,,,u2base.csv,userid
+,actors,actorid,,,movies2actors,actorid
+,movies,movieid,,,movies2actors,movieid
+,movies,movieid,,,movies2directors,movieid
+,directors,directorid,,,movies2directors,directorid
+,movies,movieid,,,u2base,movieid
+,users,userid,,,u2base,userid

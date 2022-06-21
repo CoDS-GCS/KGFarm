@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.svm import SVC
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, confusion_matrix, ConfusionMatrixDisplay
 from sklearn.ensemble import RandomForestClassifier
 from matplotlib.pyplot import figure
 from feature_generator import generate
@@ -66,6 +66,13 @@ def main():
     score_svm = f1_score(y_test, y_pred_svm)
     score_rf = f1_score(y_test, y_pred_rf)
     plot_scores(['SVM Classifier', 'Random Forest Classifier'], [score_svm, score_rf])
+
+    # Confusion Matrix
+    cm = confusion_matrix(y_test, y_pred_rf)
+    disp = ConfusionMatrixDisplay(cm)
+    disp.plot()
+    plt.show()
+
 
 
 if __name__ == "__main__":

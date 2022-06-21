@@ -30,7 +30,7 @@ def generate_features(conn, ind: pd.DataFrame):
         # TODO: F3 generation needs optimization
         # counts how often A appears as B
         count = []
-        A = ind['A'].to_list()
+        A = ind['A'].tolist()
         B = ind['B'].tolist()
 
         for a in A:
@@ -125,12 +125,15 @@ def export_csv(features_df: pd.DataFrame, save_as: str):
     return features_df
 
 
-def generate(database: str, export_features: bool = False):
+def generate(database: str, export_features: bool = True):
     # This implementation is as per http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.438.9288&rep=rep1&type=pdf
     # TODO: add a filter for Table_A != Table_B  while retrieving inclusion dependencies for all features
     conn = connect_to_stardog(port=5822, db=database, show_status=True)
     # Get all inclusion dependencies (IND) initially
+    # To get the INDs from the graph
     ind = get_INDs(conn)
+    # To get the INDs via human in the loop
+    #ind = pd.read_csv('../../../helpers/IND_Discovery/'+database+'.csv')
     # Generate features for these IND pairs
     features_df = generate_features(conn, ind)
     # Add labels / target using true mappings
