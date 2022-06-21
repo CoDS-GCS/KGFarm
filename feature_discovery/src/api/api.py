@@ -60,10 +60,10 @@ class KGFarm:
                                                                          'Physical_table'],
                                                                      'File_source': feature_view_info['File_source']}
 
-    def show_entities(self):
+    def get_entities(self):
         return convert_dict_to_dataframe('Entity', self.entities)
 
-    def show_feature_views(self):
+    def get_feature_views(self):
         return convert_dict_to_dataframe('Feature_view', self.feature_views). \
             sort_values(by=['Feature_view']).reset_index(drop=True)
 
@@ -82,7 +82,7 @@ class KGFarm:
                     raise ValueError(feature_view, ' not found!')
                 else:
                     print(feature_view, end=' ')
-            return self.show_feature_views()
+            return self.get_feature_views()
 
     def get_optional_entities(self, show_query: bool = False):
         return get_optional_entities(self.config, show_query)
@@ -95,11 +95,11 @@ class KGFarm:
             feature_view_to_be_updated['Entity'] = [entity]
             # add optional entity info to finalized set of entities
             self.entities[entity] = {'Entity_data_type': update_info['Entity_data_type'],
-                                                                 'Physical_column': update_info['Physical_column'],
-                                                                 'Physical_table': update_info['Physical_table'],
-                                                                 'Uniqueness_ratio': update_info['Uniqueness_ratio']}
+                                     'Physical_column': update_info['Physical_column'],
+                                     'Physical_table': update_info['Physical_table'],
+                                     'Uniqueness_ratio': update_info['Uniqueness_ratio']}
             print("{} Updated! {} now uses '{}' entity".format(feature_view, feature_view, entity))
-        return self.show_feature_views()
+        return self.get_feature_views()
 
     # writes to file the predicted feature views and entities
     def finalize_feature_views(self, ttl: int = 30, save_as: str = 'predicted_register.py'):
@@ -146,7 +146,12 @@ class KGFarm:
         # TODO: gather information on how get_historical_features() work with feature view with multiple entities.
         enrichable_tables = get_enrichable_tables(self.config, show_query)
         enrichable_tables = enrichable_tables[~enrichable_tables['Enrich_with'].isin(self.__dropped_feature_views)]
-        return enrichable_tables.sort_values(by=['Table', 'Confidence_score', 'Enrich_with'], ascending=False).reset_index(drop=True)
+        enrichable_tables = enrichable_tables.sort_values(by=['Table', 'Joinability_strength', 'Enrich_with'],
+                                                          ascending=False). \
+            reset_index(drop=True)
+        enrichable_tables['Joinability_strength'] = enrichable_tables['Joinability_strength']. \
+            apply(lambda x: str(int(x * 100)) + '%')
+        return enrichable_tables
 
     def get_features(self, entity_df: pd.Series):
         # TODO: add support for fetching features that originate from multiple feature views at once.
@@ -163,4 +168,4 @@ class KGFarm:
 
 if __name__ == "__main__":
     kgfarm = KGFarm(path_to_feature_repo='../../../feature_repo/', show_connection_status=False)
-    kgfarm.show_entities()
+    kgfarm.get_entities()
