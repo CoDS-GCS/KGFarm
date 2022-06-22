@@ -61,7 +61,8 @@ class KGFarm:
                                                                      'File_source': feature_view_info['File_source']}
 
     def get_entities(self):
-        return convert_dict_to_dataframe('Entity', self.entities)
+        return convert_dict_to_dataframe('Entity', self.entities). \
+            sort_values(by=['Uniqueness_ratio'], ascending=False).reset_index(drop=True)
 
     def get_feature_views(self):
         return convert_dict_to_dataframe('Feature_view', self.feature_views). \
