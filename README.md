@@ -1,5 +1,6 @@
 # KGFarm
 <b>A Feature Discovery system for Machine learning workflows powered by Knowledge Graphs</b>
+[🔗](https://www.overleaf.com/read/fwcvhtrxcqbh)
 ## 📐 System Design
 ![design](https://user-images.githubusercontent.com/40717058/162835808-3f99b48f-78f6-44c8-a431-88a09da43d7c.png)
 
@@ -43,6 +44,7 @@ python builder.py
 - [Feature discovery slides](https://docs.google.com/presentation/d/14JigzSty4pwJaTXSNbo-SYZBcSaTqanlC4ETbGJVbTU/edit?usp=sharing)
 - [Research objectives](https://docs.google.com/document/d/1M_iWqk0YUscxXPl3UKJ0m83NAXdVOhVbUXnbKry4dSQ/edit?usp=sharing)
 - [Mitacs proposal](https://docs.google.com/document/d/1fWrp-IS9ZkKcOavcGDTr3cYx05xQag-H-PuFApZn1AY/edit?usp=sharing)
+- [KGFarm paper](https://www.overleaf.com/read/fwcvhtrxcqbh)
 
 ## 🦾 Contributors
 <p float="left">
