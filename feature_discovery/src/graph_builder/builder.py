@@ -1,6 +1,8 @@
+import sys
 from time import time
 from tqdm import tqdm
 from datetime import datetime
+sys.path.append('../../../')
 from helpers.helper import *
 from feature_discovery.src.api.template import *
 
@@ -163,28 +165,28 @@ class Builder:
         # entity info
         total_entities_generated = len(self.column_to_entity.values())
 
-        graph_size = os.path.getsize(self.output_path)*0.001
+        graph_size = os.path.getsize(self.output_path) * 0.001
 
         print('\n• {} summary\n\t- Total entities generated: {}\n\t- Total feature views generated: {}'
               '\n\t- Feature view breakdown:\n\t\t-> Feature view with single entity: {} / {}'
               '\n\t\t-> Feature view with multiple entities: {} / {}'
               '\n\t\t-> Feature view with no entity: {} / {}'
               '\n\t- Graph size: {} KB'.
-            format(self.output_path,
-                   total_entities_generated,
-                   total_feature_views_generated,
-                   feature_view_with_single_entity,
-                   total_feature_views_generated,
-                   feature_views_with_multiple_entities_generated,
-                   total_feature_views_generated,
-                   feature_views_with_no_entity,
-                   total_feature_views_generated,
-                   graph_size))
+              format(self.output_path,
+                     total_entities_generated,
+                     total_feature_views_generated,
+                     feature_view_with_single_entity,
+                     total_feature_views_generated,
+                     feature_views_with_multiple_entities_generated,
+                     total_feature_views_generated,
+                     feature_views_with_no_entity,
+                     total_feature_views_generated,
+                     graph_size))
 
 
-def generate_farm_graph():
+def generate_farm_graph(db):
     start = time()
-    builder = Builder(port=5820, database='kgfarm_dev', show_connection_status=True)
+    builder = Builder(port=5820, database=db, show_connection_status=True)
     builder.annotate_feature_views()
     builder.annotate_entity_mapping()
     builder.annotate_unmapped_feature_views()
@@ -201,5 +203,5 @@ def upload_farm_graph(db: str = 'kgfarm_test', graph: str = 'Farm.nq'):
 
 
 if __name__ == "__main__":
-    generate_farm_graph()
+    generate_farm_graph(db='kgfarm_dev')
     upload_farm_graph(db='kgfarm_test', graph='Farm.nq')
