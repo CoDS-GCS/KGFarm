@@ -197,8 +197,8 @@ def generate_farm_graph(db):
 
 def upload_farm_graph(db: str = 'kgfarm_test', graph: str = 'Farm.nq'):
     print('\nUploading {} to {} database'.format(graph, db))
-    os.system('stardog data remove --all kgfarm_test')
-    os.system('stardog data add --format turtle kgfarm_test ../../../helpers/sample_data/graph/LiDS.nq')
+    os.system('stardog data remove --all {}'.format(db))
+    os.system('stardog data add --format turtle {} ../../../helpers/sample_data/graph/LiDS.nq'.format(db))
     os.system('stardog data add --format turtle {} {}'.format(db, graph))
 
 
