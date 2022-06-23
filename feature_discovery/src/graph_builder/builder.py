@@ -39,16 +39,32 @@ class Builder:
         self.graph.write('\n'.join(self.triples))
         self.triples = set()
 
-    def __annotate_default_entity(self, table_id, default_entities):
+    def __annotate_entity_and_feature_view_mapping(self, column_id, table_id, uniqueness_ratio, relation):
         triple_format = '<{}> <{}> <{}>'
+        # triple for feature view - entity mapping -> physical table id : column id
+        self.triples.add('<<' + triple_format.format(table_id, self.ontology.get('kgfarm') + relation,
+                                                     column_id) + '>> <' + self.ontology.get(
+            'kgfarm') + 'confidence>' + ' "{}"^^xsd:double.'.format(str(uniqueness_ratio)))
+
+    def __annotate_entity_name(self, column_id, entity_name):
+        # triple for entity name -> physical column id : entity name
+        self.triples.add(self.triple_format.format(column_id, self.ontology.get('entity') + 'name', entity_name))
+
+    def __elect_default_entity(self, table_id, default_entities):
         if len(default_entities) == 1:  # table with single entity detected
             column_id = list(default_entities.keys())[0]
-            uniqueness_ratio = default_entities.get(column_id)
+            uniqueness_ratio = default_entities.get(column_id)['uniqueness']
+            entity_name = default_entities.get(column_id)['name']
 
         else:  # table with multiple entities detected
-            uniqueness_ratios = list(default_entities.values())
+            entity_name = None
+            uniqueness_ratios = list(score['uniqueness'] for score in default_entities.values())
             uniqueness_ratio = max(uniqueness_ratios)
             if uniqueness_ratios.count(uniqueness_ratio) == 1:  # table with single maximum entity
+                print(list(default_entities.keys()))
+                print([list(default_entities.values()).index(uniqueness_ratio)])
+                import sys
+                sys.exit()
                 column_id = list(default_entities.keys())[list(default_entities.values()) \
                     .index(uniqueness_ratio)]
             else:  # table with multiple entities having equal uniqueness ratio
@@ -59,32 +75,20 @@ class Builder:
                     if uniqueness == uniqueness_ratio:
                         candidate_column_ids.add(candidate_column_id)
                         n_relations = int(get_number_of_relations(self.config,
-                                                                  candidate_column_id)[0]['Number_of_relations'][
-                                              'value'])
+                                                            candidate_column_id)[0]['Number_of_relations']['value'])
                         if max_number_of_relations <= n_relations:
                             column_id = candidate_column_id
                             max_number_of_relations = n_relations
 
         self.direct_entity_table_mapping[table_id] = column_id
-        self.triples.add('<<' + triple_format.format(table_id, self.ontology.get('kgfarm') + 'hasDefaultEntity',
-                                                     column_id) + '>> <' + self.ontology.get(
-            'kgfarm') + 'confidence>' + ' "{}"^^xsd:double.'.format(str(uniqueness_ratio)))
-
-    def __annotate_entity_and_feature_view_mapping(self, column_id, entity_name, table_id, uniqueness_ratio, relation):
-        triple_format = '<{}> <{}> <{}>'
-        # triple for entity name -> physical column id : entity name
-        self.triples.add(self.triple_format.format(column_id, self.ontology.get('entity') + 'name', entity_name))
-        # triple for feature view - entity mapping -> physical table id : column id
-        self.triples.add('<<' + triple_format.format(table_id, self.ontology.get('kgfarm') + relation,
-                                                     column_id) + '>> <' + self.ontology.get(
-            'kgfarm') + 'confidence>' + ' "{}"^^xsd:double.'.format(str(uniqueness_ratio)))
-
+        self.__annotate_entity_and_feature_view_mapping(column_id, table_id, uniqueness_ratio, 'hasDefaultEntity')
+        self.__annotate_entity_name(column_id, entity_name)
     # does one-to-one mapping of table -> feature view
     def annotate_feature_views(self):
         print('\n• Annotating feature views')
         self.graph.write('# 1. Feature Views, one-to-one mapping with tables \n')
         table_ids = get_table_ids(self.config)['Table_id'].tolist()
-        feature_view_count = 000
+        feature_view_count = 0
         for table_id in tqdm(table_ids):
             feature_view_count = feature_view_count + 1
             self.triples.add(self.triple_format.format(
@@ -95,12 +99,16 @@ class Builder:
         self.__dump_triples()
 
     def annotate_entity_mapping(self):
+        mapped_tables = set()
+        candidates_for_default_entities = {}
         print('• Annotating entities to feature views')
         self.graph.write('\n# 2. Entities and feature view - entity mappings \n')
+        # get candidate entities (columns with high uniqueness) sorted by table names
         entities = detect_entities(self.config)
-        mapped_tables = set()
-        default_entities = {}
-        # take the first table
+        """
+        The candidate entity columns are sorted/ / grouped based upon the Table from which they originate.
+        i.e. first, we populate all detected entities PER TABLE and then call the function that elects the default entity.  
+        """""
         table_to_process = list(entities.to_dict('index').values())[0]['Primary_table_id']
         for entity_info in tqdm(entities.to_dict('index').values()):
             entity_name = (entity_info['Primary_column'] + '_' + entity_info['Primary_table']). \
@@ -110,17 +118,20 @@ class Builder:
             uniqueness_ratio = entity_info['Primary_key_uniqueness_ratio']
 
             if table_id != table_to_process:
-                self.__annotate_default_entity(table_to_process, default_entities)
+                """
+                moved to new set of entities for different table, given by table_id, 
+                while table_to_process contains that very table for which we populated candidates for default entity.
+                """
+                self.__elect_default_entity(table_to_process, candidates_for_default_entities)
                 table_to_process = table_id
-                default_entities = {}
+                candidates_for_default_entities = {}
 
-            default_entities[column_id] = uniqueness_ratio
+            candidates_for_default_entities[column_id] = {'name': entity_name, 'uniqueness': uniqueness_ratio}
 
-            self.__annotate_entity_and_feature_view_mapping(column_id, entity_name,
-                                                            table_id, uniqueness_ratio, 'hasEntity')
-            self.column_to_entity[column_id] = entity_name
+            self.__annotate_entity_and_feature_view_mapping(column_id, table_id, uniqueness_ratio, 'hasEntity')
+            # self.column_to_entity[column_id] = entity_name
             mapped_tables.add(table_id)
-        self.__annotate_default_entity(table_to_process, default_entities)
+        self.__elect_default_entity(table_to_process, candidates_for_default_entities)
         all_tables = set(list(self.table_to_feature_view.keys()))
         self.unmapped_tables = all_tables.difference(mapped_tables)
         self.__dump_triples()
