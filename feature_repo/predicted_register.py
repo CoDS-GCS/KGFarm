@@ -15,13 +15,11 @@ account__completedacct = Entity(name='account__completedacct', value_type=ValueT
 
 card__completedcard = Entity(name='card__completedcard', value_type=ValueType.STRING, join_key='card_id')
 
-loan__luxuryloanportfolio = Entity(name='loan__luxuryloanportfolio', value_type=ValueType.STRING, join_key='loan_id')
+loan__luxuryloanportfolio = Entity(name='loan__luxuryloanportfolio', value_type=ValueType.STRING, join_key='social')
 
 account__completedloan = Entity(name='account__completedloan', value_type=ValueType.STRING, join_key='account_id')
 
 district__completeddistrict = Entity(name='district__completeddistrict', value_type=ValueType.INT64, join_key='district_id')
-
-client__completeddisposition = Entity(name='client__completeddisposition', value_type=ValueType.INT64, join_key='client_id')
 
 order__completedorder = Entity(name='order__completedorder', value_type=ValueType.INT64, join_key='order_id')
 
@@ -31,11 +29,9 @@ account__month_summary = Entity(name='account__month_summary', value_type=ValueT
 
 client__month_summary = Entity(name='client__month_summary', value_type=ValueType.INT64, join_key='client_id')
 
-social_luxuryloanportfolio = Entity(name='social_luxuryloanportfolio', value_type=ValueType.STRING, join_key='social')
-
 Feature_view_1 = FeatureView(
 name='Feature_view_1',
-entities=['social_luxuryloanportfolio'],
+entities=['loan__luxuryloanportfolio'],
 ttl=timedelta(days=30),
 online=True,
 batch_source=FileSource(
