@@ -148,25 +148,28 @@ def get_enrichable_tables(config, show_query):
 
 def get_optional_entities(config, show_query):
     query = """
-    SELECT ?Optional_entity ?Entity_data_type ?Physical_column ?Physical_table (?Score as ?Uniqueness_ratio) ?Feature_view
-    WHERE
-    {
-        FILTER NOT EXISTS { ?Table_id kgfarm:hasDefaultEntity ?Column_id}           .
-        FILTER NOT EXISTS { ?Table_id kgfarm:hasMultipleEntities ?Column_id }       .
-        <<?Table_id kgfarm:hasEntity ?Column_id>>    kgfarm:confidence   ?Score     .
-        ?Column_id  entity:name         ?Entity_name                                ;
-                    data:hasDataType    ?Physical_column_data_type                  ;  
-                    schema:name         ?Physical_column                            .
-        ?Table_id   featureView:name    ?Feature_view                               ;
-                    schema:name         ?Physical_table                             .
-         
-        BIND(IF(REGEX(?Physical_column_data_type, 'N'),'INT64','STRING') as ?Entity_data_type)
-        BIND(CONCAT("[", STR(?Entity_name), "]") AS ?Optional_entity ) 
-    } ORDER BY ?Feature_view DESC (?Uniqueness_ratio)
+SELECT ?Feature_view ?Entity (?Physical_column as ?Optional_physical_representation) ?Data_type (?Score as ?Uniqueness_ratio) ?Entity ?Physical_table 
+WHERE
+{
+    FILTER NOT EXISTS { ?Table_id kgfarm:hasDefaultEntity ?Column_id}               .
+    FILTER NOT EXISTS { ?Table_id kgfarm:hasMultipleEntities ?Column_id }           .
+
+    <<?Table_id kgfarm:hasEntity ?Column_id>>    kgfarm:confidence   ?Score         .
+    ?Column_id  data:hasDataType        ?Physical_column_data_type                  ;  
+                schema:name             ?Physical_column                            .
+    ?Table_id   featureView:name        ?Feature_view                               ;
+                schema:name             ?Physical_table                             ;
+                kgfarm:hasDefaultEntity ?Default_column_id                          .
+    
+    ?Default_column_id  entity:name     ?Entity                                     .
+        
+    BIND(IF(REGEX(?Physical_column_data_type, 'N'),'INT64','STRING') as ?Data_type)
+} ORDER BY ?Feature_view DESC (?Uniqueness_ratio)
     """
     if show_query:
         display_query(query)
     return execute_query(config, query)
+
 
 # --------------------------------------------Farm Builder--------------------------------------------------------------
 

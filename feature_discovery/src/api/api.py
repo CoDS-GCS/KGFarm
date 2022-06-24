@@ -1,5 +1,3 @@
-import pandas as pd
-
 from feature_discovery.src.api.template import *
 from helpers.helper import *
 from helpers.feast_templates import entity_skeleton, feature_view_skeleton, definitions
@@ -39,23 +37,32 @@ class KGFarm:
         # load feature views with one or more entities
         for feature_view_info in get_feature_views(self.config, show_query). \
                 to_dict('index').values():
-            if feature_view_info['Feature_view'] in self.feature_views:  # multiple entity
+            # multiple entity
+            if feature_view_info['Feature_view'] in self.feature_views:
+                # append other entity names and physical column
                 entity_to_update = self.feature_views[feature_view_info['Feature_view']]['Entity']
                 entity_to_update.extend([feature_view_info['Entity']])
+                physical_column_to_update = self.feature_views[feature_view_info['Feature_view']]['Physical_column']
+                physical_column_to_update = physical_column_to_update + ', ' + feature_view_info['Physical_column']
                 self.feature_views[feature_view_info['Feature_view']] = {'Entity': entity_to_update,
+                                                                         'Physical_column': physical_column_to_update,
                                                                          'Physical_table': feature_view_info[
                                                                              'Physical_table'],
                                                                          'File_source': feature_view_info[
                                                                              'File_source']}
-            else:  # single entity
+            # single entity
+            else:
                 self.feature_views[feature_view_info['Feature_view']] = {'Entity': [feature_view_info['Entity']],
+                                                                         'Physical_column': feature_view_info[
+                                                                             'Physical_column'],
                                                                          'Physical_table': feature_view_info[
                                                                              'Physical_table'],
                                                                          'File_source': feature_view_info[
                                                                              'File_source']}
-
+        # load feature views with no entity
         for feature_view_info in get_feature_views_without_entities(self.config, show_query).to_dict('index').values():
             self.feature_views[feature_view_info['Feature_view']] = {'Entity': None,
+                                                                     'Physical_column': None,
                                                                      'Physical_table': feature_view_info[
                                                                          'Physical_table'],
                                                                      'File_source': feature_view_info['File_source']}
@@ -75,14 +82,18 @@ class KGFarm:
         else:
             print('Dropped ', end='')
             for feature_view_to_be_dropped in drop:
+                entities = feature_view_to_be_dropped['Entity']
+                if entities:
+                    for entity in entities:
+                        self.entities.pop(entity, 'None')
                 feature_view = feature_view_to_be_dropped['Feature_view']
-                drop_status = self.feature_views.pop(feature_view, 'None')
+                drop_status_feature_view = self.feature_views.pop(feature_view, 'None')
                 self.__dropped_feature_views.add(feature_view)
-                if drop_status == 'None':
+                if drop_status_feature_view == 'None':
                     print('unsuccessful!\n')
                     raise ValueError(feature_view, ' not found!')
                 else:
-                    print(feature_view, end=' ')
+                    print(feature_view,  end=' ')
             return self.get_feature_views()
 
     def get_optional_entities(self, show_query: bool = False):
@@ -90,16 +101,20 @@ class KGFarm:
 
     def update_entity(self, entity_to_update_info: list):
         for update_info in tqdm(entity_to_update_info):
-            feature_view = update_info['Feature_view']
-            entity = update_info['Optional_entity'].replace('[', '').replace(']', '')
-            feature_view_to_be_updated = self.feature_views.get(feature_view)
-            feature_view_to_be_updated['Entity'] = [entity]
-            # add optional entity info to finalized set of entities
-            self.entities[entity] = {'Entity_data_type': update_info['Entity_data_type'],
-                                     'Physical_column': update_info['Physical_column'],
-                                     'Physical_table': update_info['Physical_table'],
-                                     'Uniqueness_ratio': update_info['Uniqueness_ratio']}
-            print("{} Updated! {} now uses '{}' entity".format(feature_view, feature_view, entity))
+            # update entity
+            entity_info = self.entities.get(update_info['Entity'])
+            entity_info['Physical_column'] = update_info['Optional_physical_representation']
+            entity_info['Entity_data_type'] = update_info['Data_type']
+            entity_info['Uniqueness_ratio'] = update_info['Uniqueness_ratio']
+            self.entities[update_info['Entity']] = entity_info
+            # update feature view
+            feature_view_info = self.feature_views.get(update_info['Feature_view'])
+            feature_view_info['Physical_column'] = update_info['Optional_physical_representation']
+            self.feature_views[update_info['Feature_view']] = feature_view_info
+
+            print("[{}] now uses '{}' as its physical representation\n"
+                  .format(update_info['Entity'], update_info['Optional_physical_representation']))
+
         return self.get_feature_views()
 
     # writes to file the predicted feature views and entities
