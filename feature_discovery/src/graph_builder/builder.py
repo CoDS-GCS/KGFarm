@@ -50,39 +50,41 @@ class Builder:
         # triple for entity name -> physical column id : entity name
         self.triples.add(self.triple_format.format(column_id, self.ontology.get('entity') + 'name', entity_name))
 
-    def __elect_default_entity(self, table_id, default_entities):
+    def __elect_default_entity(self, table_id, default_entities, column_id=None, entity_name=None):
         if len(default_entities) == 1:  # table with single entity detected
             column_id = list(default_entities.keys())[0]
             uniqueness_ratio = default_entities.get(column_id)['uniqueness']
             entity_name = default_entities.get(column_id)['name']
 
         else:  # table with multiple entities detected
-            entity_name = None
             uniqueness_ratios = list(score['uniqueness'] for score in default_entities.values())
             uniqueness_ratio = max(uniqueness_ratios)
             if uniqueness_ratios.count(uniqueness_ratio) == 1:  # table with single maximum entity
-                print(list(default_entities.keys()))
-                print([list(default_entities.values()).index(uniqueness_ratio)])
-                import sys
-                sys.exit()
-                column_id = list(default_entities.keys())[list(default_entities.values()) \
-                    .index(uniqueness_ratio)]
+                # if count == 1 i.e. there exists only one maximum value of uniqueness
+                for candidate_column_id, candidate_column_info in default_entities.items():
+                    if uniqueness_ratio == candidate_column_info['uniqueness']:
+                        column_id = candidate_column_id
+                        entity_name = candidate_column_info['name']
+                        break
             else:  # table with multiple entities having equal uniqueness ratio
                 candidate_column_ids = set()
                 max_number_of_relations = 0
                 column_id = None
-                for candidate_column_id, uniqueness in default_entities.items():
-                    if uniqueness == uniqueness_ratio:
+                for candidate_column_id, candidate_column_info in default_entities.items():
+                    if candidate_column_info['uniqueness'] == uniqueness_ratio:
                         candidate_column_ids.add(candidate_column_id)
                         n_relations = int(get_number_of_relations(self.config,
                                                             candidate_column_id)[0]['Number_of_relations']['value'])
                         if max_number_of_relations <= n_relations:
                             column_id = candidate_column_id
+                            entity_name = candidate_column_info['name']
                             max_number_of_relations = n_relations
 
+        self.column_to_entity[column_id] = entity_name
         self.direct_entity_table_mapping[table_id] = column_id
         self.__annotate_entity_and_feature_view_mapping(column_id, table_id, uniqueness_ratio, 'hasDefaultEntity')
         self.__annotate_entity_name(column_id, entity_name)
+
     # does one-to-one mapping of table -> feature view
     def annotate_feature_views(self):
         print('\n• Annotating feature views')
@@ -129,7 +131,6 @@ class Builder:
             candidates_for_default_entities[column_id] = {'name': entity_name, 'uniqueness': uniqueness_ratio}
 
             self.__annotate_entity_and_feature_view_mapping(column_id, table_id, uniqueness_ratio, 'hasEntity')
-            # self.column_to_entity[column_id] = entity_name
             mapped_tables.add(table_id)
         self.__elect_default_entity(table_to_process, candidates_for_default_entities)
         all_tables = set(list(self.table_to_feature_view.keys()))
@@ -149,8 +150,8 @@ class Builder:
             column_id = unmapped_feature_view['Primary_column_id']
             uniqueness_ratio = unmapped_feature_view['Primary_key_uniqueness_ratio']
 
-            self.__annotate_entity_and_feature_view_mapping(column_id, entity_name,
-                                                            table_id, uniqueness_ratio, 'hasMultipleEntities')
+            self.__annotate_entity_and_feature_view_mapping(column_id, table_id, uniqueness_ratio, 'hasMultipleEntities')
+            self.__annotate_entity_name(column_id, entity_name)
             self.column_to_entity[column_id] = entity_name
             # if table_id is absent from self.unmapped_tables that means that table_id has multiple entities
             if table_id in self.unmapped_tables:
