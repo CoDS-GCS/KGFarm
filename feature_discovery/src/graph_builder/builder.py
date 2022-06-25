@@ -177,7 +177,7 @@ class Builder:
         # entity info
         total_entities_generated = len(self.column_to_entity.values())
 
-        graph_size = os.path.getsize(self.output_path) * 0.001
+        graph_size = str(round((os.path.getsize(self.output_path) * 0.001), 3))
 
         print('\n• {} summary\n\t- Total entities generated: {}\n\t- Total feature views generated: {}'
               '\n\t- Feature view breakdown:\n\t\t-> Feature view with single entity: {} / {}'
@@ -196,24 +196,35 @@ class Builder:
                      graph_size))
 
 
-def generate_farm_graph(db):
+def upload_farm_graph(db: str = 'kgfarm_test', port=5820, graph: str = 'Farm.nq'):
+    db = 'KGFarm_' + db
+    # Create KGFarm database
+    connection_details = {'endpoint': 'http://localhost:{}'.format(str(port)), 'username': 'admin', 'password': 'admin'}
+    with stardog.Admin(**connection_details) as admin:
+        # delete if exists already
+        if db in [database.name for database in admin.databases()]:
+            admin.database(db).drop()
+        # create new database
+        status = admin.new_database(db, {'edge.properties': True})
+    print('\nUploading {} to {} database'.format(graph, db))
+    # upload Farm graph
+    os.system('stardog data add --format turtle {} {}'.format(db, graph))
+    # upload LiDS graph
+    os.system('stardog data add --format turtle {} ../../../helpers/sample_data/graph/LiDS.nq'.format(db))
+
+
+def generate_farm_graph(db, port):
     start = time()
-    builder = Builder(port=5820, database=db, show_connection_status=True)
+    builder = Builder(port=port, database=db, show_connection_status=True)
     builder.annotate_feature_views()
     builder.annotate_entity_mapping()
     builder.annotate_unmapped_feature_views()
     print('\n• Farm graph generated successfully!\n\t- Time taken: {}\n\t- Saved at: {}'.
           format(time_taken(start, time()), os.path.abspath(builder.output_path)))
     builder.summarize_graph()
-
-
-def upload_farm_graph(db: str = 'kgfarm_test', graph: str = 'Farm.nq'):
-    print('\nUploading {} to {} database'.format(graph, db))
-    os.system('stardog data remove --all {}'.format(db))
-    os.system('stardog data add --format turtle {} ../../../helpers/sample_data/graph/LiDS.nq'.format(db))
-    os.system('stardog data add --format turtle {} {}'.format(db, graph))
+    upload_farm_graph(db=db, port=port, graph='Farm.nq')
 
 
 if __name__ == "__main__":
-    generate_farm_graph(db='kgfarm_dev')
-    upload_farm_graph(db='kgfarm_test', graph='Farm.nq')
+    generate_farm_graph(db='Sample_banking_data', port=5820)
+
