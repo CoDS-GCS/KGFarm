@@ -1,7 +1,7 @@
 from helpers.helper import execute_query, display_query
 
-
 # --------------------------------------------KGFarm APIs---------------------------------------------------------------
+
 
 def get_columns(config, table, dataset):
     query = """
@@ -122,7 +122,7 @@ def get_enrichable_tables(config, show_query):
         ?Primary_table_id           kgfarm:hasMultipleEntities                  ?Primary_column_id                          .   
         }
         
-        ?Primary_table_id           featureView:name                            ?Enrich_with                                 ;
+        ?Primary_table_id           featureView:name                            ?Enrich_with                                ;
                                     schema:name                                 ?Physical_joinable_table                    ;
                                     data:hasFilePath                            ?File_source                                ;
                                     kglids:isPartOf                             ?Dataset_feature_view_id                    .
@@ -148,24 +148,24 @@ def get_enrichable_tables(config, show_query):
 
 def get_optional_entities(config, show_query):
     query = """
-SELECT ?Feature_view ?Entity (?Physical_column as ?Optional_physical_representation) ?Data_type (?Score as ?Uniqueness_ratio) ?Entity ?Physical_table 
-WHERE
-{
-    FILTER NOT EXISTS { ?Table_id kgfarm:hasDefaultEntity ?Column_id}               .
-    FILTER NOT EXISTS { ?Table_id kgfarm:hasMultipleEntities ?Column_id }           .
-
-    <<?Table_id kgfarm:hasEntity ?Column_id>>    kgfarm:confidence   ?Score         .
-    ?Column_id  data:hasDataType        ?Physical_column_data_type                  ;  
-                schema:name             ?Physical_column                            .
-    ?Table_id   featureView:name        ?Feature_view                               ;
-                schema:name             ?Physical_table                             ;
-                kgfarm:hasDefaultEntity ?Default_column_id                          .
+    SELECT ?Feature_view ?Entity (?Physical_column as ?Optional_physical_representation) ?Data_type (?Score as ?Uniqueness_ratio) ?Entity ?Physical_table 
+    WHERE
+    {
+        FILTER NOT EXISTS { ?Table_id kgfarm:hasDefaultEntity ?Column_id}               .
+        FILTER NOT EXISTS { ?Table_id kgfarm:hasMultipleEntities ?Column_id }           .
     
-    ?Default_column_id  entity:name     ?Entity                                     .
+        <<?Table_id kgfarm:hasEntity ?Column_id>>    kgfarm:confidence   ?Score         .
+        ?Column_id  data:hasDataType        ?Physical_column_data_type                  ;  
+                    schema:name             ?Physical_column                            .
+        ?Table_id   featureView:name        ?Feature_view                               ;
+                    schema:name             ?Physical_table                             ;
+                    kgfarm:hasDefaultEntity ?Default_column_id                          .
         
-    BIND(IF(REGEX(?Physical_column_data_type, 'N'),'INT64','STRING') as ?Data_type)
-} ORDER BY ?Feature_view DESC (?Uniqueness_ratio)
-    """
+        ?Default_column_id  entity:name     ?Entity                                     .
+            
+        BIND(IF(REGEX(?Physical_column_data_type, 'N'),'INT64','STRING') as ?Data_type)
+    } ORDER BY ?Feature_view DESC (?Uniqueness_ratio)
+        """
     if show_query:
         display_query(query)
     return execute_query(config, query)
@@ -185,8 +185,8 @@ def get_table_ids(config):
 
 def detect_entities(config):
     query = """ 
-SELECT DISTINCT (?Candidate_entity_name as ?Primary_column) ?Candidate_entity_dtype (?File_source as ?Primary_table) (?distinct_values/?total_values as ?Primary_key_uniqueness_ratio) (?Candidate_entity_id as ?Primary_column_id) (?Table_id as ?Primary_table_id) #?Total_number_of_columns
-WHERE
+    SELECT DISTINCT (?Candidate_entity_name as ?Primary_column) ?Candidate_entity_dtype (?File_source as ?Primary_table) (?distinct_values/?total_values as ?Primary_key_uniqueness_ratio) (?Candidate_entity_id as ?Primary_column_id) (?Table_id as ?Primary_table_id) #?Total_number_of_columns
+    WHERE
     {
         ?Candidate_entity_id    rdf:type                    kglids:Column           ;   
                                 schema:name                 ?Candidate_entity_name  ;
@@ -224,17 +224,15 @@ WHERE
 
 def get_number_of_relations(config, column_id: str):
     query = """
-SELECT (COUNT(?All_columns) as ?Number_of_relations)
-WHERE
-{
-    <%s> schema:name ?Column_name               .
-    
-    ?All_columns    schema:name ?Column_name    .
-    
-    ?All_columns    data:hasPrimaryKeyForeignKeySimilarity  ?Foreign_column .
-}    
-
-    """ % column_id
+    SELECT (COUNT(?All_columns) as ?Number_of_relations)
+    WHERE
+    {
+        <%s> schema:name ?Column_name                                           .
+        
+        ?All_columns    schema:name ?Column_name                                .
+        
+        ?All_columns    data:hasPrimaryKeyForeignKeySimilarity  ?Foreign_column .
+    }""" % column_id
     return execute_query(config, query, return_type='json')
 
 
@@ -332,8 +330,8 @@ def get_column_name_similarity(config, show_query: bool = False):
     SELECT ?A ?B (?Score AS ?F6)
     WHERE
     {   
-        ?B  data:hasInclusionDependency ?A                                  .
-        <<?B data:hasSemanticSimilarity  ?A>>    data:withCertainty  ?Score  .
+        ?B  data:hasInclusionDependency ?A                                      .
+        <<?B data:hasSemanticSimilarity  ?A>>    data:withCertainty  ?Score     .
     }"""
     if show_query:
         display_query(query)
@@ -349,15 +347,15 @@ def get_range(config, show_query: bool = False):
     ?B  data:hasInclusionDependency ?A      ;
         schema:name                 ?Name_A .
     ?A  schema:name                 ?Name_B .
-    ?A  kglids:isPartOf             ?tA.
-    ?B  kglids:isPartOf             ?tB.
-    ?A  data:hasMaxValue            ?maxA .
-    ?A  data:hasMinValue            ?minA .
-    ?B  data:hasMaxValue            ?maxB .
-    ?B  data:hasMinValue            ?minB .
+    ?A  kglids:isPartOf             ?tA     .
+    ?B  kglids:isPartOf             ?tB     .
+    ?A  data:hasMaxValue            ?maxA   .
+    ?A  data:hasMinValue            ?minA   .
+    ?B  data:hasMaxValue            ?maxB   .
+    ?B  data:hasMinValue            ?minB   .
     
-    BIND(IF((?maxB>=?maxA && ?minB<=?minA),1,0) as ?F8) .
-    FILTER(?tA != ?tB) .   
+    BIND(IF((?maxB>=?maxA && ?minB<=?minA),1,0) as ?F8) 
+    FILTER(?tA != ?tB)  
     }"""
     if show_query:
         display_query(query)
