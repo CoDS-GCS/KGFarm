@@ -75,6 +75,7 @@ class Builder:
                         candidate_column_ids.add(candidate_column_id)
                         n_relations = int(get_number_of_relations(self.config,
                                                             candidate_column_id)[0]['Number_of_relations']['value'])
+
                         if max_number_of_relations <= n_relations:
                             column_id = candidate_column_id
                             entity_name = candidate_column_info['name']

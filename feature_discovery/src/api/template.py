@@ -29,7 +29,7 @@ def get_default_entities(config, show_query):
                 featureView:name    ?Feature_view                                   .
     
     BIND(IF(REGEX(?Physical_column_data_type, 'N'),'INT64','STRING') as ?Entity_data_type)
-    }"""
+    }Order by DESC(?Uniqueness_score) ASC(?Entity_name)"""
     if show_query:
         display_query(query)
 
@@ -48,7 +48,7 @@ def get_multiple_entities(config, show_query):
                 featureView:name    ?Feature_view                                       .
 
     BIND(IF(REGEX(?Physical_column_data_type, 'N'),'INT64','STRING') as ?Entity_data_type)
-    }"""
+    }Order by DESC(?Uniqueness_score) ASC(?Entity_name)"""
     if show_query:
         display_query(query)
 
@@ -76,7 +76,7 @@ def get_feature_views(config, show_query):
                         schema:name         ?Physical_table                     .
         
         BIND(IF(REGEX(?Physical_column_data_type, 'N'),'INT64','STRING') as ?Entity_data_type)
-    } ORDER BY ?Feature_view"""
+    }"""
     if show_query:
         display_query(query)
     return execute_query(config, query)
