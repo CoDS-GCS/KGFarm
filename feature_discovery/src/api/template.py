@@ -40,12 +40,12 @@ def get_multiple_entities(config, show_query):
     query = """
     SELECT ?Entity_name ?Entity_data_type ?Physical_column (?Table as ?Physical_table) (?Score as ?Uniqueness_ratio)
     {
-    <<?Table_id kgfarm:hasMultipleEntities ?Entity_id>>    kgfarm:confidence   ?Score  .
-    ?Entity_id  entity:name         ?Entity_name                                    ;
-                schema:name         ?Physical_column                                ;
-                data:hasDataType    ?Physical_column_data_type                      .
-    ?Table_id   schema:name         ?Table                                          ;
-                featureView:name    ?Feature_view                                   .
+    <<?Table_id kgfarm:hasMultipleEntities ?Entity_id>>    kgfarm:confidence   ?Score   .
+    ?Entity_id  entity:name         ?Entity_name                                        ;
+                schema:name         ?Physical_column                                    ;
+                data:hasDataType    ?Physical_column_data_type                          .
+    ?Table_id   schema:name         ?Table                                              ;
+                featureView:name    ?Feature_view                                       .
 
     BIND(IF(REGEX(?Physical_column_data_type, 'N'),'INT64','STRING') as ?Entity_data_type)
     }"""
