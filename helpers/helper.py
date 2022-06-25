@@ -16,7 +16,7 @@ PREFIXES = """
     PREFIX rdf:         <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
     PREFIX rdfs:        <http://www.w3.org/2000/01/rdf-schema#>
     PREFIX pipeline:    <http://kglids.org/ontology/pipeline/>
-     """
+    """
 
 
 def refresh_elasticsearch():
@@ -126,3 +126,4 @@ def convert_dict_to_dataframe(key, d: dict):
     df = pd.DataFrame.from_dict(df)
     df.insert(loc=0, column=key, value=first_col)
     return df
+
