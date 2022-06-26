@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 
 class KGFarm:
-    def __init__(self, port: object = 5820, database: str = 'KGFarm_Sample_banking_data',
+    def __init__(self, port: object = 5820, database: str = 'kgfarm_test',
                  path_to_feature_repo: str = 'feature_repo/', show_connection_status: bool = True):
         # remove old feast meta
         if os.path.exists(path_to_feature_repo + 'data/registry.db'):

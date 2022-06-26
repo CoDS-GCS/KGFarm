@@ -41,11 +41,10 @@ class Builder:
 
     def __annotate_entity_and_feature_view_mapping(self, column_id, table_id, uniqueness_ratio, relation):
         triple_format = '<{}> <{}> <{}>'
-        # triple for feature view - entity mapping -> physical table id : column id
         self.triples.add('<<' + triple_format.format(table_id, self.ontology.get('kgfarm') + relation,
                                                      column_id) + '>> <' + self.ontology.get(
             'kgfarm') + 'confidence>' + ' "{}"^^xsd:double.'.format(str(uniqueness_ratio)))
-
+       
     def __annotate_entity_name(self, column_id, entity_name):
         # triple for entity name -> physical column id : entity name
         self.triples.add(self.triple_format.format(column_id, self.ontology.get('entity') + 'name', entity_name))
@@ -138,12 +137,12 @@ class Builder:
         self.unmapped_tables = all_tables.difference(mapped_tables)
         self.__dump_triples()
 
+    # get all pkfk relationships from the graph and remove the Tables for which Entities are already generated
     def annotate_unmapped_feature_views(self):
         print('• Annotating unmapped feature views')
         pkfk_relations = get_pkfk_relations(self.config)
         # filter relationships to the ones that were left unmapped
         pkfk_relations = pkfk_relations[pkfk_relations.Primary_table_id.isin(self.unmapped_tables)]
-
         for unmapped_feature_view in tqdm(pkfk_relations.to_dict('index').values()):
             entity_name = (unmapped_feature_view['Primary_column'] + '_' + unmapped_feature_view['Primary_table']). \
                 replace('id', '').replace('.parquet', '')
@@ -197,23 +196,6 @@ class Builder:
                      graph_size))
 
 
-def upload_farm_graph(db: str = 'kgfarm_test', port=5820, graph: str = 'Farm.nq'):
-    db = 'KGFarm_' + db
-    # Create KGFarm database
-    connection_details = {'endpoint': 'http://localhost:{}'.format(str(port)), 'username': 'admin', 'password': 'admin'}
-    with stardog.Admin(**connection_details) as admin:
-        # delete if exists already
-        if db in [database.name for database in admin.databases()]:
-            admin.database(db).drop()
-        # create new database
-        status = admin.new_database(db, {'edge.properties': True})
-    print('\nUploading {} to {} database'.format(graph, db))
-    # upload Farm graph
-    os.system('stardog data add --format turtle {} {}'.format(db, graph))
-    # upload LiDS graph
-    os.system('stardog data add --format turtle {} ../../../helpers/sample_data/graph/LiDS.nq'.format(db))
-
-
 def generate_farm_graph(db, port):
     start = time()
     builder = Builder(port=port, database=db, show_connection_status=True)
@@ -223,9 +205,17 @@ def generate_farm_graph(db, port):
     print('\n• Farm graph generated successfully!\n\t- Time taken: {}\n\t- Saved at: {}'.
           format(time_taken(start, time()), os.path.abspath(builder.output_path)))
     builder.summarize_graph()
-    upload_farm_graph(db=db, port=port, graph='Farm.nq')
+
+
+def upload_farm_graph(db: str = 'kgfarm_test', graph: str = 'Farm.nq'):
+    print('\nUploading {} to {} database'.format(graph, db))
+    os.system('stardog data remove --all {}'.format(db))
+    os.system('stardog data add --format turtle {} ../../../helpers/sample_data/graph/LiDS.nq'.format(db))
+    os.system('stardog data add --format turtle {} {}'.format(db, graph))
 
 
 if __name__ == "__main__":
     generate_farm_graph(db='Sample_banking_data', port=5820)
+    upload_farm_graph(db='kgfarm_test', graph='Farm.nq')
+
 
