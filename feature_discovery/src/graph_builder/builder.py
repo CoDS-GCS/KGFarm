@@ -113,7 +113,7 @@ class Builder:
         """""
         table_to_process = list(entities.to_dict('index').values())[0]['Primary_table_id']
         for entity_info in tqdm(entities.to_dict('index').values()):
-            entity_name = (entity_info['Primary_column'] + '_' + entity_info['Primary_table']). \
+            entity_name = (entity_info['Primary_column'].replace(' ', '') + '_' + entity_info['Primary_table']). \
                 replace('id', '').replace('.parquet', '')
             table_id = entity_info['Primary_table_id']
             column_id = entity_info['Primary_column_id']
