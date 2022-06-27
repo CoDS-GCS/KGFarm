@@ -144,7 +144,7 @@ class Builder:
         # filter relationships to the ones that were left unmapped
         pkfk_relations = pkfk_relations[pkfk_relations.Primary_table_id.isin(self.unmapped_tables)]
         for unmapped_feature_view in tqdm(pkfk_relations.to_dict('index').values()):
-            entity_name = (unmapped_feature_view['Primary_column'] + '_' + unmapped_feature_view['Primary_table']). \
+            entity_name = (unmapped_feature_view['Primary_column'].replace(' ', '') + '_' + unmapped_feature_view['Primary_table']). \
                 replace('id', '').replace('.parquet', '')
             table_id = unmapped_feature_view['Primary_table_id']
             column_id = unmapped_feature_view['Primary_column_id']
