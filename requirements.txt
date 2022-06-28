@@ -151,3 +151,4 @@ widgetsnbextension @ file:///opt/concourse/worker/volumes/live/b79a6318-0a66-44c
 zipp==3.8.0
 
 seaborn~=0.11.2
+skimpy~=0.0.6
