@@ -11,29 +11,29 @@ Feature View:
         A feature view is an object that represents a logical group of feature data as it is found in a data source.
 ####################################################################################################################
 '''
-account__completedacct = Entity(name='account__completedacct', value_type=ValueType.STRING, join_key='account_id')
+account_completedacct = Entity(name='account_completedacct', value_type=ValueType.STRING, join_key='account_id')
 
-account__completedloan = Entity(name='account__completedloan', value_type=ValueType.STRING, join_key='account_id')
+account_completedloan = Entity(name='account_completedloan', value_type=ValueType.STRING, join_key='account_id')
 
-client__completedclient = Entity(name='client__completedclient', value_type=ValueType.STRING, join_key='email')
+client_completedclient = Entity(name='client_completedclient', value_type=ValueType.STRING, join_key='email')
 
-client__completeddisposition = Entity(name='client__completeddisposition', value_type=ValueType.INT64, join_key='client_id')
+client_completeddisposition = Entity(name='client_completeddisposition', value_type=ValueType.INT64, join_key='client_id')
 
-disp__completedcard = Entity(name='disp__completedcard', value_type=ValueType.STRING, join_key='disp_id')
+disp_completedcard = Entity(name='disp_completedcard', value_type=ValueType.STRING, join_key='disp_id')
 
-district__completeddistrict = Entity(name='district__completeddistrict', value_type=ValueType.INT64, join_key='district_id')
+district_completeddistrict = Entity(name='district_completeddistrict', value_type=ValueType.INT64, join_key='district_id')
 
-loan__luxuryloanportfolio = Entity(name='loan__luxuryloanportfolio', value_type=ValueType.STRING, join_key='loan_id')
+loan_luxuryloanportfolio = Entity(name='loan_luxuryloanportfolio', value_type=ValueType.STRING, join_key='loan_id')
 
-order__completedorder = Entity(name='order__completedorder', value_type=ValueType.INT64, join_key='order_id')
+order_completedorder = Entity(name='order_completedorder', value_type=ValueType.INT64, join_key='order_id')
 
-account__month_summary = Entity(name='account__month_summary', value_type=ValueType.STRING, join_key='account_id')
+account_month_summary = Entity(name='account_month_summary', value_type=ValueType.STRING, join_key='account_id')
 
-client__month_summary = Entity(name='client__month_summary', value_type=ValueType.INT64, join_key='client_id')
+client_month_summary = Entity(name='client_month_summary', value_type=ValueType.INT64, join_key='client_id')
 
 Feature_view_7 = FeatureView(
 name='Feature_view_7',
-entities=['account__completedacct'],
+entities=['account_completedacct'],
 ttl=timedelta(days=30),
 online=True,
 batch_source=FileSource(
@@ -43,7 +43,7 @@ event_timestamp_column='event_timestamp')
 
 Feature_view_9 = FeatureView(
 name='Feature_view_9',
-entities=['district__completeddistrict'],
+entities=['district_completeddistrict'],
 ttl=timedelta(days=30),
 online=True,
 batch_source=FileSource(
@@ -53,7 +53,7 @@ event_timestamp_column='event_timestamp')
 
 Feature_view_13 = FeatureView(
 name='Feature_view_13',
-entities=['disp__completedcard'],
+entities=['disp_completedcard'],
 ttl=timedelta(days=30),
 online=True,
 batch_source=FileSource(
@@ -63,7 +63,7 @@ event_timestamp_column='event_timestamp')
 
 Feature_view_11 = FeatureView(
 name='Feature_view_11',
-entities=['account__month_summary', 'client__month_summary'],
+entities=['account_month_summary', 'client_month_summary'],
 ttl=timedelta(days=30),
 online=True,
 batch_source=FileSource(
@@ -73,7 +73,7 @@ event_timestamp_column='event_timestamp')
 
 Feature_view_5 = FeatureView(
 name='Feature_view_5',
-entities=['account__completedloan'],
+entities=['account_completedloan'],
 ttl=timedelta(days=30),
 online=True,
 batch_source=FileSource(
@@ -83,7 +83,7 @@ event_timestamp_column='event_timestamp')
 
 Feature_view_10 = FeatureView(
 name='Feature_view_10',
-entities=['client__completeddisposition'],
+entities=['client_completeddisposition'],
 ttl=timedelta(days=30),
 online=True,
 batch_source=FileSource(
@@ -93,7 +93,7 @@ event_timestamp_column='event_timestamp')
 
 Feature_view_8 = FeatureView(
 name='Feature_view_8',
-entities=['order__completedorder'],
+entities=['order_completedorder'],
 ttl=timedelta(days=30),
 online=True,
 batch_source=FileSource(
@@ -103,7 +103,7 @@ event_timestamp_column='event_timestamp')
 
 Feature_view_1 = FeatureView(
 name='Feature_view_1',
-entities=['client__completedclient'],
+entities=['client_completedclient'],
 ttl=timedelta(days=30),
 online=True,
 batch_source=FileSource(
@@ -113,7 +113,7 @@ event_timestamp_column='event_timestamp')
 
 Feature_view_3 = FeatureView(
 name='Feature_view_3',
-entities=['loan__luxuryloanportfolio'],
+entities=['loan_luxuryloanportfolio'],
 ttl=timedelta(days=30),
 online=True,
 batch_source=FileSource(

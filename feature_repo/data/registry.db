@@ -1,62 +1,124 @@
 
-N
-.
-disp__completedcard"disp_idJfeature_repo
-ãèŞ•¸«ªÈãèŞ•¸«ªÈ
-Z
-:
-district__completeddistrict"district_idJfeature_repo
-ãèŞ•¨Ñ­ÈãèŞ•¨Ñ­È
-T
-4
-account__month_summary"
+S
+3
+account_completedloan"
 account_idJfeature_repo
-ãèŞ•¸œ¯ÈãèŞ•¸œ¯È
-T
-4
-account__completedacct"
+ë÷ì•˜‘²¬ë÷ì•˜‘²¬
+M
+-
+disp_completedcard"disp_idJfeature_repo
+ë÷ì•ğ»¶¬ë÷ì•ğ»¶¬
+Y
+9
+district_completeddistrict"district_idJfeature_repo
+ë÷ì•àä¸¬ë÷ì•àä¸¬
+S
+3
+account_month_summary"
 account_idJfeature_repo
-ãèŞ•¨È°ÈãèŞ•¨È°È
-P
-0
-client__completedclient"emailJfeature_repo
-ãèŞ•€ü±ÈãèŞ•€ü±È
+ë÷ì•˜öº¬ë÷ì•˜öº¬
+S
+3
+loan_luxuryloanportfolio"loan_idJfeature_repo
+ë÷ì•èÿ¼¬ë÷ì•èÿ¼¬
+O
+/
+client_completedclient"emailJfeature_repo
+ë÷ì• ‘¿¬ë÷ì• ‘¿¬
+S
+3
+account_completedacct"
+account_idJfeature_repo
+ë÷ì•ÀªÁ¬ë÷ì•ÀªÁ¬
 E
 %
 __dummy"
 __dummy_idJfeature_repo
-ãèŞ•Ø¯³ÈãèŞ•Ø¯³È
-Y
-9
-client__completeddisposition"	client_idJfeature_repo
-ãèŞ•°ã´ÈãèŞ•°ã´È
-T
-4
-account__completedloan"
-account_idJfeature_repo
-ãèŞ•Ø¦¶ÈãèŞ•Ø¦¶È
-R
-2
-client__month_summary"	client_idJfeature_repo
-ãèŞ•°Ú·ÈãèŞ•°Ú·È
-T
-4
-loan__luxuryloanportfolio"loan_idJfeature_repo
-ãèŞ•ğ•¹ÈãèŞ•ğ•¹È
+ë÷ì•ÈËÃ¬ë÷ì•ÈËÃ¬
+X
+8
+client_completeddisposition"	client_idJfeature_repo
+ë÷ì•¸ôÅ¬ë÷ì•¸ôÅ¬
+P
+0
+order_completedorder"order_idJfeature_repo
+ë÷ì•¥È¬ë÷ì•¥È¬
 Q
 1
-order__completedorder"order_idJfeature_repo
-ãèŞ•€áºÈãèŞ•€áºÈ1"$89f4cd97-522c-4e6a-b401-5eddd223eda7*ğèŞ•‚„’2„
-Ë
-Feature_view_10feature_repoclient__completeddisposition"
+client_month_summary"	client_idJfeature_repo
+ë÷ì•¸åÊ¬ë÷ì•¸åÊ¬1"$78135b2a-d434-4395-86b3-334f8fa89c4d*øì•˜’Í2‚
+Ê
+Feature_view_10feature_repoclient_completeddisposition"
 disp_id"
 
 account_id"
-type2€š:Ûevent_timestampZˆ…/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completeddisposition.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢…/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completeddisposition.parquet@4
-ãèŞ•˜Ó¼ÈíèŞ•¨‰Ş–
-íÎÀ”ÈÄÚ³€¶•2Ø
-Ÿ
-Feature_view_5feature_repoaccount__completedloan"
+type2€š:Ûevent_timestampZˆ…/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completeddisposition.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢…/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completeddisposition.parquet@3
+ë÷ì•ĞÑÎ¬‹øì•Ğ¼“H
+ŠŞÎ”ğÀÍ…€¶•2¼
+…
+Feature_view_14feature_repo__dummy"
+district_id2€š:Àevent_timestampZ{y/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/district.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢y/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/district.parquet@2
+ë÷ì•°Õ¬‹øì•È­ÛW
+‹ŞÎ”Ø‹ÚH€¶•2ğ
+¹
+Feature_view_6feature_repo__dummy"
+date"	
+stars"
+reviews"
+product"
+district_id2€š:Æevent_timestampZ~|/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/crm_reviews.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢|/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/crm_reviews.parquet@2
+ë÷ì•àşÙ¬‹øì•ˆ´ís
+‹ŞÎ”¨ø‹X€¶•2«
+ó
+Feature_view_1feature_repoclient_completedclient"
+	client_id"
+sex"
+fulldate"
+day"	
+month"
+year"
+age"
+
+social"	
+first"
+
+middle"
+last"	
+phone"
+	address_1"
+	address_2"
+city"	
+state"
+zipcode"
+district_id"
+date2€š:Ñevent_timestampZƒ€/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedclient.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢€/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedclient.parquet@3
+ë÷ì•Ğ›à¬Œøì•¸¯œ
+‹ŞÎ”¼¡t€¶•2
+×
+Feature_view_13feature_repodisp_completedcard"
+card_id"
+type"
+year"	
+month"
+day"
+fulldate"
+date2€š:Ëevent_timestampZ€~/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedcard.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢~/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedcard.parquet@4
+ë÷ì•àÅì¬Œøì•ˆËÚÕ
+ŒŞÎ”À“Ïœ€¶•2œ
+ä
+Feature_view_7feature_repoaccount_completedacct"
+district_id"
+	frequency"
+
+parseddate"
+year"	
+month"
+day"
+date2€š:Ëevent_timestampZ€~/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedacct.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢~/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedacct.parquet@3
+ë÷ì•¸çó¬øì•°ì¥U
+ŒŞÎ”ÀÉŒÖ€¶•2Ö
+
+Feature_view_5feature_repoaccount_completedloan"
 loan_id"
 
 amount"
@@ -70,25 +132,23 @@ account_id"
 fulldate"
 location"
 purpose"
-date2€š:Ëevent_timestampZ€~/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedloan.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢~/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedloan.parquet@4
-ãèŞ•ÁÈíèŞ•ÀªöÁ
-íÎÀ”¸Í‹—€¶•2¾
-…
-Feature_view_14feature_repo__dummy"
-district_id2€š:Àevent_timestampZ{y/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/district.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢y/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/district.parquet@4
-ãèŞ•È¢ÇÈíèŞ•ğ§­Ê
-íÎÀ”è‡™Â€¶•2ò
-¹
-Feature_view_6feature_repo__dummy"
-date"	
-stars"
-reviews"
-product"
-district_id2€š:Æevent_timestampZ~|/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/crm_reviews.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢|/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/crm_reviews.parquet@4
-ãèŞ•°¡ÊÈíèŞ•àáÜ
-íÎÀ”°•ÈÊ€¶•2¬
-ó
-Feature_view_3feature_repoloan__luxuryloanportfolio"
+date2€š:Ëevent_timestampZ€~/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedloan.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢~/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedloan.parquet@3
+ë÷ì•‰û¬øì•È§›
+ŞÎ”ˆ„ÚU€¶•2÷
+¾
+Feature_view_11feature_repoaccount_month_summaryclient_month_summary"
+province"
+country2€š:Ëevent_timestampZ€~/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/month_summary.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢~/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/month_summary.parquet@4
+ë÷ì•¨ã„­øì•¸Ú„
+ŞÎ”¨æÂ›€¶•2»
+‚
+Feature_view_12feature_repo__dummy"
+
+account_id2€š:¾event_timestampZzx/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/account.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢x/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/account.parquet@4
+ë÷ì• ªŠ­øì•¾¼É
+ŞÎ”Øæ´€¶•2«
+ò
+Feature_view_3feature_repoloan_luxuryloanportfolio"
 funded_amount"
 funded_date"
 duration_years"
@@ -122,46 +182,10 @@ middlename"
 land_square_feet"
 gross_square_feet"
 tax_class_at_time_of_sale2€š:Ùevent_timestampZ‡„/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/luxuryloanportfolio.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢„/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/luxuryloanportfolio.parquet@4
-ãèŞ•Ğ´ÎÈîèŞ•È¥œÜ
-íÎÀ”ò¼Ü€¶•2»
-‚
-Feature_view_12feature_repo__dummy"
-
-account_id2€š:¾event_timestampZzx/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/account.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢x/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/account.parquet@4
-ãèŞ•ÈéÙÈîèŞ•àÁ
-îÎÀ”€ÂÄÜ€¶•2ù
-À
-Feature_view_11feature_repoaccount__month_summaryclient__month_summary"
-province"
-country2€š:Ëevent_timestampZ€~/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/month_summary.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢~/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/month_summary.parquet@4
-ãèŞ•€øÜÈîèŞ•¨³Û¿
-îÎÀ”Èæ¾€¶•2
-Õ
-Feature_view_8feature_repoorder__completedorder"
-
-account_id"
-bank_to"
-
-account_to"
-
-amount"
-k_symbol2€š:Íevent_timestampZ/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedorder.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedorder.parquet@4
-ãèŞ•À­àÈîèŞ•ˆÿœÓ
-îÎÀ”øâú¿€¶•2
-å
-Feature_view_7feature_repoaccount__completedacct"
-district_id"
-	frequency"
-
-parseddate"
-year"	
-month"
-day"
-date2€š:Ëevent_timestampZ€~/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedacct.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢~/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedacct.parquet@3
-ãèŞ•°ĞäÈïèŞ•ØÇª{
-îÎÀ”øÊ½Ó€¶•2Ù
-¡
-Feature_view_9feature_repodistrict__completeddistrict"
+ë÷ì•øÑ­øì•˜æèÙ
+ŞÎ”™òÉ€¶•2Ù
+ 
+Feature_view_9feature_repodistrict_completeddistrict"
 city"
 
 state_name"
@@ -174,51 +198,24 @@ state_name"
 net_growth"
 
 return"
-n_customer_sat2€š:Õevent_timestampZ…‚/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completeddistrict.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢‚/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completeddistrict.parquet@3
-ãèŞ•°ÁéÈïèŞ•èéâ‰
-ïÎÀ” ¸Ñ{€¶•2¬
-ô
-Feature_view_1feature_repoclient__completedclient"
-	client_id"
-sex"
-fulldate"
-day"	
-month"
-year"
-age"
+n_customer_sat2€š:Õevent_timestampZ…‚/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completeddistrict.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢‚/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completeddistrict.parquet@4
+ë÷ì•èÊ¡­øì•À¨Ïğ
+ŞÎ”€¨©Ú€¶•2Œ
+Ô
+Feature_view_8feature_repoorder_completedorder"
 
-social"	
-first"
+account_id"
+bank_to"
 
-middle"
-last"	
-phone"
-	address_1"
-	address_2"
-city"	
-state"
-zipcode"
-district_id"
-date2€š:Ñevent_timestampZƒ€/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedclient.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢€/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedclient.parquet@3
-ãèŞ•À€ïÈğèŞ• ¯‡k
-ïÎÀ”è‰‚Š€¶•2
-Ø
-Feature_view_13feature_repodisp__completedcard"
-card_id"
-type"
-year"	
-month"
-day"
-fulldate"
-date2€š:Ëevent_timestampZ€~/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedcard.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢~/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedcard.parquet@3
-ãèŞ•°—÷ÈğèŞ•°Åø‘
-ğÎÀ” ´¯k€¶•Rñ
+account_to"
+
+amount"
+k_symbol2€š:Íevent_timestampZ/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedorder.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data/parquet/retail-bankingdemodata/completedorder.parquet@3
+ë÷ì• Çª­øì•˜Â½
+ŞÎ”ø‘ˆñ€¶•Rñ
 §
 ,feast.infra.online_stores.sqlite.SqliteTable"w
 W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.dbfeature_repo_Feature_view_10
-¦
-,feast.infra.online_stores.sqlite.SqliteTable"v
-W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.dbfeature_repo_Feature_view_5
 §
 ,feast.infra.online_stores.sqlite.SqliteTable"w
 W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.dbfeature_repo_Feature_view_14
@@ -227,25 +224,28 @@ W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_
 W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.dbfeature_repo_Feature_view_6
 ¦
 ,feast.infra.online_stores.sqlite.SqliteTable"v
-W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.dbfeature_repo_Feature_view_3
+W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.dbfeature_repo_Feature_view_1
+§
+,feast.infra.online_stores.sqlite.SqliteTable"w
+W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.dbfeature_repo_Feature_view_13
+¦
+,feast.infra.online_stores.sqlite.SqliteTable"v
+W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.dbfeature_repo_Feature_view_7
+¦
+,feast.infra.online_stores.sqlite.SqliteTable"v
+W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.dbfeature_repo_Feature_view_5
+¦
+,feast.infra.online_stores.sqlite.SqliteTable"v
+W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.dbfeature_repo_Feature_view_9
 §
 ,feast.infra.online_stores.sqlite.SqliteTable"w
 W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.dbfeature_repo_Feature_view_12
+¦
+,feast.infra.online_stores.sqlite.SqliteTable"v
+W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.dbfeature_repo_Feature_view_3
 §
 ,feast.infra.online_stores.sqlite.SqliteTable"w
 W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.dbfeature_repo_Feature_view_11
 ¦
 ,feast.infra.online_stores.sqlite.SqliteTable"v
 W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.dbfeature_repo_Feature_view_8
-¦
-,feast.infra.online_stores.sqlite.SqliteTable"v
-W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.dbfeature_repo_Feature_view_7
-¦
-,feast.infra.online_stores.sqlite.SqliteTable"v
-W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.dbfeature_repo_Feature_view_9
-¦
-,feast.infra.online_stores.sqlite.SqliteTable"v
-W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.dbfeature_repo_Feature_view_1
-§
-,feast.infra.online_stores.sqlite.SqliteTable"w
-W/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/feature_repo/data/online_store.dbfeature_repo_Feature_view_13
