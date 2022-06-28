@@ -2,6 +2,8 @@ import sys
 from time import time
 from tqdm import tqdm
 from datetime import datetime
+from skimpy import clean_columns
+
 sys.path.append('../../../')
 from helpers.helper import *
 from feature_discovery.src.api.template import *
@@ -44,10 +46,42 @@ class Builder:
         self.triples.add('<<' + triple_format.format(table_id, self.ontology.get('kgfarm') + relation,
                                                      column_id) + '>> <' + self.ontology.get(
             'kgfarm') + 'confidence>' + ' "{}"^^xsd:double.'.format(str(uniqueness_ratio)))
-       
+
     def __annotate_entity_name(self, column_id, entity_name):
         # triple for entity name -> physical column id : entity name
         self.triples.add(self.triple_format.format(column_id, self.ontology.get('entity') + 'name', entity_name))
+
+    @staticmethod
+    def __clean_columns_for_entity_naming(entity_info: pd.DataFrame):
+        """
+        1. cleans column names using skimpy
+        2. removes number from column names
+        3. removes 'id', 'num' from column names
+        4. handles empty columns and transform '__' to '_'
+        """
+        pd.options.mode.chained_assignment = None
+        column_names = entity_info['Primary_column'].tolist()
+        # clean column names using skimpy
+        columns_to_be_cleaned = pd.DataFrame(data=[], columns=column_names, index=[0])
+        # removes number from column names
+        column_names = clean_columns(columns_to_be_cleaned) \
+            .columns.str.replace(r'\d+', '', regex=True).to_list()
+        # removes 'id', 'num' from column names
+        column_names = list(map(lambda x: x.replace('id', '').replace('num', ''), column_names))
+        # handles empty columns and transform '__' to '_'
+        for column in column_names:
+            try:
+                if len(column) >= 2 and column[-1] == '_':
+                    index = column_names.index(column)
+                    column_names[index] = column[:len(column) - 1]
+                elif len(column) < 2:
+                    index = column_names.index(column)
+                    column_names[index] = 'entity'
+            except IndexError:
+                index = column_names.index(column)
+                column_names[index] = 'entity'
+        entity_info['Primary_column'] = column_names
+        return entity_info
 
     def __elect_default_entity(self, table_id, default_entities, column_id=None, entity_name=None):
         if len(default_entities) == 1:  # table with single entity detected
@@ -73,7 +107,8 @@ class Builder:
                     if candidate_column_info['uniqueness'] == uniqueness_ratio:
                         candidate_column_ids.add(candidate_column_id)
                         n_relations = int(get_number_of_relations(self.config,
-                                                            candidate_column_id)[0]['Number_of_relations']['value'])
+                                                                  candidate_column_id)[0]['Number_of_relations'][
+                                              'value'])
 
                         if max_number_of_relations <= n_relations:
                             column_id = candidate_column_id
@@ -96,8 +131,8 @@ class Builder:
             self.triples.add(self.triple_format.format(
                 table_id,
                 self.ontology.get('featureView') + 'name',
-                'Feature_view_{}'.format(feature_view_count)))
-            self.table_to_feature_view[table_id] = 'Feature_view_{}'.format(feature_view_count)
+                'Feature_view_{:02}'.format(feature_view_count)))
+            self.table_to_feature_view[table_id] = 'Feature_view_{:02}'.format(feature_view_count)
         self.__dump_triples()
 
     def annotate_entity_mapping(self):
@@ -106,15 +141,15 @@ class Builder:
         print('• Annotating entities to feature views')
         self.graph.write('\n# 2. Entities and feature view - entity mappings \n')
         # get candidate entities (columns with high uniqueness) sorted by table names
-        entities = detect_entities(self.config)
+        entities = self.__clean_columns_for_entity_naming(detect_entities(self.config))
         """
-        The candidate entity columns are sorted/ / grouped based upon the Table from which they originate.
+        The candidate entity columns are sorted / grouped based upon the Table from which they originate.
         i.e. first, we populate all detected entities PER TABLE and then call the function that elects the default entity.  
         """""
         table_to_process = list(entities.to_dict('index').values())[0]['Primary_table_id']
         for entity_info in tqdm(entities.to_dict('index').values()):
-            entity_name = (entity_info['Primary_column'].replace(' ', '') + '_' + entity_info['Primary_table']). \
-                replace('id', '').replace('.parquet', '')
+            entity_name = (entity_info['Primary_column'] + '_' + entity_info['Primary_table'].replace('.parquet', '')) \
+                .replace('__', '_')
             table_id = entity_info['Primary_table_id']
             column_id = entity_info['Primary_column_id']
             uniqueness_ratio = entity_info['Primary_key_uniqueness_ratio']
@@ -142,15 +177,18 @@ class Builder:
         print('• Annotating unmapped feature views')
         pkfk_relations = get_pkfk_relations(self.config)
         # filter relationships to the ones that were left unmapped
-        pkfk_relations = pkfk_relations[pkfk_relations.Primary_table_id.isin(self.unmapped_tables)]
+        pkfk_relations = self.__clean_columns_for_entity_naming(pkfk_relations[pkfk_relations.
+                                                                Primary_table_id.isin(self.unmapped_tables)])
         for unmapped_feature_view in tqdm(pkfk_relations.to_dict('index').values()):
-            entity_name = (unmapped_feature_view['Primary_column'].replace(' ', '') + '_' + unmapped_feature_view['Primary_table']). \
-                replace('id', '').replace('.parquet', '')
+            entity_name = (unmapped_feature_view['Primary_column'] + '_' +
+                           unmapped_feature_view['Primary_table'].replace('.parquet', '')).replace('__', '')
+
             table_id = unmapped_feature_view['Primary_table_id']
             column_id = unmapped_feature_view['Primary_column_id']
             uniqueness_ratio = unmapped_feature_view['Primary_key_uniqueness_ratio']
 
-            self.__annotate_entity_and_feature_view_mapping(column_id, table_id, uniqueness_ratio, 'hasMultipleEntities')
+            self.__annotate_entity_and_feature_view_mapping(column_id, table_id, uniqueness_ratio,
+                                                            'hasMultipleEntities')
             self.__annotate_entity_name(column_id, entity_name)
             self.column_to_entity[column_id] = entity_name
             # if table_id is absent from self.unmapped_tables that means that table_id has multiple entities
@@ -217,5 +255,3 @@ def upload_farm_graph(db: str = 'kgfarm_test', graph: str = 'Farm.nq'):
 if __name__ == "__main__":
     generate_farm_graph(db='Sample_banking_data', port=5820)
     upload_farm_graph(db='kgfarm_test', graph='Farm.nq')
-
-
