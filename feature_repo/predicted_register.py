@@ -31,8 +31,8 @@ account_month_summary = Entity(name='account_month_summary', value_type=ValueTyp
 
 client_month_summary = Entity(name='client_month_summary', value_type=ValueType.INT64, join_key='client_id')
 
-Feature_view_7 = FeatureView(
-name='Feature_view_7',
+Feature_view_07 = FeatureView(
+name='Feature_view_07',
 entities=['account_completedacct'],
 ttl=timedelta(days=30),
 online=True,
@@ -41,8 +41,8 @@ path=r'/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data
 event_timestamp_column='event_timestamp')
 )
 
-Feature_view_9 = FeatureView(
-name='Feature_view_9',
+Feature_view_09 = FeatureView(
+name='Feature_view_09',
 entities=['district_completeddistrict'],
 ttl=timedelta(days=30),
 online=True,
@@ -71,8 +71,8 @@ path=r'/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data
 event_timestamp_column='event_timestamp')
 )
 
-Feature_view_5 = FeatureView(
-name='Feature_view_5',
+Feature_view_05 = FeatureView(
+name='Feature_view_05',
 entities=['account_completedloan'],
 ttl=timedelta(days=30),
 online=True,
@@ -91,8 +91,8 @@ path=r'/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data
 event_timestamp_column='event_timestamp')
 )
 
-Feature_view_8 = FeatureView(
-name='Feature_view_8',
+Feature_view_08 = FeatureView(
+name='Feature_view_08',
 entities=['order_completedorder'],
 ttl=timedelta(days=30),
 online=True,
@@ -101,8 +101,8 @@ path=r'/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data
 event_timestamp_column='event_timestamp')
 )
 
-Feature_view_1 = FeatureView(
-name='Feature_view_1',
+Feature_view_01 = FeatureView(
+name='Feature_view_01',
 entities=['client_completedclient'],
 ttl=timedelta(days=30),
 online=True,
@@ -111,8 +111,8 @@ path=r'/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data
 event_timestamp_column='event_timestamp')
 )
 
-Feature_view_3 = FeatureView(
-name='Feature_view_3',
+Feature_view_03 = FeatureView(
+name='Feature_view_03',
 entities=['loan_luxuryloanportfolio'],
 ttl=timedelta(days=30),
 online=True,
@@ -141,8 +141,8 @@ path=r'/Users/shubhamvashisth/Documents/CoDS/projects/KGFarm/helpers/sample_data
 event_timestamp_column='event_timestamp')
 )
 
-Feature_view_6 = FeatureView(
-name='Feature_view_6',
+Feature_view_06 = FeatureView(
+name='Feature_view_06',
 entities=[],
 ttl=timedelta(days=30),
 online=True,
