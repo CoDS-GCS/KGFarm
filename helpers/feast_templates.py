@@ -1,6 +1,6 @@
 def definitions():
     return \
-"""# The Entities & Feature Views were predicted using Discovery operations. Feel free to edit :)
+"""# The Entities & Feature Views were predicted using Discovery operations of KGFarm. Feel free to edit :)
 from datetime import timedelta
 from feast import Entity, FeatureView, FileSource, ValueType
 '''
