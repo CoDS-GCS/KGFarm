@@ -161,6 +161,19 @@ class KGFarm:
     def get_enrichable_tables(self, show_query: bool = False):
         # TODO: gather information on how get_historical_features() work with feature view with multiple entities.
         enrichable_tables = get_enrichable_tables(self.config, show_query)
+        # delete pairs where features are same i.e. nothing to join
+        for index, pairs in tqdm(enrichable_tables.to_dict('index').items()):
+            entity_dataset = pairs['Dataset']
+            entity_table = pairs['Table']
+            feature_view_dataset = pairs['Dataset_feature_view']
+            feature_view_table = pairs['Physical_joinable_table']
+
+            features_in_entity_df = get_columns(self.config, entity_table, entity_dataset)
+            features_in_feature_view = get_columns(self.config, feature_view_table, feature_view_dataset)
+
+            if features_in_entity_df == features_in_feature_view:
+                enrichable_tables = enrichable_tables.drop(index)
+
         enrichable_tables = enrichable_tables[~enrichable_tables['Enrich_with'].isin(self.__dropped_feature_views)]
         enrichable_tables = enrichable_tables.sort_values(by=['Table', 'Joinability_strength', 'Enrich_with'],
                                                           ascending=False). \
@@ -172,6 +185,7 @@ class KGFarm:
     def get_features(self, entity_df: pd.Series):
         # TODO: add support for fetching features that originate from multiple feature views at once.
         feature_view = entity_df['Enrich_with']
+        print(feature_view)
         # features in entity dataframe
         entity_df_features = get_columns(self.config, entity_df['Table'], entity_df['Dataset'])
         # features in feature view table
@@ -184,4 +198,4 @@ class KGFarm:
 
 if __name__ == "__main__":
     kgfarm = KGFarm(path_to_feature_repo='../../../feature_repo/', show_connection_status=False)
-    kgfarm.get_entities()
+    kgfarm.get_enrichable_tables()
