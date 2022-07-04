@@ -67,7 +67,7 @@ class Builder:
         column_names = clean_columns(columns_to_be_cleaned) \
             .columns.str.replace(r'\d+', '', regex=True).to_list()
         # removes 'id', 'num' from column names
-        column_names = list(map(lambda x: x.replace('id', '').replace('num', ''), column_names))
+        column_names = list(map(lambda x: x.replace('id', '').replace('number', ''), column_names))
         # handles empty columns and transform '__' to '_'
         for column in column_names:
             try:

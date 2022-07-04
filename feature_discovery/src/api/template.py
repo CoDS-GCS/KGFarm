@@ -218,6 +218,8 @@ def detect_entities(config):
         }
 
         FILTER(?Total_number_of_columns > 2)
+        # ignore event timestamps
+        FILTER(?Candidate_entity_name != 'event_timestamp')
     } ORDER BY DESC(?Primary_table_id)"""
     return execute_query(config, query)
 
@@ -267,6 +269,9 @@ def get_pkfk_relations(config):
         }
 
         FILTER (?Total_number_of_columns > 2)
+        # ignore event timestamps
+        FILTER(?Primary_column != 'event_timestamp')
+        FILTER(?Foreign_column != 'event_timestamp')
     }"""
     return execute_query(config, query)
 
