@@ -185,7 +185,6 @@ class KGFarm:
     def get_features(self, entity_df: pd.Series):
         # TODO: add support for fetching features that originate from multiple feature views at once.
         feature_view = entity_df['Enrich_with']
-        print(feature_view)
         # features in entity dataframe
         entity_df_features = get_columns(self.config, entity_df['Table'], entity_df['Dataset'])
         # features in feature view table
