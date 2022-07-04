@@ -96,7 +96,7 @@ class KGFarm:
                     print(feature_view,  end=' ')
             return self.get_feature_views()
 
-    def get_optional_entities(self, show_query: bool = False):
+    def get_optional_physical_representations(self, show_query: bool = False):
         return get_optional_entities(self.config, show_query)
 
     def update_entity(self, entity_to_update_info: list):
