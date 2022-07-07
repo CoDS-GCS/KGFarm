@@ -162,16 +162,19 @@ class KGFarm:
         # TODO: gather information on how get_historical_features() work with feature view with multiple entities.
         enrichable_tables = get_enrichable_tables(self.config, show_query)
         # delete pairs where features are same i.e. nothing to join
+        pairs_with_same_features = 0
         for index, pairs in tqdm(enrichable_tables.to_dict('index').items()):
             entity_dataset = pairs['Dataset']
             entity_table = pairs['Table']
             feature_view_dataset = pairs['Dataset_feature_view']
             feature_view_table = pairs['Physical_joinable_table']
-
             features_in_entity_df = get_columns(self.config, entity_table, entity_dataset)
             features_in_feature_view = get_columns(self.config, feature_view_table, feature_view_dataset)
-
+            # sort features
+            features_in_entity_df.sort()
+            features_in_feature_view.sort()
             if features_in_entity_df == features_in_feature_view:
+                pairs_with_same_features = pairs_with_same_features + 1
                 enrichable_tables = enrichable_tables.drop(index)
 
         enrichable_tables = enrichable_tables[~enrichable_tables['Enrich_with'].isin(self.__dropped_feature_views)]
@@ -196,5 +199,5 @@ class KGFarm:
 
 
 if __name__ == "__main__":
-    kgfarm = KGFarm(path_to_feature_repo='../../../feature_repo/', show_connection_status=False)
+    kgfarm = KGFarm(path_to_feature_repo='../../../feature_repo/', port=5822, show_connection_status=False)
     kgfarm.get_enrichable_tables()
