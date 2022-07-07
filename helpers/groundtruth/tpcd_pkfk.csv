@@ -1,0 +1,10 @@
+PK - Section,PK - Table,PK - ColName,To,FK - Section,FK - Table,FK - ColName
+,dss_nation,n_nationkey,,,dss_customer,c_nationkey
+,dss_order,o_orderkey,,,dss_lineitem,l_orderkey
+,dss_region,r_regionkey,,,dss_nation,n_regionkey
+,dss_customer,c_custkey,,,dss_order,o_custkey
+,dss_supplier,s_suppkey,,,dss_partsupp,ps_suppkey
+,dss_part,p_partkey,,,dss_partsupp,ps_partkey
+,dss_lineitem,l_partkey,,,dss_partsupp,ps_partkey
+,dss_lineitem,l_suppkey,,,dss_partsupp,ps_suppkey
+,dss_nation,n_nationkey,,,dss_supplier,s_nationkey

@@ -120,13 +120,32 @@ def get_INDs(config, show_query: bool = False):
     return execute_query(config, query)
 
 
+def get_content_similar_pairs(config, show_query: bool = False):
+    query = """
+    SELECT(strbefore(?Foreign_table_name, '.csv') as ?Foreign_table) (?Name_A as ?Foreign_key) ?A(strbefore(?Primary_table_name, '.csv') as ?Primary_table) (?Name_B as ?Primary_key) ?B
+    WHERE
+    {
+    ?B          schema:name                 ?Name_B                                         ;
+                kglids:isPartOf             ?Table_B                                        .
+    <<?B        data:hasDeepEmbeddingContentSimilarity ?A >>    data:withCertainty  ?Score  .
+
+    ?A          kglids:isPartOf             ?Table_A                                        ;
+                schema:name                 ?Name_A                                         .
+
+    ?Table_B    schema:name                 ?Primary_table_name                             .
+    ?Table_A    schema:name                 ?Foreign_table_name                             .
+    FILTER(?Score>0.995)
+    }"""
+    if show_query:
+        display_query(query)
+
+    return execute_query(config, query)
+
 def get_distinct_dependent_values(config, show_query: bool = False):
     query = """
     SELECT ?A ?B (?Distinct_values/?Total_values AS ?F1)
     WHERE
     {   
-        ?B  data:hasInclusionDependency ?A                  .
-        
         ?A  data:hasTotalValueCount     ?Total_values       ;
             data:hasDistinctValueCount  ?Distinct_values    .  
     }"""
@@ -141,7 +160,7 @@ def get_content_similarity(config, show_query: bool = False):
     SELECT ?A ?B (?Score AS ?F2)
     WHERE
     {   
-        ?B  data:hasInclusionDependency ?A                                  .
+        #?B  data:hasInclusionDependency ?A                                  .
         <<?B data:hasContentSimilarity  ?A>>    data:withCertainty  ?Score  .
     }"""
     if show_query:
@@ -155,7 +174,7 @@ def get_column_name_similarity(config, show_query: bool = False):
     SELECT ?A ?B (?Score AS ?F6)
     WHERE
     {   
-        ?B  data:hasInclusionDependency ?A                                  .
+        #?B  data:hasInclusionDependency ?A                                  .
         <<?B data:hasSemanticSimilarity  ?A>>    data:withCertainty  ?Score  .
     }"""
     if show_query:
@@ -169,7 +188,7 @@ def get_range(config, show_query: bool = False):
     SELECT ?A ?B ?F8
     WHERE
     {
-    ?B  data:hasInclusionDependency ?A      ;
+    ?B  #data:hasInclusionDependency ?A      ;
         schema:name                 ?Name_A .
     ?A  schema:name                 ?Name_B .
     ?A  kglids:isPartOf             ?tA.
@@ -193,7 +212,7 @@ def get_typical_name_suffix(config, show_query: bool = False):
     SELECT ?A ?B ?F9
     WHERE
     {
-    ?B  data:hasInclusionDependency ?A      ;
+    ?B  #data:hasInclusionDependency ?A      ;
         schema:name                 ?Name_A .
     ?A  schema:name                 ?Name_B .
     
@@ -210,8 +229,7 @@ def get_table_size_ratio(config, show_query: bool = False):
     SELECT ?A ?B  (?Rows_A/?Rows_B AS ?F10)
     WHERE
     {
-    ?B  data:hasInclusionDependency ?A      ;
-        data:hasTotalValueCount     ?Rows_A .
+    ?B  data:hasTotalValueCount     ?Rows_A .
     ?A  data:hasTotalValueCount     ?Rows_B .
     }"""
     if show_query:

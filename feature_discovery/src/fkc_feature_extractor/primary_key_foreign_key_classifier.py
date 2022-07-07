@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.svm import SVC
-from sklearn.metrics import f1_score, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import recall_score, precision_score, f1_score, confusion_matrix, ConfusionMatrixDisplay
 from sklearn.ensemble import RandomForestClassifier
 from matplotlib.pyplot import figure
 from feature_generator import generate
@@ -34,19 +34,29 @@ def plot_scores(models, scores):
     plt.grid()
     plt.show()
 
+def data_information(df: pd.DataFrame, use: str):
+    labels = df[df.columns[-1]].tolist()
+    print(use, ": ",labels.count(1),"/", labels.count(1)+labels.count(0))
+
+
 
 def main():
     # Training data
-    training_database = 'TPC-H'
-    features = generate(training_database)
-    plot_class_frequency(features, training_database)
+    training_database_list = ['MovieLens','TPC-H','financial_ijs','financial_std']
+    features = generate(training_database_list)
+    # testing_database = 'MovieLens'
+    # features2 = generate(testing_database)
+    # features.append(features2)
+    #plot_class_frequency(features, training_database)
+    data_information(features, 'Training Data')
     X_train = features.drop(columns=['Has_pk_fk_relation', 'F3'], axis=1)
     y_train = features['Has_pk_fk_relation']
 
     # Testing data
-    testing_database = 'MovieLens'
-    features = generate(testing_database)
-    plot_class_frequency(features, testing_database)
+    testing_database_list = ['financial']
+    features = generate(testing_database_list)
+    #plot_class_frequency(features, testing_database)
+    data_information(features, 'Testing Data')
     X_test = features.drop(columns=['Has_pk_fk_relation', 'F3'], axis=1)
     y_test = features['Has_pk_fk_relation']
 
@@ -63,9 +73,14 @@ def main():
     y_pred_rf = rf.predict(X_test)
 
     # Plot f1
-    score_svm = f1_score(y_test, y_pred_svm)
     score_rf = f1_score(y_test, y_pred_rf)
-    plot_scores(['SVM Classifier', 'Random Forest Classifier'], [score_svm, score_rf])
+    #plot_scores(['SVM Classifier', 'Random Forest Classifier'], [score_svm, score_rf])
+    recall = recall_score(y_test, y_pred_rf)
+    precision = precision_score(y_test, y_pred_rf)
+
+    print('precision: ',precision )
+    print('recall: ', recall)
+    print('F1-Score: ',score_rf)
 
     # Confusion Matrix
     cm = confusion_matrix(y_test, y_pred_rf)

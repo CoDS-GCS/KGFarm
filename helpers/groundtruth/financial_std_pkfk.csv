@@ -1,0 +1,7 @@
+PK - Section,PK - Table,PK - ColName,To,FK - Section,FK - Table,FK - ColName
+,acc,account_id,,,Loan_Acc,account_id
+,loan,loan_id,,,Loan_Acc,loan_id
+,order,order_id,,,Loan_Order,order_id
+,loan,loan_id,,,Loan_Order,loan_id
+,trans,transaction_id,,,Loan_Trans,transaction_id
+,loan,loan_id,,,Loan_Trans,loan_id
