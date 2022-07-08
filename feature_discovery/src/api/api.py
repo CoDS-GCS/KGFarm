@@ -199,5 +199,5 @@ class KGFarm:
 
 
 if __name__ == "__main__":
-    kgfarm = KGFarm(path_to_feature_repo='../../../feature_repo/', port=5822, show_connection_status=False)
+    kgfarm = KGFarm(path_to_feature_repo='../../../feature_repo/', port=5820, show_connection_status=False)
     kgfarm.get_enrichable_tables()

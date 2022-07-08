@@ -103,6 +103,9 @@ class Builder:
                 candidate_column_ids = set()
                 max_number_of_relations = 0
                 column_id = None
+                default_entities = list(default_entities.items())
+                default_entities.sort(reverse=True)
+                default_entities = dict(default_entities)
                 for candidate_column_id, candidate_column_info in default_entities.items():
                     if candidate_column_info['uniqueness'] == uniqueness_ratio:
                         candidate_column_ids.add(candidate_column_id)
@@ -245,13 +248,13 @@ def generate_farm_graph(db, port):
     builder.summarize_graph()
 
 
-def upload_farm_graph(db: str = 'kgfarm_test', graph: str = 'Farm.nq'):
-    print('\nUploading {} to {} database'.format(graph, db))
+def upload_farm_graph(db: str = 'kgfarm_test', farm_graph: str = 'Farm.nq', lids_graph: str = 'LiDS.nq'):
+    print('\nUploading {} to {} database'.format(farm_graph, db))
     os.system('stardog data remove --all {}'.format(db))
-    os.system('stardog data add --format turtle {} ../../../helpers/sample_data/graph/LiDS.nq'.format(db))
-    os.system('stardog data add --format turtle {} {}'.format(db, graph))
+    os.system('stardog data add --format turtle {} {}'.format(db, farm_graph))
+    os.system('stardog data add --format turtle {} ../../../helpers/sample_data/graph/LiDS.nq'.format(db, lids_graph))
 
 
 if __name__ == "__main__":
-    generate_farm_graph(db='Sample_banking_data', port=5820)
-    upload_farm_graph(db='kgfarm_test', graph='Farm.nq')
+    generate_farm_graph(db='kglids_test', port=5820)
+    upload_farm_graph(db='kgfarm_test', farm_graph='Farm.nq', lids_graph='LiDS.nq')
