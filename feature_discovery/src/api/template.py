@@ -173,6 +173,59 @@ def get_optional_entities(config, show_query):
     return execute_query(config, query)
 
 
+def recommend_transformations(config, table, dataset, show_query):
+    query = """
+    SELECT DISTINCT ?Transformation ?Package ?Function ?Library ?Feature ?Table ?Dataset ?Pipeline ?Author ?Written_on ?Pipeline_url  
+    WHERE
+    {
+    # query pipeline-default graph
+    ?Pipeline_id        rdf:type                kglids:Pipeline     ;
+                        kglids:isPartOf         ?Dataset_id         ;
+                        rdfs:label              ?Pipeline           ;
+                        pipeline:isWrittenBy    ?Author             ;
+                        pipeline:isWrittenOn    ?Written_on         ;
+                        pipeline:hasSourceURL   ?Pipeline_url       . 
+    
+    # querying named-graphs for pipeline               
+    GRAPH ?Pipeline_id
+    {
+        ?Statement      pipeline:callsClass     ?Class_id           .
+        ?Statement_2    pipeline:callsFunction  ?Function_id        ;
+                        pipeline:readsColumn    ?Column_id          .
+        # <<?Statement_2    pipeline:hasParameter   ?o>> ?p1 ?o1      .
+    }
+    
+    # querying the link between default-named graphs relationships
+    ?Class_id          kglids:isPartOf          <http://kglids.org/resource/library/sklearn/preprocessing>      .
+    ?Function_id       kglids:isPartOf          ?Class_id           . 
+    <http://kglids.org/resource/library/sklearn/preprocessing> kglids:isPartOf ?Library_id                                  .
+    
+    # query data-items
+    ?Dataset_id         schema:name             ?Dataset            .
+    ?Column_id          schema:name             ?Feature            ;
+                        kglids:isPartOf         ?Table_id           .
+    ?Table_id           schema:name             ?Table              .
+    
+    # querying the link between Farm and LiDS graph
+    ?Table_id           featureView:name    ?Feature_view           .
+    
+    # beautify output
+    BIND(STRAFTER(str(?Library_id), str(lib:)) as ?Library)         . 
+    BIND(STRAFTER(str(?Class_id), str('http://kglids.org/resource/library/sklearn/preprocessing/')) as ?Transformation)     .
+    BIND(STRAFTER(str(?Class_id), str('http://kglids.org/resource/library/sklearn/')) as ?P)  
+    BIND(STRBEFORE(str(?P), str('/')) as ?Package)                  .
+    BIND(STRAFTER(str(?Function_id), str('http://kglids.org/resource/library/sklearn/preprocessing/')) as ?F)               .
+    BIND(REPLACE(?F, '/', '.', 'i') AS ?F1)                         .  
+    BIND(CONCAT(STR( ?F1 ), '( )') AS ?Function)                     .             
+    
+    # sort by dataset names and transformations
+    } ORDER BY ?Dataset ?Table ?Transformation ?Author"""
+
+    if show_query:
+        display_query(query)
+    return execute_query(config, query)
+
+
 # --------------------------------------------Farm Builder--------------------------------------------------------------
 
 def get_table_ids(config):

@@ -2,6 +2,7 @@ from feature_discovery.src.api.template import *
 from helpers.helper import *
 from helpers.feast_templates import entity_skeleton, feature_view_skeleton, definitions
 from tqdm import tqdm
+pd.set_option('display.max_colwidth', None)
 
 
 class KGFarm:
@@ -93,7 +94,7 @@ class KGFarm:
                     print('unsuccessful!\n')
                     raise ValueError(feature_view, ' not found!')
                 else:
-                    print(feature_view,  end=' ')
+                    print(feature_view, end=' ')
             return self.get_feature_views()
 
     def get_optional_physical_representations(self, show_query: bool = False):
@@ -195,11 +196,52 @@ class KGFarm:
                                             entity_df['Dataset_feature_view'])
         # take difference
         features = ['{}:'.format(feature_view) + feature for feature in feature_view_features if
-                feature not in entity_df_features]
+                    feature not in entity_df_features]
         print(len(features), 'feature(s) were found!')
         return features
 
+    def recommend_transformations(self, table: str = '', dataset: str = '',
+                                  show_metadata: bool = False, show_query: bool = False):
+        transformation_info = recommend_transformations(self.config, table, dataset, show_query)
+
+        # group features together per transformation
+        transformation_info_grouped = []
+        feature = []
+        pipeline = None
+        transformation = None
+        for row_number, value in transformation_info.to_dict('index').items():
+            if transformation == value['Transformation'] and pipeline == value['Pipeline']:
+                feature.append(value['Feature'])
+            else:
+                if row_number == 0:
+                    transformation = value['Transformation']
+                    pipeline = value['Pipeline']
+                    feature = [value['Feature']]
+                    continue
+                row = transformation_info.to_dict('index').get(row_number - 1)
+                transformation_info_grouped.append({'Transformation': transformation,
+                                                    'Package': row['Package'],
+                                                    'Function': row['Function'],
+                                                    'Library': row['Library'],
+                                                    'Features': feature,
+                                                    'Table': row['Table'],
+                                                    'Dataset': row['Dataset'],
+                                                    'Author': row['Author'],
+                                                    'Written_on': row['Written_on'],
+                                                    'Pipeline': pipeline,
+                                                    'Pipeline_url': row['Pipeline_url']})
+                transformation = value['Transformation']
+                pipeline = value['Pipeline']
+                feature = [value['Feature']]
+
+        transformation_info = pd.DataFrame(transformation_info_grouped)
+        if not show_metadata:
+            transformation_info.drop(['Package', 'Function', 'Library', 'Author', 'Written_on', 'Pipeline_url'],
+                                     axis=1, inplace=True)
+        return transformation_info
+
 
 if __name__ == "__main__":
-    kgfarm = KGFarm(path_to_feature_repo='../../../feature_repo/', port=5820, show_connection_status=False)
-    kgfarm.get_enrichable_tables()
+    kgfarm = KGFarm(path_to_feature_repo='../../../feature_repo/', port=5820, database='kgfarm',
+                    show_connection_status=False)
+    print(kgfarm.recommend_transformations(show_metadata=True))
