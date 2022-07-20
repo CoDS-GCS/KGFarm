@@ -152,7 +152,7 @@ class Builder:
         table_to_process = list(entities.to_dict('index').values())[0]['Primary_table_id']
         for entity_info in tqdm(entities.to_dict('index').values()):
             entity_name = (entity_info['Primary_column'] + '_' + entity_info['Primary_table'].replace('.parquet', '')) \
-                .replace('__', '_').replace(' ', '')
+                .replace('-', '_').replace('__', '_').replace(' ', '')
             table_id = entity_info['Primary_table_id']
             column_id = entity_info['Primary_column_id']
             uniqueness_ratio = entity_info['Primary_key_uniqueness_ratio']
@@ -184,7 +184,8 @@ class Builder:
                                                                 Primary_table_id.isin(self.unmapped_tables)])
         for unmapped_feature_view in tqdm(pkfk_relations.to_dict('index').values()):
             entity_name = (unmapped_feature_view['Primary_column'] + '_' +
-                           unmapped_feature_view['Primary_table'].replace('.parquet', '')).replace('__', '').replace(' ', '')
+                           unmapped_feature_view['Primary_table'].replace('.parquet', '')).replacr('-', '_').\
+                replace('__', '').replace(' ', '')
 
             table_id = unmapped_feature_view['Primary_table_id']
             column_id = unmapped_feature_view['Primary_column_id']
@@ -256,5 +257,5 @@ def upload_farm_graph(db: str = 'kgfarm_test', farm_graph: str = 'Farm.nq', lids
 
 
 if __name__ == "__main__":
-    generate_farm_graph(db='kglids_test', port=5820)
-    upload_farm_graph(db='kgfarm_test', farm_graph='Farm.nq', lids_graph='LiDS.nq')
+    generate_farm_graph(db='kgfarm', port=5820)
+    # upload_farm_graph(db='kgfarm_test', farm_graph='Farm.nq', lids_graph='LiDS.nq')
