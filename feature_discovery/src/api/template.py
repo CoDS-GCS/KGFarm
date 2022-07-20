@@ -13,6 +13,8 @@ def get_columns(config, table, dataset):
         ?Table_id			kglids:isPartOf	?Dataset_id								.
         ?Column_id			kglids:isPartOf	?Table_id								;
                             schema:name		?Column									.
+        # format in feast requires fv: feature_name, hence features with ':' need to be renamed or removed. 
+        FILTER(!regex((?Column), (':')))
     }""" % (table, dataset)
     return execute_query(config, query)['Column'].tolist()
 

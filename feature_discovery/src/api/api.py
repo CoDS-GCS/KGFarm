@@ -194,8 +194,10 @@ class KGFarm:
         feature_view_features = get_columns(self.config, entity_df['Physical_joinable_table'],
                                             entity_df['Dataset_feature_view'])
         # take difference
-        return ['{}:'.format(feature_view) + feature for feature in feature_view_features if
+        features = ['{}:'.format(feature_view) + feature for feature in feature_view_features if
                 feature not in entity_df_features]
+        print(len(features), 'feature(s) were found!')
+        return features
 
 
 if __name__ == "__main__":
