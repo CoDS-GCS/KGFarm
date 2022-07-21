@@ -3,6 +3,19 @@ from helpers.helper import execute_query, display_query
 # --------------------------------------------KGFarm APIs---------------------------------------------------------------
 
 
+def get_table_path(config, table, dataset):
+    query = """
+    SELECT ?Table_path
+    WHERE
+    {
+    ?Table_id   schema:name         "%s";
+                kglids:isPartOf     ?Dataset_id     ;
+                data:hasFilePath    ?Table_path     .
+    ?Dataset_id schema:name         "%s".
+    }"""% (table, dataset)
+    return str(execute_query(config, query)['Table_path'][0])
+
+
 def get_columns(config, table, dataset):
     query = """
     SELECT DISTINCT ?Column	
@@ -173,9 +186,10 @@ def get_optional_entities(config, show_query):
     return execute_query(config, query)
 
 
-def recommend_transformations(config, table, dataset, show_query):
+# TODO: add filter for table and dataset
+def recommend_feature_transformations(config, table, dataset, show_query):
     query = """
-    SELECT DISTINCT ?Transformation ?Package ?Function ?Library ?Feature ?Table ?Dataset ?Pipeline ?Author ?Written_on ?Pipeline_url  
+    SELECT DISTINCT ?Transformation ?Package ?Function ?Library ?Feature ?Feature_view ?Table ?Dataset ?Pipeline ?Author ?Written_on ?Pipeline_url  
     WHERE
     {
     # query pipeline-default graph

@@ -1,7 +1,10 @@
+import sklearn
 from feature_discovery.src.api.template import *
+from sklearn.preprocessing import *
 from helpers.helper import *
 from helpers.feast_templates import entity_skeleton, feature_view_skeleton, definitions
 from tqdm import tqdm
+
 pd.set_option('display.max_colwidth', None)
 
 
@@ -67,6 +70,13 @@ class KGFarm:
                                                                      'Physical_table': feature_view_info[
                                                                          'Physical_table'],
                                                                      'File_source': feature_view_info['File_source']}
+
+    def load_table(self, table_info: pd.Series, print_table_name: bool = True):
+        table = table_info['Table']
+        dataset = table_info['Dataset']
+        if print_table_name:
+            print(table)
+        return pd.read_parquet(get_table_path(self.config, table, dataset))
 
     def get_entities(self):
         return convert_dict_to_dataframe('Entity', self.entities). \
@@ -200,9 +210,9 @@ class KGFarm:
         print(len(features), 'feature(s) were found!')
         return features
 
-    def recommend_transformations(self, table: str = '', dataset: str = '',
-                                  show_metadata: bool = False, show_query: bool = False):
-        transformation_info = recommend_transformations(self.config, table, dataset, show_query)
+    def recommend_feature_transformations(self, table: str = '', dataset: str = '',
+                                          show_metadata: bool = False, show_query: bool = False):
+        transformation_info = recommend_feature_transformations(self.config, table, dataset, show_query)
 
         # group features together per transformation
         transformation_info_grouped = []
@@ -223,7 +233,8 @@ class KGFarm:
                                                     'Package': row['Package'],
                                                     'Function': row['Function'],
                                                     'Library': row['Library'],
-                                                    'Features': feature,
+                                                    'Feature': feature,
+                                                    'Feature_view': row['Feature_view'],
                                                     'Table': row['Table'],
                                                     'Dataset': row['Dataset'],
                                                     'Author': row['Author'],
@@ -240,8 +251,32 @@ class KGFarm:
                                      axis=1, inplace=True)
         return transformation_info
 
+    def apply_transformation(self, transformation_info: pd.Series):
+        df = self.load_table(transformation_info, print_table_name = False)
+        # df.drop('event_timestamp', inplace=True, axis=1)
+        transformation = transformation_info['Transformation']
+        features = transformation_info['Feature']
+        if transformation == 'LabelEncoder':
+            print('Applying LabelEncoder transformation')
+            for feature in tqdm(features):
+                try:
+                    encoder = LabelEncoder()
+                    df[feature] = encoder.fit_transform(df[feature])
+                except sklearn.exceptions:
+                    print("{} couldn't be transformed".format(transformation_info['Table']))
+        elif transformation == 'StandardScaler':
+            print('Applying StandardScaler transformation')
+            try:
+                scaler = StandardScaler(copy=False)
+                df[features] = scaler.fit_transform(df[features])
+            except sklearn.exceptions:
+                print("{} couldn't be transformed".format(transformation_info['Table']))
+        else:
+            print(transformation, ' not supported yet!')
+        print('{} feature(s) {} transformed successfully!'.format(len(features), features))
+        return df
+
 
 if __name__ == "__main__":
     kgfarm = KGFarm(path_to_feature_repo='../../../feature_repo/', port=5820, database='kgfarm',
                     show_connection_status=False)
-    print(kgfarm.recommend_transformations(show_metadata=True))
