@@ -33,9 +33,9 @@ python builder.py
 * [X] Predict [Feature view](https://docs.feast.dev/getting-started/concepts/feature-view) with single [Entity](https://docs.feast.dev/v/v0.6-branch/user-guide/entities)
 * [X] Predict [Feature view](https://docs.feast.dev/getting-started/concepts/feature-view) with multiple [Entities](https://docs.feast.dev/v/v0.6-branch/user-guide/entities)
 * [X] Support for [Entity](https://docs.feast.dev/v/v0.6-branch/user-guide/entities) updation on the fly
-* [x] Predict Features for [Model training](https://docs.feast.dev/getting-started/quickstart#step-4-generating-training-data)
+* [x] Predict Features for [Dataset enrichment](https://docs.feast.dev/getting-started/quickstart#step-4-generating-training-data) (Alpha)
+* [x] Predict feature transformations (Alpha)
 * [ ] Support for [Entity aliasing](https://docs.feast.dev/getting-started/concepts/feature-view#entity-aliasing)
-* [ ] Predict feature transformations
 * [ ] Recommend semantically similar features
 * [ ] Recommend similar features by content
 * [ ] Detect Feature bias
