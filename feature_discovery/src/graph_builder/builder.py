@@ -184,7 +184,7 @@ class Builder:
                                                                 Primary_table_id.isin(self.unmapped_tables)])
         for unmapped_feature_view in tqdm(pkfk_relations.to_dict('index').values()):
             entity_name = (unmapped_feature_view['Primary_column'] + '_' +
-                           unmapped_feature_view['Primary_table'].replace('.parquet', '')).replacr('-', '_').\
+                           unmapped_feature_view['Primary_table'].replace('.parquet', '')).replace('-', '_').\
                 replace('__', '').replace(' ', '')
 
             table_id = unmapped_feature_view['Primary_table_id']
@@ -238,7 +238,7 @@ class Builder:
                      graph_size))
 
 
-def generate_farm_graph(db, port):
+def generate_farm_graph(db, port=5820):
     start = time()
     builder = Builder(port=port, database=db, show_connection_status=True)
     builder.annotate_feature_views()
@@ -257,5 +257,5 @@ def upload_farm_graph(db: str = 'kgfarm_test', farm_graph: str = 'Farm.nq', lids
 
 
 if __name__ == "__main__":
-    generate_farm_graph(db='kgfarm', port=5820)
-    # upload_farm_graph(db='kgfarm_test', farm_graph='Farm.nq', lids_graph='LiDS.nq')
+    generate_farm_graph(db='kgfarm_test')
+    upload_farm_graph(db='kgfarm_test', farm_graph='Farm.nq', lids_graph='LiDS.nq')
