@@ -1,5 +1,5 @@
 import sklearn
-from feature_discovery.src.api.template import *
+from operations.template import *
 from sklearn.preprocessing import *
 from helpers.helper import *
 from helpers.feast_templates import entity_skeleton, feature_view_skeleton, definitions
@@ -278,5 +278,5 @@ class KGFarm:
 
 
 if __name__ == "__main__":
-    kgfarm = KGFarm(path_to_feature_repo='../../../feature_repo/', port=5820, database='kgfarm',
+    kgfarm = KGFarm(path_to_feature_repo='../feature_repo/', port=5820, database='kgfarm',
                     show_connection_status=False)

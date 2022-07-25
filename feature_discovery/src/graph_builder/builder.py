@@ -6,7 +6,7 @@ from skimpy import clean_columns
 
 sys.path.append('../../../')
 from helpers.helper import *
-from feature_discovery.src.api.template import *
+from operations.template import *
 
 
 class Builder:
@@ -151,7 +151,7 @@ class Builder:
         """""
         table_to_process = list(entities.to_dict('index').values())[0]['Primary_table_id']
         for entity_info in tqdm(entities.to_dict('index').values()):
-            entity_name = (entity_info['Primary_column'] + '_' + entity_info['Primary_table'].replace('.parquet', '')) \
+            entity_name = (entity_info['Primary_column'] + '_' + entity_info['Primary_table'].replace('.csv', '')) \
                 .replace('-', '_').replace('__', '_').replace(' ', '')
             table_id = entity_info['Primary_table_id']
             column_id = entity_info['Primary_column_id']
@@ -184,7 +184,7 @@ class Builder:
                                                                 Primary_table_id.isin(self.unmapped_tables)])
         for unmapped_feature_view in tqdm(pkfk_relations.to_dict('index').values()):
             entity_name = (unmapped_feature_view['Primary_column'] + '_' +
-                           unmapped_feature_view['Primary_table'].replace('.parquet', '')).replace('-', '_').\
+                           unmapped_feature_view['Primary_table'].replace('.csv', '')).replace('-', '_').\
                 replace('__', '').replace(' ', '')
 
             table_id = unmapped_feature_view['Primary_table_id']

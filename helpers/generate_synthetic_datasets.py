@@ -64,7 +64,7 @@ def process_tables(dataset, path_to_tables: str = 'sample_data/csv/'):
                 ids.extend(random.sample(original_ids, size))
             starting_table = pd.DataFrame(ids, columns=[new_df.columns[0]])
             # add custom name
-            starting_table.to_csv(new_df.columns[0].replace('_id', '')+'.csv', index=False)
+            starting_table.to_csv(new_df.columns[0].replace('_id', '') + '.csv', index=False)
         client_ids = pd.read_csv('crm_call_center_logs.csv')['rand_client'].tolist()
         client_ids = [int(x) for x in client_ids if str(x) != 'nan']
 
@@ -72,9 +72,7 @@ def process_tables(dataset, path_to_tables: str = 'sample_data/csv/'):
         client_ids = client_ids + list(set(other_client_ids) - set(client_ids))
         client_ids = list(set(client_ids))
         pd.DataFrame(list(zip(client_ids)),
-                              columns=['client_id']).to_csv('client.csv', index=False)
-
-
+                     columns=['client_id']).to_csv('client.csv', index=False)
 
     # add synthetic features
     def add_synthetic_features():
@@ -90,9 +88,10 @@ def process_tables(dataset, path_to_tables: str = 'sample_data/csv/'):
     def add_table_with_multiple_entities():
         account_ids = pd.read_csv('account.csv')['account_id'].tolist()
         size = len(account_ids)
-        client_ids = random.sample(pd.read_csv('client.csv')['client_id'].to_list()*2, size)
-        province = random.sample(['British Columbia', 'Quebec', 'Ontario', 'Newfoundland & Labrador', 'Alberta']*5000, size)
-        new_df = pd.DataFrame(list(zip(client_ids, account_ids, province, ['Canada']*size)),
+        client_ids = random.sample(pd.read_csv('client.csv')['client_id'].to_list() * 2, size)
+        province = random.sample(['British Columbia', 'Quebec', 'Ontario', 'Newfoundland & Labrador', 'Alberta'] * 5000,
+                                 size)
+        new_df = pd.DataFrame(list(zip(client_ids, account_ids, province, ['Canada'] * size)),
                               columns=['client_id', 'account_id', 'province', 'country'])
         new_df.to_csv('month_summary.csv', index=False)
 
@@ -107,7 +106,7 @@ def process_tables(dataset, path_to_tables: str = 'sample_data/csv/'):
             df['event_timestamp'] = get_random_timestamps(df[df.columns[0]].count())
             df.to_parquet('../../parquet/{}/{}'.format(dataset, table.replace('.csv', '.parquet')))
             os.remove(table)
-            df.to_csv(table)
+            df.to_csv(table, index=False)
 
 
 def main():
