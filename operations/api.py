@@ -5,7 +5,7 @@ from helpers.helper import *
 from helpers.feast_templates import entity_skeleton, feature_view_skeleton, definitions
 from tqdm import tqdm
 
-pd.set_option('display.max_colwidth', None)
+pd.set_option('display.max_columns', 10)
 
 
 class KGFarm:
@@ -173,7 +173,6 @@ class KGFarm:
         # TODO: gather information on how get_historical_features() work with feature view with multiple entities.
         enrichable_tables = get_enrichable_tables(self.config, show_query)
         # delete pairs where features are same i.e. nothing to join
-        pairs_with_same_features = 0
         for index, pairs in tqdm(enrichable_tables.to_dict('index').items()):
             entity_dataset = pairs['Dataset']
             entity_table = pairs['Table']
@@ -185,15 +184,23 @@ class KGFarm:
             features_in_entity_df.sort()
             features_in_feature_view.sort()
             if features_in_entity_df == features_in_feature_view:
-                pairs_with_same_features = pairs_with_same_features + 1
                 enrichable_tables = enrichable_tables.drop(index)
 
+        # remove feature views that were dropped by the user
         enrichable_tables = enrichable_tables[~enrichable_tables['Enrich_with'].isin(self.__dropped_feature_views)]
         enrichable_tables = enrichable_tables.sort_values(by=['Table', 'Joinability_strength', 'Enrich_with'],
                                                           ascending=False). \
             reset_index(drop=True)
+
+        # update physical representations with the most-updated entity info
+        for row, row_info in enrichable_tables.to_dict('index').items():
+            updated_key = self.feature_views.get(row_info['Enrich_with'])['Physical_column']
+            if ',' not in updated_key:
+                enrichable_tables.at[row, ['Join_key']] = updated_key
+
         enrichable_tables['Joinability_strength'] = enrichable_tables['Joinability_strength']. \
             apply(lambda x: str(int(x * 100)) + '%')
+
         return enrichable_tables
 
     def get_features(self, entity_df: pd.Series):
@@ -278,5 +285,8 @@ class KGFarm:
 
 
 if __name__ == "__main__":
-    kgfarm = KGFarm(path_to_feature_repo='../feature_repo/', port=5820, database='kgfarm',
+    kgfarm = KGFarm(path_to_feature_repo='../feature_repo/', port=5820, database='kgfarm_test',
                     show_connection_status=False)
+    optional_physical_representations_df = kgfarm.get_optional_physical_representations()
+    kgfarm.update_entity([optional_physical_representations_df.iloc[12]])
+    kgfarm.get_enrichable_tables()

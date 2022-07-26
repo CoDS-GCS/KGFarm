@@ -114,7 +114,7 @@ def get_feature_views_without_entities(config, show_query):
 
 def get_enrichable_tables(config, show_query):
     query = """
-    SELECT DISTINCT ?Table ?Enrich_with (?Confidence_score as ?Joinability_strength) ?Physical_joinable_table ?Table_path ?File_source ?Dataset ?Dataset_feature_view
+    SELECT DISTINCT ?Table ?Enrich_with (?Confidence_score as ?Joinability_strength) (?join_key_name as ?Join_key) ?Physical_joinable_table ?Table_path ?File_source ?Dataset ?Dataset_feature_view
     WHERE
     {
         # {
