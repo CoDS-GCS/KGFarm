@@ -1,0 +1,8 @@
+﻿PK - Section,PK - Table,PK - ColName,To,FK - Section,FK - Table,FK - ColName
+,orders,O_ORDERKEY,,,lineitem,L_ORDERKEY
+,customer,C_CUSTKEY,,,orders,O_CUSTKEY
+,nation,N_NATIONKEY,,,customer,C_NATIONKEY
+,supplier,S_SUPPKEY,,,partsupp,PS_SUPPKEY
+,part,P_PARTKEY,,,partsupp,PS_PARTKEY
+,nation,N_NATIONKEY,,,supplier,S_NATIONKEY
+,region,R_REGIONKEY,,,nation,N_REGIONKEY

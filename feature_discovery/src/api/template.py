@@ -104,15 +104,16 @@ def get_INDs(config, show_query: bool = False):
     SELECT(strbefore(?Foreign_table_name, '.csv') as ?Foreign_table) (?Name_A as ?Foreign_key) ?A(strbefore(?Primary_table_name, '.csv') as ?Primary_table) (?Name_B as ?Primary_key) ?B
     WHERE
     {
-    ?B          data:hasInclusionDependency ?A                      ;
-                schema:name                 ?Name_B                 ;
+    ?B          schema:name                 ?Name_B                 ;
                 kglids:isPartOf             ?Table_B                .
+    <<?B        data:hasInclusionDependency ?A >>    data:withCertainty  ?Score  .
         
     ?A          kglids:isPartOf             ?Table_A                ;
                 schema:name                 ?Name_A                 .
         
     ?Table_B    schema:name                 ?Primary_table_name     .
     ?Table_A    schema:name                 ?Foreign_table_name     .
+    FILTER(?Score>0.60)
     }"""
     if show_query:
         display_query(query)
@@ -134,7 +135,7 @@ def get_content_similar_pairs(config, show_query: bool = False):
 
     ?Table_B    schema:name                 ?Primary_table_name                             .
     ?Table_A    schema:name                 ?Foreign_table_name                             .
-    FILTER(?Score>0.995)
+    FILTER(?Score>=0.995)
     }"""
     if show_query:
         display_query(query)
@@ -160,8 +161,8 @@ def get_content_similarity(config, show_query: bool = False):
     SELECT ?A ?B (?Score AS ?F2)
     WHERE
     {   
-        #?B  data:hasInclusionDependency ?A                                  .
-        <<?B data:hasContentSimilarity  ?A>>    data:withCertainty  ?Score  .
+        <<?B data:hasDeepEmbeddingContentSimilarity           ?A>>    data:withCertainty  ?Score  .                         
+        #<<?B data:hasContentSimilarity  ?A>>    data:withCertainty  ?Score  .
     }"""
     if show_query:
         display_query(query)
@@ -171,11 +172,11 @@ def get_content_similarity(config, show_query: bool = False):
 
 def get_column_name_similarity(config, show_query: bool = False):
     query = """
-    SELECT ?A ?B (?Score AS ?F6)
+    SELECT ?A ?B ?F6
     WHERE
-    {   
-        #?B  data:hasInclusionDependency ?A                                  .
+    {                                    
         <<?B data:hasSemanticSimilarity  ?A>>    data:withCertainty  ?Score  .
+        BIND(IF((?Score=1),1,0) as ?F6) .
     }"""
     if show_query:
         display_query(query)
@@ -188,9 +189,8 @@ def get_range(config, show_query: bool = False):
     SELECT ?A ?B ?F8
     WHERE
     {
-    ?B  #data:hasInclusionDependency ?A      ;
-        schema:name                 ?Name_A .
-    ?A  schema:name                 ?Name_B .
+    ?B  schema:name                 ?Name_B .
+    ?A  schema:name                 ?Name_A .
     ?A  kglids:isPartOf             ?tA.
     ?B  kglids:isPartOf             ?tB.
     ?A  data:hasMaxValue            ?maxA .
@@ -198,7 +198,7 @@ def get_range(config, show_query: bool = False):
     ?B  data:hasMaxValue            ?maxB .
     ?B  data:hasMinValue            ?minB .
     
-    BIND(IF((?maxB>=?maxA && ?minB<=?minA),1,0) as ?F8) .
+    BIND(IF((?maxB=?maxA && ?minB=?minA),1,0) as ?F8) .
     FILTER(?tA != ?tB) .   
     }"""
     if show_query:
@@ -207,16 +207,39 @@ def get_range(config, show_query: bool = False):
     return execute_query(config, query)
 
 
+def get_range_with_value(config, A,B,show_query: bool = False):
+    query = """
+    SELECT ?F8
+    WHERE
+    {
+    ?B  schema:name                 ?Name_B .
+    ?A  schema:name                 ?Name_A .
+    ?A  kglids:isPartOf             ?tA.
+    ?B  kglids:isPartOf             ?tB.
+    ?A  data:hasMaxValue            ?maxA .
+    ?A  data:hasMinValue            ?minA .
+    ?B  data:hasMaxValue            ?maxB .
+    ?B  data:hasMinValue            ?minB .
+
+    BIND(IF((?maxB=?maxA && ?minB=?minA),1,0) as ?F8) .
+    FILTER(?tA != ?tB  && ?A='"""+A+"""'  && ?B='"""+B+"""') .   
+    }"""
+    if show_query:
+        display_query(query)
+    x=execute_query(config, query)
+    #print(query)
+    return execute_query(config, query)
+
+
 def get_typical_name_suffix(config, show_query: bool = False):
     query = """
     SELECT ?A ?B ?F9
     WHERE
     {
-    ?B  #data:hasInclusionDependency ?A      ;
-        schema:name                 ?Name_A .
-    ?A  schema:name                 ?Name_B .
+    ?B  schema:name                 ?Name_B .
+    ?A  schema:name                 ?Name_A .
     
-    BIND(IF(REGEX(?Name_A, 'id$', "i" )||REGEX(?Name_A, 'key$', "i" )||REGEX(?Name_A, 'num_$', "i" ),1,0) as ?F9) .   
+    BIND(IF(REGEX(?Name_A, 'id$', "i" )||REGEX(?Name_A, 'key$', "i" )||REGEX(?Name_A, 'num$', "i" ),1,0) as ?F9) .   
     }"""
     if show_query:
         display_query(query)

@@ -1,0 +1,21 @@
+PK - Section,PK - Table,PK - ColName,To,FK - Section,FK - Table,FK - ColName
+,C_District,d_id,,,C_Customer,c_d_id
+,C_Warehouse,w_id,,,C_District,d_w_id
+,C_Customer,c_id,,,C_History,h_c_id
+,C_Customer,c_d_id,,,C_History,h_c_d_id
+,C_Customer,c_w_id,,,C_History,h_c_w_id
+,C_District,d_id,,,C_History,h_d_id
+,C_District,d_w_id,,,C_History,h_w_id
+,C_Order,o_id,,,C_New_Order,no_o_id
+,C_Order,o_d_id,,,C_New_Order,no_d_id
+,C_Order,o_w_id,,,C_New_Order,no_w_id
+,C_Customer,c_d_id,,,C_Order,o_d_id
+,C_Customer,c_id,,,C_Order,o_c_id
+,C_Customer,c_w_id,,,C_Order,o_w_id
+,C_Order,o_id,,,C_Order_Line,ol_o_id
+,C_Order,o_d_id,,,C_Order_Line,ol_d_id
+,C_Order,o_w_id,,,C_Order_Line,ol_w_id
+,C_Stock,s_i_id,,,C_Order_Line,ol_i_id
+,C_Stock,s_w_id,,,C_Order_Line,ol_supply_w_id
+,C_Item,i_id,,,C_Stock,s_i_id
+,C_Warehouse,w_id,,,C_Stock,s_w_id
