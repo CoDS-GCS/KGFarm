@@ -1,7 +1,9 @@
 import sklearn
+import datetime
 from operations.template import *
 from sklearn.preprocessing import *
 from helpers.helper import *
+from datetime import timedelta
 from helpers.feast_templates import entity_skeleton, feature_view_skeleton, definitions
 from tqdm import tqdm
 
@@ -259,7 +261,7 @@ class KGFarm:
         return transformation_info
 
     def apply_transformation(self, transformation_info: pd.Series):
-        df = self.load_table(transformation_info, print_table_name = False)
+        df = self.load_table(transformation_info, print_table_name=False)
         # df.drop('event_timestamp', inplace=True, axis=1)
         transformation = transformation_info['Transformation']
         features = transformation_info['Feature']
@@ -282,6 +284,28 @@ class KGFarm:
             print(transformation, ' not supported yet!')
         print('{} feature(s) {} transformed successfully!'.format(len(features), features))
         return df
+
+    @staticmethod
+    def enrich(enrichment_info: pd.Series, ttl: int = 10):
+        entity_df = pd.read_csv(enrichment_info['Table_path'])
+        feature_view = pd.read_csv(enrichment_info['File_source'])
+        join_jey = enrichment_info['Join_key']
+        enriched_df = pd.merge(entity_df, feature_view, on=join_jey)
+        for row, row_info in tqdm(enriched_df.to_dict('index').items()):
+            timestamp_entity = datetime.datetime.strptime(row_info['event_timestamp_x'], '%Y-%m-%d %H:%M:%S.%f')
+            timestamp_feature_view = datetime.datetime.strptime(row_info['event_timestamp_y'], '%Y-%m-%d %H:%M:%S.%f')
+            """
+            delete record if the following either of the following 2 conditions were violated:
+            1. Timestamp of entity < Timestamp of feature view or
+            2. Timestamp of entity - ttl > timestamp of feature view 
+            """
+            if timestamp_entity < timestamp_feature_view or timestamp_entity - timedelta(
+                    days=ttl) > timestamp_feature_view:
+                enriched_df.drop(index=row, axis=0, inplace=True)
+
+        enriched_df.drop('event_timestamp_y', axis=1, inplace=True)
+        enriched_df.rename(columns={'event_timestamp_x': 'event_timestamp'}, inplace=True)
+        return enriched_df.sort_values(by=['district_id']).reset_index(drop=True)
 
 
 if __name__ == "__main__":
