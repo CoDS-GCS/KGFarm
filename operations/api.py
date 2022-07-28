@@ -1,18 +1,19 @@
 import sklearn
 import datetime
+import pandas as pd
+from tqdm import tqdm
+from datetime import timedelta
 from operations.template import *
 from sklearn.preprocessing import *
-from helpers.helper import *
-from datetime import timedelta
-from helpers.feast_templates import entity_skeleton, feature_view_skeleton, definitions
-from tqdm import tqdm
-
+from helpers.helper import connect_to_stardog, convert_dict_to_dataframe
+# from helpers.feast_templates import entity_skeleton, feature_view_skeleton, definitions
 pd.set_option('display.max_columns', 10)
 
 
 class KGFarm:
     def __init__(self, port: object = 5820, database: str = 'kgfarm_test',
                  path_to_feature_repo: str = 'feature_repo/', show_connection_status: bool = True):
+        """
         # remove old feast meta
         if os.path.exists(path_to_feature_repo + 'data/registry.db'):
             os.remove(path_to_feature_repo + 'data/registry.db')
@@ -20,7 +21,7 @@ class KGFarm:
             os.remove(path_to_feature_repo + 'data/online_store.db')
         if os.path.exists(path_to_feature_repo + 'data/driver_stats.parquet'):
             os.remove(path_to_feature_repo + 'data/driver_stats.parquet')
-
+        """
         self.path_to_feature_repo = path_to_feature_repo
         self.config = connect_to_stardog(port, database, show_connection_status)
         self.entities = {}  # for now needed for populating entity metadata while generating register .py file
@@ -130,6 +131,7 @@ class KGFarm:
 
         return self.get_feature_views()
 
+    """
     # writes to file the predicted feature views and entities
     def finalize_feature_views(self, ttl: int = 30, save_as: str = 'predicted_register.py'):
         # delete the default feast file
@@ -170,6 +172,7 @@ class KGFarm:
             py_file.close()
         print('Predicted feature view(s) file saved at: ',
               os.path.abspath(self.path_to_feature_repo) + '/' + save_as)
+    """
 
     def get_enrichable_tables(self, show_query: bool = False):
         # TODO: gather information on how get_historical_features() work with feature view with multiple entities.
@@ -205,7 +208,7 @@ class KGFarm:
 
         return enrichable_tables
 
-    def get_features(self, entity_df: pd.Series):
+    def get_features(self, entity_df: pd.Series, show_status: bool = True):
         # TODO: add support for fetching features that originate from multiple feature views at once.
         feature_view = entity_df['Enrich_with']
         # features in entity dataframe
@@ -216,7 +219,8 @@ class KGFarm:
         # take difference
         features = ['{}:'.format(feature_view) + feature for feature in feature_view_features if
                     feature not in entity_df_features]
-        print(len(features), 'feature(s) were found!')
+        if show_status:
+            print(len(features), 'feature(s) were found!')
         return features
 
     def recommend_feature_transformations(self, table: str = '', dataset: str = '',
@@ -285,11 +289,20 @@ class KGFarm:
         print('{} feature(s) {} transformed successfully!'.format(len(features), features))
         return df
 
-    @staticmethod
-    def enrich(enrichment_info: pd.Series, ttl: int = 10):
+    def enrich(self, enrichment_info: pd.Series, ttl: int = 10):
+        # get features
+        features = self.get_features(enrichment_info, show_status=False)
+        features = [feature.split(':')[-1] for feature in features]
+        print('Enriching {} with {} feature(s) {}'.format(enrichment_info['Table'], len(features), features))
+
+        # parse row passed as the input
         entity_df = pd.read_csv(enrichment_info['Table_path'])
         feature_view = pd.read_csv(enrichment_info['File_source'])
         join_jey = enrichment_info['Join_key']
+
+        # add timestamp and join-key to features in feature view to perform join
+        features.extend([join_jey, 'event_timestamp'])
+        feature_view = feature_view[features]
         enriched_df = pd.merge(entity_df, feature_view, on=join_jey)
         for row, row_info in tqdm(enriched_df.to_dict('index').items()):
             timestamp_entity = datetime.datetime.strptime(row_info['event_timestamp_x'], '%Y-%m-%d %H:%M:%S.%f')
@@ -305,12 +318,14 @@ class KGFarm:
 
         enriched_df.drop('event_timestamp_y', axis=1, inplace=True)
         enriched_df.rename(columns={'event_timestamp_x': 'event_timestamp'}, inplace=True)
-        return enriched_df.sort_values(by=['district_id']).reset_index(drop=True)
+        # re-arrange columns
+        columns = list(enriched_df.columns)
+        columns.remove('event_timestamp')
+        columns.insert(0, 'event_timestamp')
+        enriched_df = enriched_df[columns]
+        return enriched_df.sort_values(by=join_jey).reset_index(drop=True)
 
 
 if __name__ == "__main__":
     kgfarm = KGFarm(path_to_feature_repo='../feature_repo/', port=5820, database='kgfarm_test',
                     show_connection_status=False)
-    optional_physical_representations_df = kgfarm.get_optional_physical_representations()
-    kgfarm.update_entity([optional_physical_representations_df.iloc[12]])
-    kgfarm.get_enrichable_tables()
