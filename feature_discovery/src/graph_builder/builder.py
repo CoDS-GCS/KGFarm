@@ -1,4 +1,5 @@
 import sys
+import numpy as np
 from time import time
 from tqdm import tqdm
 from datetime import datetime
@@ -256,6 +257,7 @@ def upload_farm_graph(db: str = 'kgfarm_test', farm_graph: str = 'Farm.nq', lids
     os.system('stardog data add --format turtle {} ../../../helpers/sample_data/graph/LiDS.nq'.format(db, lids_graph))
 
 
+# TODO: remove duplicate entities
 if __name__ == "__main__":
-    generate_farm_graph(db='kgfarm_test')
-    upload_farm_graph(db='kgfarm_test', farm_graph='Farm.nq', lids_graph='LiDS.nq')
+    generate_farm_graph(db='kgfarm')
+    # upload_farm_graph(db='kgfarm', farm_graph='Farm.nq', lids_graph='LiDS.nq')
