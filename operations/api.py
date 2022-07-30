@@ -79,7 +79,7 @@ class KGFarm:
         dataset = table_info['Dataset']
         if print_table_name:
             print(table)
-        return pd.read_parquet(get_table_path(self.config, table, dataset))
+        return pd.read_csv(get_table_path(self.config, table, dataset))
 
     def get_entities(self):
         return convert_dict_to_dataframe('Entity', self.entities). \
