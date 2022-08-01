@@ -7,7 +7,8 @@ from operations.template import *
 from sklearn.preprocessing import *
 from helpers.helper import connect_to_stardog, convert_dict_to_dataframe
 # from helpers.feast_templates import entity_skeleton, feature_view_skeleton, definitions
-pd.set_option('display.max_columns', 10)
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_colwidth', None)
 
 
 class KGFarm:
@@ -265,7 +266,7 @@ class KGFarm:
         return transformation_info
 
     def apply_transformation(self, transformation_info: pd.Series):
-        df = self.load_table(transformation_info, print_table_name=False)
+        df = self.load_table(transformation_info['Table'], print_table_name=False)
         # df.drop('event_timestamp', inplace=True, axis=1)
         transformation = transformation_info['Transformation']
         features = transformation_info['Feature']
