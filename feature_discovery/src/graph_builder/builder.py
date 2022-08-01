@@ -1,5 +1,4 @@
 import sys
-import numpy as np
 from time import time
 from tqdm import tqdm
 from datetime import datetime
@@ -126,6 +125,7 @@ class Builder:
 
     # does one-to-one mapping of table -> feature view
     def annotate_feature_views(self):
+        # TODO: add zero padding for ordering of feature view names
         print('\n• Annotating feature views')
         self.graph.write('# 1. Feature Views, one-to-one mapping with tables \n')
         table_ids = get_table_ids(self.config)['Table_id'].tolist()
@@ -250,14 +250,14 @@ def generate_farm_graph(db, port=5820):
     builder.summarize_graph()
 
 
-def upload_farm_graph(db: str = 'kgfarm_test', farm_graph: str = 'Farm.nq', lids_graph: str = 'LiDS.nq'):
+def upload_farm_graph(db: str = 'kgfarm_test', farm_graph: str = 'Farm.nq'):
     print('\nUploading {} to {} database'.format(farm_graph, db))
-    os.system('stardog data remove --all {}'.format(db))
+    # os.system('stardog data remove --all {}'.format(db))
     os.system('stardog data add --format turtle {} {}'.format(db, farm_graph))
-    os.system('stardog data add --format turtle {} ../../../helpers/sample_data/graph/LiDS.nq'.format(db, lids_graph))
+    # os.system('stardog data add --format turtle {} ../../../helpers/sample_data/graph/LiDS.nq'.format(db, lids_graph))
 
 
 # TODO: remove duplicate entities
 if __name__ == "__main__":
-    generate_farm_graph(db='kgfarm')
-    # upload_farm_graph(db='kgfarm', farm_graph='Farm.nq', lids_graph='LiDS.nq')
+    generate_farm_graph(db='test')
+    upload_farm_graph(db='test', farm_graph='Farm.nq')
