@@ -2,9 +2,13 @@ import os
 import io
 import yaml
 import stardog
+import numpy as np
 import pandas as pd
+import seaborn as sns
 import SPARQLWrapper.Wrapper
+from matplotlib import pyplot as plt
 from SPARQLWrapper import JSON, SPARQLWrapper
+
 
 PREFIXES = """
     PREFIX kgfarm:      <http://kgfarm.com/ontology/>
@@ -127,4 +131,72 @@ def convert_dict_to_dataframe(key, d: dict):
     df = pd.DataFrame.from_dict(df)
     df.insert(loc=0, column=key, value=first_col)
     return df
+
+
+def plot_scores(conventional_approach: dict):
+    plt.rcParams['figure.dpi'] = 120
+    sns.set_style("dark")
+
+    x = list(classifier.replace('classifier', '') for classifier in conventional_approach.keys())
+    y = list(conventional_approach.values())
+
+    fig, ax = plt.subplots(figsize=(7, 3))
+    width = 0.38
+    ind = np.arange(len(y))
+    color = 'tab:green'
+    ax.barh(ind, y, width, color=color, edgecolor=color)
+
+    ax.set_yticks(ind + width / 2)
+    ax.set_yticklabels(x, minor=False)
+    ax.invert_yaxis()
+    plt.xlabel('F1-score')
+    plt.grid(color='lightgray', linestyle='dashed', axis='x')
+    plt.show()
+
+
+def plot_comparison(conventional_approach: dict, kgfarm_approach: dict):
+    plt.rcParams['figure.dpi'] = 300
+    sns.set_style("dark")
+    scores = {}
+    for classifier in conventional_approach.keys():
+        scores[classifier] = [conventional_approach.get(classifier), kgfarm_approach.get(classifier)]
+
+    labels = ["conventional pipeline", "using KGFarm"]
+    x = np.arange(len(labels))
+    width = 0.15  # the width of the bars
+
+    fig, ax = plt.subplots(figsize=(7, 6))
+
+    classifier = 'Random forest classifier'
+    color = 'darkgreen'
+    rects1 = ax.bar(x - width, scores.get(classifier), color=color, edgecolor=color, width=width, label=classifier)
+    plt.axhline(y=scores.get(classifier)[1], color=color, linestyle="--")
+    classifier = 'Gradient boosting classifier'
+    color = 'mediumseagreen'
+    rects2 = ax.bar(x, scores.get(classifier), color=color, width=width, edgecolor=color, label=classifier)
+    plt.axhline(y=scores.get(classifier)[1], color=color, linestyle="--")
+    classifier = 'Naive bayes classifier'
+    color = 'lightgreen'
+    rects3 = ax.bar(x + width, scores.get(classifier), color=color, width=width, edgecolor=color, label=classifier)
+    plt.axhline(y=scores.get(classifier)[1], color=color, linestyle="--")
+
+    def autolabel(rects):
+        for rect in rects:
+            h = rect.get_height()
+            ax.text(rect.get_x() + rect.get_width() / 2, h, float(h), ha='center', verticalalignment='bottom',
+                    fontsize=15)
+
+    autolabel(rects1)
+    autolabel(rects2)
+    autolabel(rects3)
+
+    ax.set_ylabel('F1-score', fontsize=15)
+    ax.set_axisbelow(True)
+    ax.grid(color='gray', linestyle='dashed', axis='y')
+    ax.set_xticks(x)
+    ax.set_xticklabels(("conventional ML pipeline", "using KGFarm"), fontsize=15)
+    ax.legend(fontsize=10, bbox_to_anchor=(1.0, 1.02))
+    fig.tight_layout()
+    plt.subplots_adjust(left=0.2, bottom=0.2, right=1.35)
+    plt.show()
 
