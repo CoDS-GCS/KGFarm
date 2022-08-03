@@ -240,6 +240,27 @@ def recommend_feature_transformations(config, table, dataset, show_query):
     return execute_query(config, query)
 
 
+def search_entity_table(config, columns):
+    def generate_subquery():
+        subquery = ''
+        col_count = 0
+        for column in columns:
+            subquery = subquery + "\t?Column_id_{} schema:name '{}';\n\t\t\tkglids:isPartOf ?Table_id.\n\n".\
+                format(col_count, column)
+            col_count = col_count + 1
+        return subquery
+
+    query = """
+    SELECT ?Table
+    WHERE
+    {
+    %s
+        ?Table_id   schema:name         ?Table.
+    }
+    """ % generate_subquery()
+    return execute_query(config, query)['Table'][0]
+
+
 # --------------------------------------------Farm Builder--------------------------------------------------------------
 
 def get_table_ids(config):

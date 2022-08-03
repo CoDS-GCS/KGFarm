@@ -30,6 +30,7 @@ class KGFarm:
         # Need to maintain these because we do not update the KG
         self.__dropped_feature_views = set()
         self.__get_entities_and_feature_views()
+        self.__table_transformations = {}  # for enrichment -> enriched with : source table
 
     def __get_entities_and_feature_views(self, show_query: bool = False):
         def format_entities(entities):
@@ -175,8 +176,8 @@ class KGFarm:
               os.path.abspath(self.path_to_feature_repo) + '/' + save_as)
     """
 
-    def get_enrichable_tables(self, show_query: bool = False):
-        # TODO: gather information on how get_historical_features() work with feature view with multiple entities.
+    def search_enrichment_options(self, entity_df: pd.DataFrame = None, show_query: bool = False):
+        # TODO: support for multiple entities.
         enrichable_tables = get_enrichable_tables(self.config, show_query)
         # delete pairs where features are same i.e. nothing to join
         for index, pairs in tqdm(enrichable_tables.to_dict('index').items()):
@@ -207,13 +208,26 @@ class KGFarm:
         enrichable_tables['Joinability_strength'] = enrichable_tables['Joinability_strength']. \
             apply(lambda x: str(int(x * 100)) + '%')
 
+        if entity_df is not None:
+            # filter enrichable_tables dataframe based on columns in entity_df
+            entity_table = search_entity_table(self.config, list(entity_df.columns))
+            enrichable_tables = enrichable_tables.loc[enrichable_tables['Table'] == entity_table]
+            enrichable_tables.drop(['Table', 'Table_path', 'Dataset'], axis=1, inplace=True)
+            # enrichable_tables.rename({'Dataset_feature_view': 'Dataset'}, axis=1, inplace=True)
+            enrichable_tables = enrichable_tables[['Enrich_with', 'Physical_joinable_table', 'Join_key',
+                                                   'Joinability_strength', 'File_source',	'Dataset_feature_view']].\
+                reset_index(drop=True)
+
         return enrichable_tables
 
-    def get_features(self, entity_df: pd.Series, show_status: bool = True):
+    def get_features(self, entity_df: pd.Series, entity_df_columns: tuple = (), show_status: bool = True):
         # TODO: add support for fetching features that originate from multiple feature views at once.
         feature_view = entity_df['Enrich_with']
         # features in entity dataframe
-        entity_df_features = get_columns(self.config, entity_df['Table'], entity_df['Dataset'])
+        if len(entity_df_columns) > 0:
+            entity_df_features = entity_df_columns
+        else:
+            entity_df_features = get_columns(self.config, entity_df_columns, entity_df['Dataset'])
         # features in feature view table
         feature_view_features = get_columns(self.config, entity_df['Physical_joinable_table'],
                                             entity_df['Dataset_feature_view'])
@@ -224,8 +238,8 @@ class KGFarm:
             print(len(features), 'feature(s) were found!')
         return features
 
-    def recommend_feature_transformations(self, table: str = '', dataset: str = '',
-                                          show_metadata: bool = False, show_query: bool = False):
+    def recommend_feature_transformations(self, entity_df: pd.DataFrame = None, table: str = '', dataset: str = '',
+                                          show_metadata: bool = True, show_query: bool = False):
         transformation_info = recommend_feature_transformations(self.config, table, dataset, show_query)
 
         # group features together per transformation
@@ -263,10 +277,21 @@ class KGFarm:
         if not show_metadata:
             transformation_info.drop(['Package', 'Function', 'Library', 'Author', 'Written_on', 'Pipeline_url'],
                                      axis=1, inplace=True)
+
+        if entity_df is not None:
+            table = self.__table_transformations.get(tuple(entity_df.columns))
+            transformation_info = transformation_info.loc[transformation_info['Table'] == table]
+            transformation_info = transformation_info.reset_index(drop=True)
+
+            transformation_info.drop(['Dataset', 'Written_on', 'Pipeline_url', 'Dataset', 'Author', 'Table'],
+                                 axis=1, inplace=True)
         return transformation_info
 
-    def apply_transformation(self, transformation_info: pd.Series):
-        df = self.load_table(transformation_info['Table'], print_table_name=False)
+    def apply_transformation(self, transformation_info: pd.Series, entity_df: pd.DataFrame = None):
+        if entity_df is not None:
+            df = entity_df
+        else:
+            df = self.load_table(transformation_info['Table'], print_table_name=False)
         # df.drop('event_timestamp', inplace=True, axis=1)
         transformation = transformation_info['Transformation']
         features = transformation_info['Feature']
@@ -290,14 +315,19 @@ class KGFarm:
         print('{} feature(s) {} transformed successfully!'.format(len(features), features))
         return df
 
-    def enrich(self, enrichment_info: pd.Series, ttl: int = 10):
-        # get features
-        features = self.get_features(enrichment_info, show_status=False)
-        features = [feature.split(':')[-1] for feature in features]
-        print('Enriching {} with {} feature(s) {}'.format(enrichment_info['Table'], len(features), features))
+    def enrich(self, enrichment_info: pd.Series, entity_df: pd.DataFrame = None, ttl: int = 10):
+        # get features to be enriched with
+        if entity_df is not None:
+            features = self.get_features(enrichment_info, tuple(entity_df.columns), show_status=False)
+            features = [feature.split(':')[-1] for feature in features]
+            print('Enriching {} with {} feature(s) {}'.format('entity_df', len(features), features))
+        else:
+            entity_df = pd.read_csv(enrichment_info['Table_path'])
+            features = self.get_features(enrichment_info, show_status=False)
+            features = [feature.split(':')[-1] for feature in features]
+            print('Enriching {} with {} feature(s) {}'.format(enrichment_info['Table'], len(features), features))
 
         # parse row passed as the input
-        entity_df = pd.read_csv(enrichment_info['Table_path'])
         feature_view = pd.read_csv(enrichment_info['File_source'])
         join_jey = enrichment_info['Join_key']
 
@@ -319,12 +349,18 @@ class KGFarm:
 
         enriched_df.drop('event_timestamp_y', axis=1, inplace=True)
         enriched_df.rename(columns={'event_timestamp_x': 'event_timestamp'}, inplace=True)
+
         # re-arrange columns
         columns = list(enriched_df.columns)
         columns.remove('event_timestamp')
         columns.insert(0, 'event_timestamp')
         enriched_df = enriched_df[columns]
-        return enriched_df.sort_values(by=join_jey).reset_index(drop=True)
+        enriched_df = enriched_df.sort_values(by=join_jey).reset_index(drop=True)
+
+        # maintain enrichment details
+        self.__table_transformations[tuple(enriched_df.columns)] = enrichment_info['Physical_joinable_table']
+
+        return enriched_df
 
 
 if __name__ == "__main__":
