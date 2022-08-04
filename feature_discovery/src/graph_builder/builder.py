@@ -259,5 +259,5 @@ def upload_farm_graph(db: str = 'kgfarm_test', farm_graph: str = 'Farm.nq'):
 
 # TODO: remove duplicate entities
 if __name__ == "__main__":
-    generate_farm_graph(db='test')
-    upload_farm_graph(db='test', farm_graph='Farm.nq')
+    generate_farm_graph(db='kgfarm_test')
+    upload_farm_graph(db='kgfarm_test', farm_graph='Farm.nq')
