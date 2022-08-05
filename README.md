@@ -1,5 +1,5 @@
 # KGFarm
-<b>A Feature Discovery system for Machine learning workflows powered by Knowledge Graphs</b>
+<b>A Feature Discovery System for Data Science Across the Enterprise</b>
 [🔗](https://www.overleaf.com/read/fwcvhtrxcqbh)
 ## 📐 System Design
 ![design](https://user-images.githubusercontent.com/40717058/162835808-3f99b48f-78f6-44c8-a431-88a09da43d7c.png)
@@ -33,11 +33,8 @@ python builder.py
 * [X] Predict [Feature view](https://docs.feast.dev/getting-started/concepts/feature-view) with single [Entity](https://docs.feast.dev/v/v0.6-branch/user-guide/entities)
 * [X] Predict [Feature view](https://docs.feast.dev/getting-started/concepts/feature-view) with multiple [Entities](https://docs.feast.dev/v/v0.6-branch/user-guide/entities)
 * [X] Support for [Entity](https://docs.feast.dev/v/v0.6-branch/user-guide/entities) updation on the fly
-* [x] Predict Features for [Dataset enrichment](https://docs.feast.dev/getting-started/quickstart#step-4-generating-training-data) (Alpha)
-* [x] Predict feature transformations (Alpha)
-* [ ] Support for [Entity aliasing](https://docs.feast.dev/getting-started/concepts/feature-view#entity-aliasing)
-* [ ] Recommend semantically similar features
-* [ ] Recommend similar features by content
+* [X] Predict Features for [Dataset enrichment](https://docs.feast.dev/getting-started/quickstart#step-4-generating-training-data)
+* [X] Predict feature transformations (Alpha)
 * [ ] Detect Feature bias
 
 ## 📗 Useful resources
