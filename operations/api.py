@@ -177,6 +177,7 @@ class KGFarm:
     """
 
     def search_enrichment_options(self, entity_df: pd.DataFrame = None, show_query: bool = False):
+        # TODO: investigate why some recommendations here have no feature/column to join
         # TODO: support for multiple entities.
         enrichable_tables = get_enrichable_tables(self.config, show_query)
         # delete pairs where features are same i.e. nothing to join
@@ -220,17 +221,17 @@ class KGFarm:
 
         return enrichable_tables
 
-    def get_features(self, entity_df: pd.Series, entity_df_columns: tuple = (), show_status: bool = True):
+    def get_features(self, enrichment_info: pd.Series, entity_df: pd.DataFrame = None, entity_df_columns: tuple = (), show_status: bool = True):
         # TODO: add support for fetching features that originate from multiple feature views at once.
-        feature_view = entity_df['Enrich_with']
-        # features in entity dataframe
-        if len(entity_df_columns) > 0:
+        feature_view = enrichment_info['Enrich_with']
+
+        if len(entity_df_columns) > 0:  # process entity_df passed by the user
             entity_df_features = entity_df_columns
-        else:
-            entity_df_features = get_columns(self.config, entity_df_columns, entity_df['Dataset'])
+        else:  # process the choice passed by the user from search_enrichment_options
+            entity_df_features = list(entity_df.columns)
         # features in feature view table
-        feature_view_features = get_columns(self.config, entity_df['Physical_joinable_table'],
-                                            entity_df['Dataset_feature_view'])
+        feature_view_features = get_columns(self.config, enrichment_info['Physical_joinable_table'],
+                                            enrichment_info['Dataset_feature_view'])
         # take difference
         features = ['{}:'.format(feature_view) + feature for feature in feature_view_features if
                     feature not in entity_df_features]
@@ -316,14 +317,14 @@ class KGFarm:
         return df
 
     def enrich(self, enrichment_info: pd.Series, entity_df: pd.DataFrame = None, ttl: int = 10):
-        # get features to be enriched with
-        if entity_df is not None:
-            features = self.get_features(enrichment_info, tuple(entity_df.columns), show_status=False)
+        if entity_df is not None:  # entity_df passed by the user
+            # get features to be enriched with
+            features = self.get_features(enrichment_info=enrichment_info, entity_df_columns=tuple(entity_df.columns), show_status=False)
             features = [feature.split(':')[-1] for feature in features]
             print('Enriching {} with {} feature(s) {}'.format('entity_df', len(features), features))
-        else:
+        else:  # option selected from search_enrichment_options()
             entity_df = pd.read_csv(enrichment_info['Table_path'])
-            features = self.get_features(enrichment_info, show_status=False)
+            features = self.get_features(enrichment_info=enrichment_info, entity_df=entity_df, show_status=False)
             features = [feature.split(':')[-1] for feature in features]
             print('Enriching {} with {} feature(s) {}'.format(enrichment_info['Table'], len(features), features))
 
