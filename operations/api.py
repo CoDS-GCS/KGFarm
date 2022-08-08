@@ -289,11 +289,11 @@ class KGFarm:
         return transformation_info
 
     def apply_transformation(self, transformation_info: pd.Series, entity_df: pd.DataFrame = None):
-        if entity_df is not None:
+        # TODO: add support for other transformations as well (ex. one-hot encoding, min-max scaling, etc.)
+        if entity_df is not None:  # apply transformations directly on entity_df passed by user
             df = entity_df
-        else:
-            df = self.load_table(transformation_info['Table'], print_table_name=False)
-        # df.drop('event_timestamp', inplace=True, axis=1)
+        else:  # load the table from the choice/row passed by the user from recommend_feature_transformations()
+            df = self.load_table(transformation_info, print_table_name=False)
         transformation = transformation_info['Transformation']
         features = transformation_info['Feature']
         if transformation == 'LabelEncoder':
@@ -313,6 +313,7 @@ class KGFarm:
                 print("{} couldn't be transformed".format(transformation_info['Table']))
         else:
             print(transformation, ' not supported yet!')
+            return
         print('{} feature(s) {} transformed successfully!'.format(len(features), features))
         return df
 
