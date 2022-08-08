@@ -9,26 +9,22 @@
 ```bash
 pip install -r requirements.txt
 ```
-2. Setup [<code>feature repository</code>]((https://github.com/CoDS-GCS/KGFarm/tree/main/feature_repo)) using [feast](https://feast.dev/)
-```bash
-feast init feature_repo
-```
-3. Connect to the [Stardog](https://www.stardog.com/) engine
+2. Connect to the [Stardog](https://www.stardog.com/) engine
 ```bash
 stardog-admin server start
 ```
-4. Run KGFarm's [<code>graph_builder</code>](https://github.com/CoDS-GCS/KGFarm/blob/main/feature_discovery/src/graph_builder/builder.py):<br/>
-generates [<code>Farm.nq</code>](https://github.com/CoDS-GCS/KGFarm/blob/main/feature_discovery/src/graph_builder/Farm.nq) and uploads it to the [stardog server](https://cloud.stardog.com/)
+3. Run KGFarm's [<code>graph_builder</code>](feature_discovery/src/graph_builder/builder.py):<br/>
+generates [<code>Farm.nq</code>](feature_discovery/src/graph_builder/Farm.nq) and uploads it to the [stardog server](https://cloud.stardog.com/)
 
 ```bash
 cd feature_discovery/src/graph_builder
 python builder.py
 ```
-5. Start using KGFarm APIs (checkout [<code>KGFarm_notebook.ipynb</code>](https://github.com/CoDS-GCS/KGFarm/blob/main/KGFarm_notebook.ipynb))
+4. Start using KGFarm APIs (checkout [<code>KGFarm_notebook.ipynb</code>](KGFarm_notebook.ipynb))
 
 ## 🚧 Roadmap
-- <b>List of deliverables for KGFarm version 0.1</b> [🔗](https://docs.google.com/presentation/d/14JigzSty4pwJaTXSNbo-SYZBcSaTqanlC4ETbGJVbTU/edit?usp=sharing)
-* [x] Predict [Entities](https://docs.feast.dev/v/v0.6-branch/user-guide/entities) 
+- <b>List of deliverables for KGFarm v0.0</b> [🔗](https://docs.google.com/presentation/d/14JigzSty4pwJaTXSNbo-SYZBcSaTqanlC4ETbGJVbTU/edit?usp=sharing)
+* [x] Extract [Entities](https://docs.feast.dev/v/v0.6-branch/user-guide/entities) 
 * [X] Predict [Feature views without Entities](https://docs.feast.dev/getting-started/concepts/feature-view#feature-views-without-entities)
 * [X] Predict [Feature view](https://docs.feast.dev/getting-started/concepts/feature-view) with single [Entity](https://docs.feast.dev/v/v0.6-branch/user-guide/entities)
 * [X] Predict [Feature view](https://docs.feast.dev/getting-started/concepts/feature-view) with multiple [Entities](https://docs.feast.dev/v/v0.6-branch/user-guide/entities)
