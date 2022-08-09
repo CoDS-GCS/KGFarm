@@ -106,6 +106,12 @@ def execute_query(conn: stardog.Connection, query: str, return_type: str = 'csv'
     elif return_type == 'json':
         result = conn.select(query)
         return result['results']['bindings']
+    elif return_type == 'ask':
+        result = conn.select(query)
+        return result['boolean']
+    elif return_type == 'delete':
+        result = conn.update(query)
+        return result
     else:
         raise ValueError(return_type, ' not supported')
 
