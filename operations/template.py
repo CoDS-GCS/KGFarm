@@ -1,6 +1,6 @@
 from helpers.helper import execute_query, display_query
 
-# --------------------------------------------KGFarm APIs---------------------------------------------------------------
+# --------------------------------------------KGFarm APIs (SELECT queries)----------------------------------------------
 
 
 def get_table_path(config, table, dataset):
@@ -32,38 +32,24 @@ def get_columns(config, table, dataset):
     return execute_query(config, query)['Column'].tolist()
 
 
-def get_default_entities(config, show_query):
+def get_entities(config, show_query):
     query = """
-    SELECT ?Entity_name ?Entity_data_type ?Physical_column (?Table as ?Physical_table) (?Score as ?Uniqueness_ratio)
+    SELECT ?Entity_name (?Physical_column_data_type as ?Entity_data_type) ?Physical_column (?Table as ?Physical_table) (?Score as ?Uniqueness_ratio)
     {
-    <<?Table_id kgfarm:hasDefaultEntity ?Entity_id>>    kgfarm:confidence   ?Score  .
-    ?Entity_id  entity:name         ?Entity_name                                    ;
-                schema:name         ?Physical_column                                ;
-                data:hasDataType    ?Physical_column_data_type                      .
-    ?Table_id   schema:name         ?Table                                          ;
-                featureView:name    ?Feature_view                                   .
+        {
+            <<?Table_id kgfarm:hasDefaultEntity ?Entity_id>>        kgfarm:confidence   ?Score  .
+        }
+        UNION
+        {
+            <<?Table_id kgfarm:hasMultipleEntities ?Entity_id>>     kgfarm:confidence   ?Score  .
+        }
     
-    BIND(IF(REGEX(?Physical_column_data_type, 'N'),'INT64','STRING') as ?Entity_data_type)
-    }Order by DESC(?Uniqueness_score) ASC(?Entity_name)"""
-    if show_query:
-        display_query(query)
+        ?Entity_id  entity:name         ?Entity_name                                            ;
+                    schema:name         ?Physical_column                                        ;
+                    data:hasDataType    ?Physical_column_data_type                              .
+        ?Table_id   schema:name         ?Table                                                  .
+    }Order by DESC(?Uniqueness_ratio)"""
 
-    return execute_query(config, query)
-
-
-def get_multiple_entities(config, show_query):
-    query = """
-    SELECT ?Entity_name ?Entity_data_type ?Physical_column (?Table as ?Physical_table) (?Score as ?Uniqueness_ratio)
-    {
-    <<?Table_id kgfarm:hasMultipleEntities ?Entity_id>>    kgfarm:confidence   ?Score   .
-    ?Entity_id  entity:name         ?Entity_name                                        ;
-                schema:name         ?Physical_column                                    ;
-                data:hasDataType    ?Physical_column_data_type                          .
-    ?Table_id   schema:name         ?Table                                              ;
-                featureView:name    ?Feature_view                                       .
-
-    BIND(IF(REGEX(?Physical_column_data_type, 'N'),'INT64','STRING') as ?Entity_data_type)
-    }Order by DESC(?Uniqueness_score) ASC(?Entity_name)"""
     if show_query:
         display_query(query)
 
@@ -72,40 +58,25 @@ def get_multiple_entities(config, show_query):
 
 def get_feature_views(config, show_query):
     query = """
-    SELECT ?Feature_view (?Entity_name as ?Entity) ?Entity_data_type ?Physical_column ?Physical_column_data_type  ?Physical_table ?File_source (?Score as ?Uniqueness_ratio)
-    {
-        {       
-            <<?Table_id kgfarm:hasDefaultEntity ?Entity_id>>    kgfarm:confidence   ?Score  .
-        }
-        UNION
-        {
-            <<?Table_id kgfarm:hasMultipleEntities ?Entity_id>>    kgfarm:confidence   ?Score  .
-        }
-        
-        ?Entity_id      entity:name         ?Entity_name                        ;
-                        data:hasDataType    ?Physical_column_data_type          ;  
-                        schema:name         ?Physical_column                    .
-        
-        ?Table_id       featureView:name    ?Feature_view                       ;
-                        data:hasFilePath    ?File_source                        ;
-                        schema:name         ?Physical_table                     .
-        
-        BIND(IF(REGEX(?Physical_column_data_type, 'N'),'INT64','STRING') as ?Entity_data_type)
-    }"""
-    if show_query:
-        display_query(query)
-    return execute_query(config, query)
-
-
-def get_feature_views_without_entities(config, show_query):
-    query = """
-    SELECT ?Feature_view ?Physical_table ?File_source 
+    SELECT ?Feature_view ?Entity ?Physical_column ?Physical_table ?File_source
     WHERE
     {
-        ?Table_id   kgfarm:hasNoEntity  ?Uniqueness_ratio           ;
-                    featureView:name    ?Feature_view               ;
-                    data:hasFilePath    ?File_source                ;
-                    schema:name         ?Physical_table             .
+        ?Table_id       rdf:type                    kglids:Table        ;
+                        featureView:name            ?Feature_view       ;
+                        schema:name                 ?Physical_table     ;   
+                        data:hasFilePath            ?File_source        .
+        OPTIONAL
+        {
+            ?Table_id   kgfarm:hasDefaultEntity     ?Column_id          .
+            ?Column_id  entity:name                 ?Entity             ;
+                        schema:name                 ?Physical_column    .
+        }
+            OPTIONAL
+        {
+            ?Table_id   kgfarm:hasMultipleEntities  ?Column_id          .
+            ?Column_id  entity:name                 ?Entity             ;
+                        schema:name                 ?Physical_column    .
+        }
     }"""
     if show_query:
         display_query(query)
@@ -187,50 +158,50 @@ def get_optional_entities(config, show_query):
 
 
 # TODO: add filter for table and dataset
-def recommend_feature_transformations(config, table, dataset, show_query):
+def recommend_feature_transformations(config, show_query):
     query = """
     SELECT DISTINCT ?Transformation ?Package ?Function ?Library ?Feature ?Feature_view ?Table ?Dataset ?Pipeline ?Author ?Written_on ?Pipeline_url  
     WHERE
     {
     # query pipeline-default graph
-    ?Pipeline_id        rdf:type                kglids:Pipeline     ;
-                        kglids:isPartOf         ?Dataset_id         ;
-                        rdfs:label              ?Pipeline           ;
-                        pipeline:isWrittenBy    ?Author             ;
-                        pipeline:isWrittenOn    ?Written_on         ;
-                        pipeline:hasSourceURL   ?Pipeline_url       . 
+    ?Pipeline_id            rdf:type                kglids:Pipeline     ;
+                            kglids:isPartOf         ?Dataset_id         ;
+                            rdfs:label              ?Pipeline           ;
+                            pipeline:isWrittenBy    ?Author             ;
+                            pipeline:isWrittenOn    ?Written_on         ;
+                            pipeline:hasSourceURL   ?Pipeline_url       . 
     
     # querying named-graphs for pipeline               
     GRAPH ?Pipeline_id
     {
-        ?Statement      pipeline:callsClass     ?Class_id           .
-        ?Statement_2    pipeline:callsFunction  ?Function_id        ;
-                        pipeline:readsColumn    ?Column_id          .
-        # <<?Statement_2    pipeline:hasParameter   ?o>> ?p1 ?o1      .
+        ?Statement          pipeline:callsClass     ?Class_id           .
+        ?Statement_2        pipeline:callsFunction  ?Function_id        ;
+                            pipeline:readsColumn    ?Column_id          .
+        # <<?Statement_2    pipeline:hasParameter   ?o>> ?p1 ?o1        .
     }
     
     # querying the link between default-named graphs relationships
-    ?Class_id          kglids:isPartOf          <http://kglids.org/resource/library/sklearn/preprocessing>      .
-    ?Function_id       kglids:isPartOf          ?Class_id           . 
-    <http://kglids.org/resource/library/sklearn/preprocessing> kglids:isPartOf ?Library_id                                  .
+    ?Class_id               kglids:isPartOf          <http://kglids.org/resource/library/sklearn/preprocessing> .
+    ?Function_id            kglids:isPartOf          ?Class_id          . 
+    <http://kglids.org/resource/library/sklearn/preprocessing> kglids:isPartOf ?Library_id                      .
     
     # query data-items
-    ?Dataset_id         schema:name             ?Dataset            .
-    ?Column_id          schema:name             ?Feature            ;
-                        kglids:isPartOf         ?Table_id           .
-    ?Table_id           schema:name             ?Table              .
+    ?Dataset_id             schema:name             ?Dataset            .
+    ?Column_id              schema:name             ?Feature            ;
+                            kglids:isPartOf         ?Table_id           .
+    ?Table_id               schema:name             ?Table              .
     
     # querying the link between Farm and LiDS graph
-    ?Table_id           featureView:name    ?Feature_view           .
+    ?Table_id               featureView:name         ?Feature_view      .
     
     # beautify output
-    BIND(STRAFTER(str(?Library_id), str(lib:)) as ?Library)         . 
-    BIND(STRAFTER(str(?Class_id), str('http://kglids.org/resource/library/sklearn/preprocessing/')) as ?Transformation)     .
+    BIND(STRAFTER(str(?Library_id), str(lib:)) as ?Library)             
+    BIND(STRAFTER(str(?Class_id), str('http://kglids.org/resource/library/sklearn/preprocessing/')) as ?Transformation)     
     BIND(STRAFTER(str(?Class_id), str('http://kglids.org/resource/library/sklearn/')) as ?P)  
-    BIND(STRBEFORE(str(?P), str('/')) as ?Package)                  .
-    BIND(STRAFTER(str(?Function_id), str('http://kglids.org/resource/library/sklearn/preprocessing/')) as ?F)               .
-    BIND(REPLACE(?F, '/', '.', 'i') AS ?F1)                         .  
-    BIND(CONCAT(STR( ?F1 ), '( )') AS ?Function)                     .             
+    BIND(STRBEFORE(str(?P), str('/')) as ?Package)                       
+    BIND(STRAFTER(str(?Function_id), str('http://kglids.org/resource/library/sklearn/preprocessing/')) as ?F)               
+    BIND(REPLACE(?F, '/', '.', 'i') AS ?F1)                               
+    BIND(CONCAT(STR( ?F1 ), '( )') AS ?Function)                                     
     
     # sort by dataset names and transformations
     } ORDER BY ?Dataset ?Table ?Transformation ?Author"""
@@ -259,6 +230,25 @@ def search_entity_table(config, columns):
     }
     """ % generate_subquery()
     return execute_query(config, query)['Table'][0]
+
+# --------------------------------------KGFarm APIs (updation queries) via Governor-------------------------------------
+
+
+def exists(config, feature_view):
+    query = """ASK { ?Table_id featureView:name  '%s'}""" % feature_view
+    return execute_query(config, query, return_type='ask')
+
+
+def drop_feature_view(config, feature_view):
+    query = """
+    DELETE 
+    {     
+        ?Table_id featureView:name ?Feature_view            .
+    }
+    WHERE  { ?Table_id featureView:name ?Feature_view
+             FILTER (?Feature_view = '%s') 
+    }""" % feature_view
+    execute_query(config, query, return_type='delete')
 
 
 # --------------------------------------------Farm Builder--------------------------------------------------------------
