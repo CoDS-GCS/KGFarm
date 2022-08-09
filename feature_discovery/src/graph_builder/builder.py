@@ -1,4 +1,5 @@
 import sys
+import argparse
 from time import time
 from tqdm import tqdm
 from datetime import datetime
@@ -10,7 +11,7 @@ from operations.template import *
 
 
 class Builder:
-    def __init__(self, output_path: str = 'Farm.nq', port: int = 5820, database: str = 'kgfarm_dev',
+    def __init__(self, output_path: str = 'Farm.nq', port: int = 5820, database: str = 'kgfarm_test',
                  show_connection_status: bool = False):
         self.config = connect_to_stardog(port, database, show_connection_status)
         self.output_path = output_path
@@ -125,7 +126,7 @@ class Builder:
 
     # does one-to-one mapping of table -> feature view
     def annotate_feature_views(self):
-        # TODO: add zero padding for ordering of feature view names
+        # TODO: add zero padding for ordering of feature view numbering
         print('\n• Annotating feature views')
         self.graph.write('# 1. Feature Views, one-to-one mapping with tables \n')
         table_ids = get_table_ids(self.config)['Table_id'].tolist()
@@ -202,7 +203,6 @@ class Builder:
             else:
                 self.tables_with_multiple_entities.add(table_id)
 
-        # TODO: look for better ways of annotating feature views without entity
         for table_id in self.unmapped_tables:
             self.triples.add(self.triple_format.format(table_id, self.ontology.get('kgfarm') + 'hasNoEntity', 0))
 
@@ -258,6 +258,13 @@ def upload_farm_graph(db: str = 'kgfarm_test', farm_graph: str = 'Farm.nq'):
 
 
 # TODO: remove duplicate entities
+# TODO: remove annotation of 'hasNoEntity', use sparql's Optional and Not exists to handle this case.
 if __name__ == "__main__":
-    generate_farm_graph(db='kgfarm_test')
-    upload_farm_graph(db='kgfarm_test', farm_graph='Farm.nq')
+    # parse user input
+    ap = argparse.ArgumentParser()
+    ap.add_argument('-db', '--database', required=True,
+                    help='database from which Farm graph will be generated')
+    args = vars(ap.parse_args())
+    db = args['database']
+    generate_farm_graph(db=db)
+    upload_farm_graph(db=db, farm_graph='Farm.nq')
