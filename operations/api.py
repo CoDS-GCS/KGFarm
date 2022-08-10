@@ -32,9 +32,55 @@ class KGFarm:
         return entity_df
 
     def get_feature_views(self, show_query: bool = False):
-        # TODO: handle feature view with multiple entities
-        feature_view_df = get_feature_views(self.config, show_query)
+        feature_view_df = get_feature_views_with_one_or_no_entity(self.config, show_query)
+        feature_view_M = get_feature_views_with_multiple_entities(self.config, show_query)
+
+        # group entities together for feature view with multiple entities
+        """
+        We need to do this because there is no direct/simple way to bind different entities to the associated feature
+        view, same goes for the physical column, to ease this, the python script below handles these cases. 
+        """
+        duplicates = feature_view_M.groupby(feature_view_M['Feature_view'].tolist(), as_index=False).size()
+        duplicates['size'] = duplicates['size'].apply(lambda x: True if x > 1 else False)
+        duplicates = set(duplicates['size'])
+        if True in duplicates:
+            update_info = []
+            feature_view_dict = {}
+            feature_view_to_be_processed = None
+            for index, feature_view_info in feature_view_M.to_dict('index').items():
+                if feature_view_to_be_processed == feature_view_info['Feature_view']:  # merge
+                    entity_list = feature_view_dict.get('Entity')
+                    entity_list.append(feature_view_info['Entity'])
+                    feature_view_dict['Entity'] = entity_list
+                    column_list = feature_view_dict.get('Physical_column')
+                    column_list.append(feature_view_info['Physical_column'])
+                    feature_view_dict['Physical_column'] = column_list
+                    if index == len(feature_view_M) - 1:  # last record
+                        update_info.append(feature_view_dict)
+                else:
+                    if feature_view_to_be_processed is None:  # pass for first record
+                        feature_view_to_be_processed = feature_view_info['Feature_view']
+                        feature_view_dict['Feature_view'] = feature_view_info['Feature_view']
+                        feature_view_dict['Entity'] = [feature_view_info['Entity']]
+                        feature_view_dict['Physical_column'] = [feature_view_info['Physical_column']]
+                        feature_view_dict['Physical_table'] = feature_view_info['Physical_table']
+                        feature_view_dict['File_source'] = feature_view_info['File_source']
+                        continue
+                    update_info.append(feature_view_dict)
+                    feature_view_dict = {}
+                    feature_view_to_be_processed = feature_view_info['Feature_view']
+                    feature_view_dict['Feature_view'] = feature_view_to_be_processed
+                    feature_view_dict['Entity'] = [feature_view_info['Entity']]
+                    feature_view_dict['Physical_column'] = [feature_view_info['Physical_column']]
+                    feature_view_dict['Physical_table'] = feature_view_info['Physical_table']
+                    feature_view_dict['File_source'] = feature_view_info['File_source']
+
+        else:  # no feature view with multiple entity
+            update_info = feature_view_M
+        feature_view_df = pd.concat([feature_view_df, pd.DataFrame(update_info)], ignore_index=True)
         feature_view_df = feature_view_df.where(pd.notnull(feature_view_df), None)
+        feature_view_df.sort_values(by='Feature_view', inplace=True)
+        feature_view_df = feature_view_df.reset_index(drop=True)
         return feature_view_df
 
     def drop_feature_view(self, drop: list):
@@ -231,9 +277,9 @@ class KGFarm:
         return enriched_df
 
 
-entity_data_types_mapping = {'N_int': 'integer', 'N_float': 'float', 'N_bool': 'boolean',
-      'T': 'string', 'T_date': 'timestamp', 'T_loc': 'location', 'T_person': 'person', 'T_org': 'organization',
-     'T_code': 'code', 'T_email': 'email'}
+entity_data_types_mapping = {'N_int': 'numeric (integer)', 'N_float': 'numeric (float)', 'N_bool': 'numeric (boolean)',
+        'T': 'string (generic)', 'T_date': 'timestamp', 'T_loc': 'string (location)', 'T_person': 'string (person)',
+        'T_org': 'string (organization)', 'T_code': 'string (code)', 'T_email': 'string (email)'}
 
 if __name__ == "__main__":
     kgfarm = KGFarm(port=5820, database='kgfarm_test', show_connection_status=False)

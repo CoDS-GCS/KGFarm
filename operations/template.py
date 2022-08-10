@@ -56,8 +56,9 @@ def get_entities(config, show_query):
     return execute_query(config, query)
 
 
-def get_feature_views(config, show_query):
+def get_feature_views_with_one_or_no_entity(config, show_query):
     query = """
+    # Select feature views with 1 or no entity
     SELECT ?Feature_view ?Entity ?Physical_column ?Physical_table ?File_source
     WHERE
     {
@@ -71,13 +72,33 @@ def get_feature_views(config, show_query):
             ?Column_id  entity:name                 ?Entity             ;
                         schema:name                 ?Physical_column    .
         }
-            OPTIONAL
+        MINUS # remove feature view with multiple entities
         {
             ?Table_id   kgfarm:hasMultipleEntities  ?Column_id          .
             ?Column_id  entity:name                 ?Entity             ;
                         schema:name                 ?Physical_column    .
         }
     }"""
+    if show_query:
+        display_query(query)
+    return execute_query(config, query)
+
+
+def get_feature_views_with_multiple_entities(config, show_query):
+    query = """
+    # Select feature views with multiple entities
+    SELECT ?Feature_view ?Entity ?Physical_column ?Physical_table ?File_source
+    WHERE
+    {
+        ?Table_id       rdf:type                    kglids:Table        ;
+                        featureView:name            ?Feature_view       ;
+                        schema:name                 ?Physical_table     ;   
+                        data:hasFilePath            ?File_source        ;
+                        kgfarm:hasMultipleEntities  ?Column_id          .
+        
+        ?Column_id      entity:name                 ?Entity             ;
+                        schema:name                 ?Physical_column    .
+    } ORDER BY ?Feature_view"""
     if show_query:
         display_query(query)
     return execute_query(config, query)
