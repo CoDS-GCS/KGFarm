@@ -98,22 +98,24 @@ def execute_query_blazegraph(sparql: SPARQLWrapper, query: str):
     return sparql.query().convert()
 
 
+# TODO: rename return_type to appropriate variable name to avoid confusion
 def execute_query(conn: stardog.Connection, query: str, return_type: str = 'csv'):
     query = PREFIXES + query
     if return_type == 'csv':
         result = conn.select(query, content_type='text/csv')
-        return pd.read_csv(io.BytesIO(result))
+        return pd.read_csv(io.BytesIO(bytes(result)))
     elif return_type == 'json':
         result = conn.select(query)
         return result['results']['bindings']
     elif return_type == 'ask':
         result = conn.select(query)
         return result['boolean']
-    elif return_type == 'delete':
+    elif return_type == 'update':
         result = conn.update(query)
         return result
     else:
-        raise ValueError(return_type, ' not supported')
+        error = return_type + ' not supported!'
+        raise ValueError(error)
 
 
 def display_query(query: str):
