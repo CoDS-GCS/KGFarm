@@ -18,19 +18,21 @@ generates [<code>Farm.nq</code>](feature_discovery/src/graph_builder/Farm.nq) an
 
 ```bash
 cd feature_discovery/src/graph_builder
-python builder.py
+python builder.py -db Database
 ```
 4. Start using KGFarm APIs (checkout [<code>KGFarm_notebook.ipynb</code>](KGFarm_notebook.ipynb))
 
 ## 🚧 Roadmap
 - <b>List of deliverables for KGFarm v0.0</b> [🔗](https://docs.google.com/presentation/d/14JigzSty4pwJaTXSNbo-SYZBcSaTqanlC4ETbGJVbTU/edit?usp=sharing)
-* [x] Extract [Entities](https://docs.feast.dev/v/v0.6-branch/user-guide/entities) 
+* [X] Extract [Entities](https://docs.feast.dev/v/v0.6-branch/user-guide/entities) 
 * [X] Predict [Feature views without Entities](https://docs.feast.dev/getting-started/concepts/feature-view#feature-views-without-entities)
 * [X] Predict [Feature view](https://docs.feast.dev/getting-started/concepts/feature-view) with single [Entity](https://docs.feast.dev/v/v0.6-branch/user-guide/entities)
 * [X] Predict [Feature view](https://docs.feast.dev/getting-started/concepts/feature-view) with multiple [Entities](https://docs.feast.dev/v/v0.6-branch/user-guide/entities)
 * [X] Support for [Entity](https://docs.feast.dev/v/v0.6-branch/user-guide/entities) updation on the fly
 * [X] Predict Features for [Dataset enrichment](https://docs.feast.dev/getting-started/quickstart#step-4-generating-training-data)
 * [X] Predict feature transformations (Alpha)
+* [X] Automate data cleaning 
+* [ ] Support Unseen datasets
 * [ ] Detect Feature bias
 
 ## 📗 Useful resources
