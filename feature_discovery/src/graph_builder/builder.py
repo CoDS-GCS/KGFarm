@@ -252,13 +252,12 @@ def generate_farm_graph(db, port=5820):
 
 def upload_farm_graph(db: str = 'kgfarm_test', farm_graph: str = 'Farm.nq'):
     print('\nUploading {} to {} database'.format(farm_graph, db))
-    # os.system('stardog data remove --all {}'.format(db))
     os.system('stardog data add --format turtle {} {}'.format(db, farm_graph))
-    # os.system('stardog data add --format turtle {} ../../../helpers/sample_data/graph/LiDS.nq'.format(db, lids_graph))
 
 
 # TODO: remove duplicate entities
 # TODO: remove annotation of 'hasNoEntity', use sparql's Optional and Not exists to handle this case.
+# TODO: count number of entities while generating hasMultipleEntities relationship, if count == 1, then make hasDefault relation instead.
 if __name__ == "__main__":
     # parse user input
     ap = argparse.ArgumentParser()
