@@ -37,12 +37,15 @@ class KGFarm:
         feature_view_df = feature_view_df.where(pd.notnull(feature_view_df), None)
         return feature_view_df
 
-    def get_optional_physical_representations(self, show_query: bool = False):
-        return get_optional_entities(self.config, show_query)
-
     def drop_feature_view(self, drop: list):
         self.governor.drop_feature_view(drop)
         return self.get_feature_views()
+
+    def get_optional_physical_representations(self, show_query: bool = False):
+        optional_physical_representations_df = get_optional_entities(self.config, show_query)
+        optional_physical_representations_df['Data_type'] = optional_physical_representations_df['Data_type'].\
+            map(entity_data_types_mapping)
+        return optional_physical_representations_df
 
     def update_entity(self, entity_to_update_info: list):
         self.governor.update_entity(entity_to_update_info)

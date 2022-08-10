@@ -134,12 +134,9 @@ def get_enrichable_tables(config, show_query):
 
 def get_optional_entities(config, show_query):
     query = """
-    SELECT ?Feature_view ?Entity (?Physical_column as ?Optional_physical_representation) ?Data_type (?Score as ?Uniqueness_ratio) ?Entity ?Physical_table 
+    SELECT DISTINCT ?Feature_view ?Entity ?Current_physical_representation (?Physical_column as ?Optional_physical_representation) (?Physical_column_data_type as ?Data_type) (?Score as ?Uniqueness_ratio) ?Entity ?Physical_table 
     WHERE
     {
-        FILTER NOT EXISTS { ?Table_id kgfarm:hasDefaultEntity ?Column_id}               .
-        FILTER NOT EXISTS { ?Table_id kgfarm:hasMultipleEntities ?Column_id }           .
-    
         <<?Table_id kgfarm:hasEntity ?Column_id>>    kgfarm:confidence   ?Score         .
         ?Column_id  data:hasDataType        ?Physical_column_data_type                  ;  
                     schema:name             ?Physical_column                            .
@@ -147,11 +144,11 @@ def get_optional_entities(config, show_query):
                     schema:name             ?Physical_table                             ;
                     kgfarm:hasDefaultEntity ?Default_column_id                          .
         
-        ?Default_column_id  entity:name     ?Entity                                     .
-            
-        BIND(IF(REGEX(?Physical_column_data_type, 'N'),'INT64','STRING') as ?Data_type)
-    } ORDER BY ?Feature_view DESC (?Uniqueness_ratio)
-        """
+        ?Default_column_id  entity:name     ?Entity                                     ;
+                            schema:name     ?Current_physical_representation            .
+        
+        MINUS { ?Table_id kgfarm:hasDefaultEntity ?Column_id} # minus default entity
+    } ORDER BY ?Feature_view DESC (?Uniqueness_ratio)"""
     if show_query:
         display_query(query)
     return execute_query(config, query)
