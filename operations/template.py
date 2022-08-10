@@ -245,10 +245,42 @@ def drop_feature_view(config, feature_view):
     WHERE  { ?Table_id featureView:name ?Feature_view
              FILTER (?Feature_view = '%s') 
     }""" % feature_view
-    execute_query(config, query, return_type='delete')
+    execute_query(config, query, return_type='update')
 
+
+def remove_current_physical_representation_of_an_entity(config, feature_view):
+    query = """
+    DELETE 
+    {
+        <<?Table_id   kgfarm:hasDefaultEntity     ?Column_id>> kgfarm:confidence ?Score     .
+        ?Column_id    entity:name                 ?Entity                                   .
+    }
+    WHERE  
+    {
+        <<?Table_id     kgfarm:hasDefaultEntity     ?Column_id>> kgfarm:confidence ?Score   .
+        ?Column_id      entity:name                 ?Entity                                 .
+        ?Table_id       featureView:name            '%s'                                    .
+    }""" % feature_view
+    execute_query(config, query, return_type='update')
+
+
+def insert_current_physical_representation_of_an_entity(config, feature_view, column, entity):
+    query = """
+    INSERT
+    {
+        <<?Table_id   kgfarm:hasDefaultEntity     ?Column_id>> kgfarm:confidence ?Score     .
+        ?Column_id    entity:name                 '%s'                                      .
+    }
+    WHERE  
+    {
+        <<?Table_id     kgfarm:hasEntity     ?Column_id>> kgfarm:confidence ?Score          .
+        ?Column_id      schema:name                 '%s'                                    .
+        ?Table_id       featureView:name            '%s'                                    .
+    }""" % (entity, column, feature_view)
+    execute_query(config, query, return_type='update')
 
 # --------------------------------------------Farm Builder--------------------------------------------------------------
+
 
 def get_table_ids(config):
     query = """

@@ -49,23 +49,7 @@ class KGFarm:
 
     def update_entity(self, entity_to_update_info: list):
         self.governor.update_entity(entity_to_update_info)
-        return
-        # for update_info in tqdm(entity_to_update_info):
-        #     # update entity
-        #     entity_info = self.entities.get(update_info['Entity'])
-        #     entity_info['Physical_column'] = update_info['Optional_physical_representation']
-        #     entity_info['Entity_data_type'] = update_info['Data_type']
-        #     entity_info['Uniqueness_ratio'] = update_info['Uniqueness_ratio']
-        #     self.entities[update_info['Entity']] = entity_info
-        #     # update feature view
-        #     feature_view_info = self.feature_views.get(update_info['Feature_view'])
-        #     feature_view_info['Physical_column'] = update_info['Optional_physical_representation']
-        #     self.feature_views[update_info['Feature_view']] = feature_view_info
-        #
-        #     print("[{}] now uses '{}' as its physical representation\n"
-        #           .format(update_info['Entity'], update_info['Optional_physical_representation']))
-        #
-        # return self.get_feature_views()
+        return self.get_feature_views()
 
     def search_enrichment_options(self, entity_df: pd.DataFrame = None, show_query: bool = False):
         # TODO: investigate why some recommendations here have no feature/column to join
