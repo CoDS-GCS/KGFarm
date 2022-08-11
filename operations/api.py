@@ -40,43 +40,37 @@ class KGFarm:
         We need to do this because there is no direct/simple way to bind different entities to the associated feature
         view, same goes for the physical column, to ease this, the python script below handles these cases. 
         """
-        duplicates = feature_view_M.groupby(feature_view_M['Feature_view'].tolist(), as_index=False).size()
-        duplicates['size'] = duplicates['size'].apply(lambda x: True if x > 1 else False)
-        duplicates = set(duplicates['size'])
-        if True in duplicates:
-            update_info = []
-            feature_view_dict = {}
-            feature_view_to_be_processed = None
-            for index, feature_view_info in feature_view_M.to_dict('index').items():
-                if feature_view_to_be_processed == feature_view_info['Feature_view']:  # merge
-                    entity_list = feature_view_dict.get('Entity')
-                    entity_list.append(feature_view_info['Entity'])
-                    feature_view_dict['Entity'] = entity_list
-                    column_list = feature_view_dict.get('Physical_column')
-                    column_list.append(feature_view_info['Physical_column'])
-                    feature_view_dict['Physical_column'] = column_list
-                    if index == len(feature_view_M) - 1:  # last record
-                        update_info.append(feature_view_dict)
-                else:
-                    if feature_view_to_be_processed is None:  # pass for first record
-                        feature_view_to_be_processed = feature_view_info['Feature_view']
-                        feature_view_dict['Feature_view'] = feature_view_info['Feature_view']
-                        feature_view_dict['Entity'] = [feature_view_info['Entity']]
-                        feature_view_dict['Physical_column'] = [feature_view_info['Physical_column']]
-                        feature_view_dict['Physical_table'] = feature_view_info['Physical_table']
-                        feature_view_dict['File_source'] = feature_view_info['File_source']
-                        continue
+        update_info = []
+        feature_view_dict = {}
+        feature_view_to_be_processed = None
+        for index, feature_view_info in feature_view_M.to_dict('index').items():
+            if feature_view_to_be_processed == feature_view_info['Feature_view']:  # merge
+                entity_list = feature_view_dict.get('Entity')
+                entity_list.append(feature_view_info['Entity'])
+                feature_view_dict['Entity'] = entity_list
+                column_list = feature_view_dict.get('Physical_column')
+                column_list.append(feature_view_info['Physical_column'])
+                feature_view_dict['Physical_column'] = column_list
+                if index == len(feature_view_M) - 1:  # last record
                     update_info.append(feature_view_dict)
-                    feature_view_dict = {}
+            else:
+                if feature_view_to_be_processed is None:  # pass for first record
                     feature_view_to_be_processed = feature_view_info['Feature_view']
-                    feature_view_dict['Feature_view'] = feature_view_to_be_processed
+                    feature_view_dict['Feature_view'] = feature_view_info['Feature_view']
                     feature_view_dict['Entity'] = [feature_view_info['Entity']]
                     feature_view_dict['Physical_column'] = [feature_view_info['Physical_column']]
                     feature_view_dict['Physical_table'] = feature_view_info['Physical_table']
                     feature_view_dict['File_source'] = feature_view_info['File_source']
+                    continue
+                update_info.append(feature_view_dict)
+                feature_view_dict = {}
+                feature_view_to_be_processed = feature_view_info['Feature_view']
+                feature_view_dict['Feature_view'] = feature_view_to_be_processed
+                feature_view_dict['Entity'] = [feature_view_info['Entity']]
+                feature_view_dict['Physical_column'] = [feature_view_info['Physical_column']]
+                feature_view_dict['Physical_table'] = feature_view_info['Physical_table']
+                feature_view_dict['File_source'] = feature_view_info['File_source']
 
-        else:  # no feature view with multiple entity
-            update_info = feature_view_M
         feature_view_df = pd.concat([feature_view_df, pd.DataFrame(update_info)], ignore_index=True)
         feature_view_df = feature_view_df.where(pd.notnull(feature_view_df), None)
         feature_view_df.sort_values(by='Feature_view', inplace=True)
