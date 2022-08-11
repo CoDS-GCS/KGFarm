@@ -184,6 +184,11 @@ class Builder:
         # filter relationships to the ones that were left unmapped
         pkfk_relations = self.__clean_columns_for_entity_naming(pkfk_relations[pkfk_relations.
                                                                 Primary_table_id.isin(self.unmapped_tables)])
+        # determine if table has multiple entities or single entity with low confidence, True if duplicate Table ids else False
+        duplicates = pkfk_relations.groupby(pkfk_relations['Primary_table_id'].tolist(), as_index=False).size()
+        duplicates['size'] = duplicates['size'].apply(lambda x: True if x > 1 else False)
+        pkfk_relations = pkfk_relations.merge(duplicates, left_on='Primary_table_id', right_on='index').drop('index', axis=1)
+
         for unmapped_feature_view in tqdm(pkfk_relations.to_dict('index').values()):
             entity_name = (unmapped_feature_view['Primary_column'] + '_' +
                            unmapped_feature_view['Primary_table'].replace('.csv', '')).replace('-', '_').\
@@ -192,16 +197,22 @@ class Builder:
             table_id = unmapped_feature_view['Primary_table_id']
             column_id = unmapped_feature_view['Primary_column_id']
             uniqueness_ratio = unmapped_feature_view['Primary_key_uniqueness_ratio']
-
-            self.__annotate_entity_and_feature_view_mapping(column_id, table_id, uniqueness_ratio,
-                                                            'hasMultipleEntities')
+            has_multiple_entities = unmapped_feature_view['size']
             self.__annotate_entity_name(column_id, entity_name)
             self.column_to_entity[column_id] = entity_name
-            # if table_id is absent from self.unmapped_tables that means that table_id has multiple entities
+            if has_multiple_entities:
+                self.__annotate_entity_and_feature_view_mapping(column_id, table_id, uniqueness_ratio,
+                                                                'hasMultipleEntities')
+            else:
+                self.__annotate_entity_and_feature_view_mapping(column_id, table_id, uniqueness_ratio,
+                                                                'hasDefaultEntity')
+
             if table_id in self.unmapped_tables:
                 self.unmapped_tables.remove(table_id)
-            else:
+            elif table_id not in self.unmapped_tables and has_multiple_entities:
                 self.tables_with_multiple_entities.add(table_id)
+            else:
+                self.direct_entity_table_mapping[table_id] = column_id
 
         for table_id in self.unmapped_tables:
             self.triples.add(self.triple_format.format(table_id, self.ontology.get('kgfarm') + 'hasNoEntity', 0))
@@ -243,8 +254,8 @@ def generate_farm_graph(db, port=5820):
     start = time()
     builder = Builder(port=port, database=db, show_connection_status=True)
     builder.annotate_feature_views()
-    builder.annotate_entity_mapping()
-    builder.annotate_unmapped_feature_views()
+    builder.annotate_entity_mapping()  # extracts default, optional entities and maps entities to respective feature views.
+    builder.annotate_unmapped_feature_views()  # extracts default, multiple entities and maps entities to respective feature views.
     print('\n• Farm graph generated successfully!\n\t- Time taken: {}\n\t- Saved at: {}'.
           format(time_taken(start, time()), os.path.abspath(builder.output_path)))
     builder.summarize_graph()
@@ -257,13 +268,14 @@ def upload_farm_graph(db: str = 'kgfarm_test', farm_graph: str = 'Farm.nq'):
 
 # TODO: remove duplicate entities
 # TODO: remove annotation of 'hasNoEntity', use sparql's Optional and Not exists to handle this case.
-# TODO: count number of entities while generating hasMultipleEntities relationship, if count == 1, then make hasDefault relation instead.
 if __name__ == "__main__":
     # parse user input
     ap = argparse.ArgumentParser()
     ap.add_argument('-db', '--database', required=True,
                     help='database from which Farm graph will be generated')
     args = vars(ap.parse_args())
-    db = args['database']
-    generate_farm_graph(db=db)
-    upload_farm_graph(db=db, farm_graph='Farm.nq')
+    target_database = args['database']
+    pd.set_option('display.max_columns', None)
+    pd.set_option('display.max_colwidth', None)
+    generate_farm_graph(db=target_database)
+    upload_farm_graph(db=target_database, farm_graph='Farm.nq')
