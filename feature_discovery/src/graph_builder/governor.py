@@ -25,6 +25,6 @@ class Governor:
             remove_current_physical_representation_of_an_entity(self.config, feature_view=feature_view)
             insert_current_physical_representation_of_an_entity(self.config, feature_view=feature_view,
                                    column=column_physical_representation_to_be_inserted, entity=entity)
-            print('Entity {} uses {} as its physical representation'.
+            print("Entity '{}' uses '{}' as its physical representation".
                   format(entity, column_physical_representation_to_be_inserted))
 
