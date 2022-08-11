@@ -104,7 +104,7 @@ def get_feature_views_with_multiple_entities(config, show_query):
     return execute_query(config, query)
 
 
-def get_enrichable_tables(config, show_query):
+def search_enrichment_options(config, show_query):
     query = """
     SELECT DISTINCT ?Table ?Enrich_with (?Confidence_score as ?Joinability_strength) (?join_key_name as ?Join_key) ?Physical_joinable_table ?Table_path ?File_source ?Dataset ?Dataset_feature_view
     WHERE
@@ -146,7 +146,7 @@ def get_enrichable_tables(config, show_query):
                                 
         ?Dataset_id                 schema:name                                 ?Dataset                                    .                                        
                                 
-    } ORDER BY DESC(?Confidence_score)"""
+    } ORDER BY DESC(?Confidence_score) ?Table ?Feature_view"""
     if show_query:
         display_query(query)
 
@@ -155,21 +155,23 @@ def get_enrichable_tables(config, show_query):
 
 def get_optional_entities(config, show_query):
     query = """
-    SELECT DISTINCT ?Feature_view ?Entity ?Current_physical_representation (?Physical_column as ?Optional_physical_representation) (?Physical_column_data_type as ?Data_type) (?Score as ?Uniqueness_ratio) ?Entity ?Physical_table 
+    SELECT ?Feature_view ?Entity ?Current_physical_representation ?Optional_physical_representation ?Data_type (?Score as ?Uniqueness_ratio) ?Physical_table
     WHERE
     {
-        <<?Table_id kgfarm:hasEntity ?Column_id>>    kgfarm:confidence   ?Score         .
-        ?Column_id  data:hasDataType        ?Physical_column_data_type                  ;  
-                    schema:name             ?Physical_column                            .
-        ?Table_id   featureView:name        ?Feature_view                               ;
-                    schema:name             ?Physical_table                             ;
-                    kgfarm:hasDefaultEntity ?Default_column_id                          .
+        <<?Table_id         kgfarm:hasEntity        ?Column_id>> kgfarm:confidence ?Score   .
         
-        ?Default_column_id  entity:name     ?Entity                                     ;
-                            schema:name     ?Current_physical_representation            .
+        ?Column_id          schema:name             ?Optional_physical_representation       ;
+                            data:hasDataType        ?Data_type                              .
         
-        MINUS { ?Table_id kgfarm:hasDefaultEntity ?Column_id} # minus default entity
-    } ORDER BY ?Feature_view DESC (?Uniqueness_ratio)"""
+        ?Table_id           kgfarm:hasDefaultEntity ?Default_column_id                      ;                   
+                            featureView:name        ?Feature_view                           ;
+                            schema:name             ?Physical_table                         .
+        
+        ?Default_column_id  entity:name             ?Entity                                 ;
+                            schema:name             ?Current_physical_representation        .
+     
+        FILTER(?Column_id != ?Default_column_id) 
+    } ORDER BY ?Feature_view DESC(?Uniqueness_ratio) ?Optional_physical_representation"""
     if show_query:
         display_query(query)
     return execute_query(config, query)

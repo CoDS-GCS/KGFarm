@@ -100,7 +100,7 @@ class KGFarm:
     def search_enrichment_options(self, entity_df: pd.DataFrame = None, show_query: bool = False):
         # TODO: investigate why some recommendations here have no feature/column to join
         # TODO: support for multiple entities.
-        enrichable_tables = get_enrichable_tables(self.config, show_query)
+        enrichable_tables = search_enrichment_options(self.config, show_query)
         # delete pairs where features are same i.e. nothing to join
         for index, pairs in tqdm(enrichable_tables.to_dict('index').items()):
             entity_dataset = pairs['Dataset']
@@ -277,8 +277,8 @@ class KGFarm:
         return enriched_df
 
 
-entity_data_types_mapping = {'N_int': 'numeric (integer)', 'N_float': 'numeric (float)', 'N_bool': 'numeric (boolean)',
-        'T': 'string (generic)', 'T_date': 'timestamp', 'T_loc': 'string (location)', 'T_person': 'string (person)',
+entity_data_types_mapping = {'N_int': 'integer', 'N_float': 'float', 'N_bool': 'boolean',
+        'T': 'string', 'T_date': 'timestamp', 'T_loc': 'string (location)', 'T_person': 'string (person)',
         'T_org': 'string (organization)', 'T_code': 'string (code)', 'T_email': 'string (email)'}
 
 if __name__ == "__main__":
