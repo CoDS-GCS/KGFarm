@@ -31,10 +31,18 @@ class KGFarm:
         entity_df['Entity_data_type'] = entity_df['Entity_data_type'].map(entity_data_types_mapping)
         return entity_df
 
-    def get_feature_views(self, show_query: bool = False):
+    def get_feature_views(self, feature_view_type: str = 'all', show_query: bool = False):
         feature_view_df = get_feature_views_with_one_or_no_entity(self.config, show_query)
-        feature_view_M = get_feature_views_with_multiple_entities(self.config, show_query)
+        feature_view_df = feature_view_df.where(pd.notnull(feature_view_df), None)
+        feature_view_df.sort_values(by='Feature_view', inplace=True)
 
+        if feature_view_type == 'single':
+            print('Showing feature view(s) with single entity')
+            feature_view_df = feature_view_df.dropna()  # remove feature with no entity
+            feature_view_df = feature_view_df.reset_index(drop=True)
+            return feature_view_df
+
+        feature_view_M = get_feature_views_with_multiple_entities(self.config, show_query)
         # group entities together for feature view with multiple entities
         """
         We need to do this because there is no direct/simple way to bind different entities to the associated feature
@@ -71,9 +79,19 @@ class KGFarm:
                 feature_view_dict['Physical_table'] = feature_view_info['Physical_table']
                 feature_view_dict['File_source'] = feature_view_info['File_source']
 
+        if feature_view_type == 'multiple':
+            print('Showing feature view(s) with multiple entities')
+            return pd.DataFrame(update_info)
+
+        if feature_view_type == 'single and multiple':
+            print('Showing feature view(s) with single and multiple entities')
+            feature_view_df = feature_view_df.dropna()  # remove feature with no entity
+
+        if feature_view_type == 'all':
+            print('Showing all feature views')
+        else:
+            raise ValueError("feature_view_type must be 'single', 'multiple', 'single and multiple', or 'all'")
         feature_view_df = pd.concat([feature_view_df, pd.DataFrame(update_info)], ignore_index=True)
-        feature_view_df = feature_view_df.where(pd.notnull(feature_view_df), None)
-        feature_view_df.sort_values(by='Feature_view', inplace=True)
         feature_view_df = feature_view_df.reset_index(drop=True)
         return feature_view_df
 
