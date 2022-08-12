@@ -126,18 +126,21 @@ class Builder:
 
     # does one-to-one mapping of table -> feature view
     def annotate_feature_views(self):
-        # TODO: add zero padding for ordering of feature view numbering
         print('\n• Annotating feature views')
         self.graph.write('# 1. Feature Views, one-to-one mapping with tables \n')
         table_ids = get_table_ids(self.config)['Table_id'].tolist()
+        # zero padding for clean feature view numbering
+        digits = len(str(len(get_table_ids(self.config))))
         feature_view_count = 0
         for table_id in tqdm(table_ids):
             feature_view_count = feature_view_count + 1
+            zeroes_to_be_padded = digits - len(str(feature_view_count))
+            feature_view = '0'*zeroes_to_be_padded + str(feature_view_count)
             self.triples.add(self.triple_format.format(
                 table_id,
                 self.ontology.get('featureView') + 'name',
-                'Feature_view_{:02}'.format(feature_view_count)))
-            self.table_to_feature_view[table_id] = 'Feature_view_{:02}'.format(feature_view_count)
+                'Feature_view_{}'.format(feature_view)))
+            self.table_to_feature_view[table_id] = 'Feature_view_{}'.format(feature_view)
         self.__dump_triples()
 
     def annotate_entity_mapping(self):
@@ -214,9 +217,6 @@ class Builder:
             else:
                 self.direct_entity_table_mapping[table_id] = column_id
 
-        for table_id in self.unmapped_tables:
-            self.triples.add(self.triple_format.format(table_id, self.ontology.get('kgfarm') + 'hasNoEntity', 0))
-
         self.__dump_triples()
 
     def summarize_graph(self):
@@ -267,7 +267,6 @@ def upload_farm_graph(db: str = 'kgfarm_test', farm_graph: str = 'Farm.nq'):
 
 
 # TODO: remove duplicate entities
-# TODO: remove annotation of 'hasNoEntity', use sparql's Optional and Not exists to handle this case.
 if __name__ == "__main__":
     # parse user input
     ap = argparse.ArgumentParser()
