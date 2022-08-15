@@ -31,13 +31,14 @@ class KGFarm:
         entity_df['Entity_data_type'] = entity_df['Entity_data_type'].map(entity_data_types_mapping)
         return entity_df
 
-    def get_feature_views(self, feature_view_type: str = 'all', show_query: bool = False):
+    def get_feature_views(self, feature_view_type: str = 'all', message_status: bool = True, show_query: bool = False):
         feature_view_df = get_feature_views_with_one_or_no_entity(self.config, show_query)
         feature_view_df = feature_view_df.where(pd.notnull(feature_view_df), None)
         feature_view_df.sort_values(by='Feature_view', inplace=True)
 
         if feature_view_type == 'single':
-            print('Showing feature view(s) with single entity')
+            if message_status:
+                print('Showing feature view(s) with single entity')
             feature_view_df = feature_view_df.dropna()  # remove feature with no entity
             feature_view_df = feature_view_df.reset_index(drop=True)
             return feature_view_df
@@ -80,16 +81,19 @@ class KGFarm:
                 feature_view_dict['File_source'] = feature_view_info['File_source']
 
         if feature_view_type == 'multiple':
-            print('Showing feature view(s) with multiple entities')
+            if message_status:
+                print('Showing feature view(s) with multiple entities')
             return pd.DataFrame(update_info)
 
         if feature_view_type == 'single and multiple':
-            print('Showing feature view(s) with single and multiple entities')
+            if message_status:
+                print('Showing feature view(s) with single and multiple entities')
             feature_view_df = feature_view_df.dropna()  # remove feature with no entity
 
         if feature_view_type == 'all':
-            print('Showing all feature views')
-        else:
+            if message_status:
+                print('Showing all feature views')
+        elif feature_view_type not in ['all', 'single', 'multiple', 'single and multiple']:
             raise ValueError("feature_view_type must be 'single', 'multiple', 'single and multiple', or 'all'")
         feature_view_df = pd.concat([feature_view_df, pd.DataFrame(update_info)], ignore_index=True)
         feature_view_df = feature_view_df.reset_index(drop=True)
@@ -97,7 +101,7 @@ class KGFarm:
 
     def drop_feature_view(self, drop: list):
         self.governor.drop_feature_view(drop)
-        return self.get_feature_views()
+        return self.get_feature_views(message_status=False)
 
     def get_optional_physical_representations(self, show_query: bool = False):
         optional_physical_representations_df = get_optional_entities(self.config, show_query)
@@ -107,7 +111,7 @@ class KGFarm:
 
     def update_entity(self, entity_to_update_info: list):
         self.governor.update_entity(entity_to_update_info)
-        return self.get_feature_views()
+        return self.get_feature_views(message_status=False)
 
     def search_enrichment_options(self, entity_df: pd.DataFrame = None, show_query: bool = False):
         # TODO: investigate why some recommendations here have no feature/column to join
