@@ -44,6 +44,7 @@ class Builder:
 
     def __annotate_entity_and_feature_view_mapping(self, column_id, table_id, uniqueness_ratio, relation):
         triple_format = '<{}> <{}> <{}>'
+        uniqueness_ratio = f"{uniqueness_ratio:.2}"  # round of the uniqueness ratio
         self.triples.add('<<' + triple_format.format(table_id, self.ontology.get('kgfarm') + relation,
                                                      column_id) + '>> <' + self.ontology.get(
             'kgfarm') + 'confidence>' + ' "{}"^^xsd:double.'.format(str(uniqueness_ratio)))
