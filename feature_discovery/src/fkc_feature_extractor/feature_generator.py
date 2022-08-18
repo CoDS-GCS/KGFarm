@@ -294,7 +294,7 @@ def generate(database_list: list, export_features: bool = True):
         conn = connect_to_stardog(port=5822, db=database, show_status=True)
         # Get all inclusion dependencies (IND) or content similarity
         # To get the INDs from the graph
-        ind_by_graph = get_INDs(conn)
+        #ind_by_graph = get_INDs(conn)
         # To get the INDs via human in the loop
         ind_by_HITL = pd.read_csv('../../../helpers/IND_Discovery/'+database+'.csv')
         # To get pairs by Content Similarity
