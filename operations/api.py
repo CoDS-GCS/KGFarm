@@ -1,14 +1,19 @@
 import sklearn
 import datetime
 import pandas as pd
+import seaborn as sns
 from tqdm import tqdm
 from datetime import timedelta
+from matplotlib import pyplot as plt
 from operations.template import *
 from sklearn.preprocessing import *
+from sklearn.feature_selection import SelectKBest, f_classif
 from feature_discovery.src.graph_builder.governor import Governor
 from helpers.helper import connect_to_stardog
+
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_colwidth', None)
+plt.rcParams['figure.dpi'] = 300
 
 
 class KGFarm:
@@ -17,6 +22,15 @@ class KGFarm:
         self.governor = Governor(self.config)
         # TODO: add info from self.__table_transformations to graph via Governor
         self.__table_transformations = {}  # for enrichment -> enriched with : source table
+
+    # re-arranging columns
+    @staticmethod
+    def __re_arrange_columns(last_column: str, df: pd.DataFrame):
+        features = list(df.columns)
+        features.remove(last_column)
+        features.append(last_column)
+        df = df[features]
+        return df
 
     # wrapper around pd.read_csv()
     def load_table(self, table_info: pd.Series, print_table_name: bool = True):
@@ -105,7 +119,7 @@ class KGFarm:
 
     def get_optional_physical_representations(self, show_query: bool = False):
         optional_physical_representations_df = get_optional_entities(self.config, show_query)
-        optional_physical_representations_df['Data_type'] = optional_physical_representations_df['Data_type'].\
+        optional_physical_representations_df['Data_type'] = optional_physical_representations_df['Data_type']. \
             map(entity_data_types_mapping)
         return optional_physical_representations_df
 
@@ -144,12 +158,13 @@ class KGFarm:
             enrichable_tables.drop(['Table', 'Table_path', 'Dataset'], axis=1, inplace=True)
             # enrichable_tables.rename({'Dataset_feature_view': 'Dataset'}, axis=1, inplace=True)
             enrichable_tables = enrichable_tables[['Enrich_with', 'Physical_joinable_table', 'Join_key',
-                                                   'Joinability_strength', 'File_source',	'Dataset_feature_view']].\
+                                                   'Joinability_strength', 'File_source', 'Dataset_feature_view']]. \
                 reset_index(drop=True)
 
         return enrichable_tables
 
-    def get_features(self, enrichment_info: pd.Series, entity_df: pd.DataFrame = None, entity_df_columns: tuple = (), show_status: bool = True):
+    def get_features(self, enrichment_info: pd.Series, entity_df: pd.DataFrame = None, entity_df_columns: tuple = (),
+                     show_status: bool = True):
         # TODO: add support for fetching features that originate from multiple feature views at once.
         feature_view = enrichment_info['Enrich_with']
 
@@ -213,7 +228,7 @@ class KGFarm:
             transformation_info = transformation_info.reset_index(drop=True)
 
             transformation_info.drop(['Dataset', 'Written_on', 'Pipeline_url', 'Dataset', 'Author', 'Table'],
-                                 axis=1, inplace=True)
+                                     axis=1, inplace=True)
         return transformation_info
 
     def apply_transformation(self, transformation_info: pd.Series, entity_df: pd.DataFrame = None):
@@ -224,6 +239,7 @@ class KGFarm:
             df = self.load_table(transformation_info, print_table_name=False)
         transformation = transformation_info['Transformation']
         features = transformation_info['Feature']
+        last_column = list(df.columns)[-1]  # for re-arranging columns
         if transformation == 'LabelEncoder':
             print('Applying LabelEncoder transformation')
             for feature in tqdm(features):
@@ -243,12 +259,14 @@ class KGFarm:
             print(transformation, ' not supported yet!')
             return
         print('{} feature(s) {} transformed successfully!'.format(len(features), features))
-        return df
+
+        return self.__re_arrange_columns(last_column, df)
 
     def enrich(self, enrichment_info: pd.Series, entity_df: pd.DataFrame = None, ttl: int = 10):
         if entity_df is not None:  # entity_df passed by the user
             # get features to be enriched with
-            features = self.get_features(enrichment_info=enrichment_info, entity_df_columns=tuple(entity_df.columns), show_status=False)
+            features = self.get_features(enrichment_info=enrichment_info, entity_df_columns=tuple(entity_df.columns),
+                                         show_status=False)
             features = [feature.split(':')[-1] for feature in features]
             print('Enriching {} with {} feature(s) {}'.format('entity_df', len(features), features))
         else:  # option selected from search_enrichment_options()
@@ -260,6 +278,8 @@ class KGFarm:
         # parse row passed as the input
         feature_view = pd.read_csv(enrichment_info['File_source'])
         join_jey = enrichment_info['Join_key']
+
+        last_column = list(entity_df.columns)[-1]  # for re-arranging column
 
         # add timestamp and join-key to features in feature view to perform join
         features.extend([join_jey, 'event_timestamp'])
@@ -286,16 +306,33 @@ class KGFarm:
         columns.insert(0, 'event_timestamp')
         enriched_df = enriched_df[columns]
         enriched_df = enriched_df.sort_values(by=join_jey).reset_index(drop=True)
+        enriched_df = self.__re_arrange_columns(last_column, enriched_df)
 
         # maintain enrichment details
         self.__table_transformations[tuple(enriched_df.columns)] = enrichment_info['Physical_joinable_table']
-
         return enriched_df
+
+    @staticmethod
+    def select_features(independent_variables: pd.DataFrame, dependent_variable: pd.Series):
+        entity_df = pd.concat([independent_variables, pd.DataFrame(dependent_variable)], axis=1)
+        corr = entity_df.corr(method='pearson')
+        plt.figure(figsize=(15, 10))
+        sns.heatmap(corr, annot=True, cmap='Greens')
+        plt.show()
+        best_features = SelectKBest(score_func=f_classif, k=5).fit(independent_variables, dependent_variable)
+        scores = pd.DataFrame(best_features.scores_)
+        features = pd.DataFrame(independent_variables.columns)
+        feature_scores = pd.concat([scores, features], axis=1)
+        feature_scores.columns = ['F-value', 'Feature']
+        feature_scores['F-value'] = feature_scores['F-value'].apply(lambda x: round(x, 2))
+        feature_scores = feature_scores.sort_values(by='F-value', ascending=False).reset_index(drop=True)
+        return feature_scores
 
 
 entity_data_types_mapping = {'N_int': 'integer', 'N_float': 'float', 'N_bool': 'boolean',
-        'T': 'string', 'T_date': 'timestamp', 'T_loc': 'string (location)', 'T_person': 'string (person)',
-        'T_org': 'string (organization)', 'T_code': 'string (code)', 'T_email': 'string (email)'}
+                             'T': 'string', 'T_date': 'timestamp', 'T_loc': 'string (location)',
+                             'T_person': 'string (person)',
+                             'T_org': 'string (organization)', 'T_code': 'string (code)', 'T_email': 'string (email)'}
 
 if __name__ == "__main__":
     kgfarm = KGFarm(port=5820, database='kgfarm_test', show_connection_status=False)
