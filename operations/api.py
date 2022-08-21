@@ -13,7 +13,6 @@ from helpers.helper import connect_to_stardog
 
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_colwidth', None)
-plt.rcParams['figure.dpi'] = 300
 
 
 class KGFarm:
@@ -312,21 +311,53 @@ class KGFarm:
         self.__table_transformations[tuple(enriched_df.columns)] = enrichment_info['Physical_joinable_table']
         return enriched_df
 
-    @staticmethod
-    def select_features(independent_variables: pd.DataFrame, dependent_variable: pd.Series):
-        entity_df = pd.concat([independent_variables, pd.DataFrame(dependent_variable)], axis=1)
-        corr = entity_df.corr(method='pearson')
-        plt.figure(figsize=(15, 10))
-        sns.heatmap(corr, annot=True, cmap='Greens')
-        plt.show()
-        best_features = SelectKBest(score_func=f_classif, k=5).fit(independent_variables, dependent_variable)
+    def select_features(self, entity_df: pd.DataFrame, dependent_variable: str, plot_correlation: bool = True,
+                        plot_anova_test: bool = True, show_f_value: bool = False,
+                        f_value_threshold: float = 2.0):
+        df = entity_df
+        for feature in tqdm(list(entity_df.columns)):  # drop entity column and timestamp
+            if is_entity_column(self.config, feature=feature, dependent_variable=dependent_variable) \
+                    or feature == 'event_timestamp':
+                df.drop(feature, axis=1, inplace=True)
+
+        print('Analyzing features')
+        if plot_correlation: # plot pearson correlation
+            plt.rcParams['figure.dpi'] = 300
+            corr = df.corr(method='pearson')
+            plt.figure(figsize=(15, 10))
+            sns.heatmap(corr, annot=True, cmap='Greens')
+            plt.show()
+
+        # calculate F-value for features
+        y = df[dependent_variable]  # dependent variable
+        X = df.drop(dependent_variable, axis=1)  # independent variables
+        best_features = SelectKBest(score_func=f_classif, k=5).fit(X, y)
         scores = pd.DataFrame(best_features.scores_)
-        features = pd.DataFrame(independent_variables.columns)
+        features = pd.DataFrame(X.columns)
         feature_scores = pd.concat([scores, features], axis=1)
-        feature_scores.columns = ['F-value', 'Feature']
-        feature_scores['F-value'] = feature_scores['F-value'].apply(lambda x: round(x, 2))
-        feature_scores = feature_scores.sort_values(by='F-value', ascending=False).reset_index(drop=True)
-        return feature_scores
+        feature_scores.columns = ['F_value', 'Feature']
+        feature_scores['F_value'] = feature_scores['F_value'].apply(lambda x: round(x, 2))
+        feature_scores = feature_scores.sort_values(by='F_value', ascending=False).reset_index(drop=True)
+
+        if plot_anova_test:  # plot ANOVA test graph
+            plt.rcParams['figure.dpi'] = 300
+            sns.set_color_codes('pastel')
+            sns.barplot(x='F_value', y='Feature', data=feature_scores,
+                        label='Total', palette="Greens_r", edgecolor='none')
+            sns.set_color_codes('muted')
+            sns.despine(left=True, bottom=True)
+            plt.xlabel('F value')
+            plt.grid(color='lightgray', axis='y')
+            plt.show()
+
+        # filter features based on f_value threshold
+        feature_scores = feature_scores[feature_scores['F_value'] > f_value_threshold]
+        if show_f_value:
+            print(feature_scores, '\n')
+
+        X = df[feature_scores['Feature']]  # features (independent variables)
+        print('Top {} features {} were selected based on highest F-value'.format(len(X.columns), list(X.columns)))
+        return X, y
 
 
 entity_data_types_mapping = {'N_int': 'integer', 'N_float': 'float', 'N_bool': 'boolean',

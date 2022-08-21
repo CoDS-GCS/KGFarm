@@ -251,6 +251,21 @@ def search_entity_table(config, columns):
     """ % generate_subquery()
     return execute_query(config, query)['Table'][0]
 
+
+def is_entity_column(config, feature, dependent_variable):
+    query = """
+    ASK
+    {  
+      ?y          kglids:isPartOf ?Table_id     ;
+                  schema:name     "%s"          .
+    
+      ?Column_id  schema:name     "%s"          ;
+                  entity:name     ?Entity       ;
+                  kglids:isPartOf ?Table_id     . 
+    }""" % (dependent_variable, feature)
+
+    return execute_query(config, query, return_type='ask')
+
 # --------------------------------------KGFarm APIs (updation queries) via Governor-------------------------------------
 
 
