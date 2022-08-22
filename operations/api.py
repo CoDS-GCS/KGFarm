@@ -126,6 +126,9 @@ class KGFarm:
         self.governor.update_entity(entity_to_update_info)
         return self.get_feature_views(message_status=False)
 
+    def search_entity(self, entity_name: str, show_query: bool = False):
+        return search_entity(self.config, entity_name, show_query)
+
     def search_enrichment_options(self, entity_df: pd.DataFrame = None, show_query: bool = False):
         # TODO: investigate why some recommendations here have no feature/column to join
         # TODO: support for multiple entities.
@@ -350,10 +353,11 @@ class KGFarm:
             plt.grid(color='lightgray', axis='y')
             plt.show()
 
-        # filter features based on f_value threshold
-        feature_scores = feature_scores[feature_scores['F_value'] > f_value_threshold]
         if show_f_value:
             print(feature_scores, '\n')
+
+        # filter features based on f_value threshold
+        feature_scores = feature_scores[feature_scores['F_value'] > f_value_threshold]
 
         X = df[feature_scores['Feature']]  # features (independent variables)
         print('Top {} features {} were selected based on highest F-value'.format(len(X.columns), list(X.columns)))
