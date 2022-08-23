@@ -77,7 +77,7 @@ nbconvert @ file:///private/var/folders/sy/f16zz6x50xz3113nwtb9bvq00000gp/T/abs_
 nbformat @ file:///opt/concourse/worker/volumes/live/5df1c094-b23e-45d9-43de-8e6c717c9b9d/volume/nbformat_1649844930724/work
 nest-asyncio @ file:///opt/concourse/worker/volumes/live/a7f89d20-060a-480e-487d-25959e806725/volume/nest-asyncio_1649847918874/work
 notebook @ file:///opt/concourse/worker/volumes/live/04354d80-9f15-4db9-4bcd-195dc104f1c6/volume/notebook_1645002579570/work
-numpy==1.22.3
+numpy~=1.23.0
 packaging @ file:///tmp/build/80754af9/packaging_1637314298585/work
 pandas==1.4.1
 pandavro==1.5.2
@@ -152,3 +152,4 @@ zipp==3.8.0
 
 seaborn~=0.11.2
 skimpy~=0.0.6
+nbformat~=5.3.0
