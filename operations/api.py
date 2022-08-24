@@ -1,3 +1,4 @@
+import copy
 import sklearn
 import datetime
 import pandas as pd
@@ -20,7 +21,7 @@ class KGFarm:
         self.config = connect_to_stardog(port, database, show_connection_status)
         self.governor = Governor(self.config)
         # TODO: add info from self.__table_transformations to graph via Governor
-        self.__table_transformations = {}  # for enrichment -> enriched with : source table
+        self.__table_transformations = {}  # cols in enriched_df: tuple -> (entity_df_id, feature_view_id)
 
     # re-arranging columns
     @staticmethod
@@ -155,7 +156,7 @@ class KGFarm:
 
         if entity_df is not None:
             # filter enrichable_tables dataframe based on columns in entity_df
-            entity_table = search_entity_table(self.config, list(entity_df.columns))
+            entity_table = search_entity_table(self.config, list(entity_df.columns))['Table'][0]
             enrichable_tables = enrichable_tables.loc[enrichable_tables['Table'] == entity_table]
             enrichable_tables.drop(['Table', 'Table_path', 'Dataset'], axis=1, inplace=True)
             # enrichable_tables.rename({'Dataset_feature_view': 'Dataset'}, axis=1, inplace=True)
@@ -196,6 +197,21 @@ class KGFarm:
         for row_number, value in transformation_info.to_dict('index').items():
             if transformation == value['Transformation'] and pipeline == value['Pipeline']:
                 feature.append(value['Feature'])
+                if row_number == len(transformation_info)-1:  # last row
+                    row = transformation_info.to_dict('index').get(row_number - 1)
+                    transformation_info_grouped.append({'Transformation': transformation,
+                                                        'Package': row['Package'],
+                                                        'Function': row['Function'],
+                                                        'Library': row['Library'],
+                                                        'Feature': feature,
+                                                        'Feature_view': row['Feature_view'],
+                                                        'Table': row['Table'],
+                                                        'Dataset': row['Dataset'],
+                                                        'Author': row['Author'],
+                                                        'Written_on': row['Written_on'],
+                                                        'Pipeline': pipeline,
+                                                        'Pipeline_url': row['Pipeline_url']})
+
             else:
                 if row_number == 0:
                     transformation = value['Transformation']
@@ -220,15 +236,27 @@ class KGFarm:
                 feature = [value['Feature']]
 
         transformation_info = pd.DataFrame(transformation_info_grouped)
+
         if not show_metadata:
             transformation_info.drop(['Package', 'Function', 'Library', 'Author', 'Written_on', 'Pipeline_url'],
                                      axis=1, inplace=True)
 
         if entity_df is not None:
-            table = self.__table_transformations.get(tuple(entity_df.columns))
-            transformation_info = transformation_info.loc[transformation_info['Table'] == table]
-            transformation_info = transformation_info.reset_index(drop=True)
+            print('Narrowing recommendations w.r.t entity_df')
+            table_ids = self.__table_transformations.get(tuple(entity_df.columns))
+            if len(table_ids) < 1:
+                return transformation_info
+            tables = list(map(lambda x: get_table_name(self.config, table_id=x), table_ids))
 
+            # filtering transformations w.r.t entity_df
+            for index, value in tqdm(transformation_info.to_dict('index').items()):
+                if value['Table'] not in tables:
+                    transformation_info.drop(index=index, axis=0, inplace=True)
+
+            if len(transformation_info) < 1:
+                return transformation_info
+
+            transformation_info = transformation_info.reset_index(drop=True)
             transformation_info.drop(['Dataset', 'Written_on', 'Pipeline_url', 'Dataset', 'Author', 'Table'],
                                      axis=1, inplace=True)
         return transformation_info
@@ -277,6 +305,7 @@ class KGFarm:
             features = [feature.split(':')[-1] for feature in features]
             print('Enriching {} with {} feature(s) {}'.format(enrichment_info['Table'], len(features), features))
 
+        source_table_id = search_entity_table(self.config, entity_df.columns)['Table_id'][0]  # needed to track tables after enrichment
         # parse row passed as the input
         feature_view = pd.read_csv(enrichment_info['File_source'])
         join_jey = enrichment_info['Join_key']
@@ -310,21 +339,45 @@ class KGFarm:
         enriched_df = enriched_df.sort_values(by=join_jey).reset_index(drop=True)
         enriched_df = self.__re_arrange_columns(last_column, enriched_df)
 
-        # maintain enrichment details
-        self.__table_transformations[tuple(enriched_df.columns)] = enrichment_info['Physical_joinable_table']
+        # maintain enrichment details (columns in enriched dataset : (table_ids of the joined tables))
+        self.__table_transformations[tuple(enriched_df.columns)] = (source_table_id,
+                                        get_physical_table(self.config, feature_view=enrichment_info['Enrich_with']))
         return enriched_df
 
-    def select_features(self, entity_df: pd.DataFrame, dependent_variable: str, plot_correlation: bool = True,
-                        plot_anova_test: bool = True, show_f_value: bool = False,
+    def __get_features(self, entity_df: pd.DataFrame, filtered_columns: list, show_query: bool = False):
+        table_id = search_entity_table(self.config, list(entity_df.columns))
+        if len(table_id) < 1:
+            print('Searching features for enriched dataframe')
+            table_ids = self.__table_transformations.get(tuple(entity_df.columns))
+            print('dropped features in ', table_ids[0], get_features_to_drop(self.config, table_ids[0], show_query))
+            print('dropped features in ', table_ids[1], get_features_to_drop(self.config, table_ids[1], show_query))
+            return [feature for feature in list(entity_df.columns) if feature not in
+            get_features_to_drop(self.config, table_ids[0], show_query)['Feature_to_drop'].tolist() and feature not in
+            get_features_to_drop(self.config, table_ids[1], show_query)['Feature_to_drop'].tolist() and feature in
+            filtered_columns]
+
+        else:
+            table_id = table_id['Table_id'][0]
+            return [feature for feature in list(entity_df.columns)
+                    if feature not in get_features_to_drop(self.config, table_id, show_query)['Feature_to_drop'].tolist()
+                    and feature in filtered_columns]
+
+    def select_features(self, entity_df: pd.DataFrame, dependent_variable: str, select_by: str = 'pipeline', plot_correlation: bool = False,
+                        plot_anova_test: bool = False, show_f_value: bool = False,
                         f_value_threshold: float = 2.0):
-        df = entity_df
+
+        if select_by not in ['pipeline', 'statistics']:
+            error = 'select_by can either be by pipeline (default) or by statistics'
+            raise ValueError(error)
+
+        df = copy.copy(entity_df)
         for feature in tqdm(list(entity_df.columns)):  # drop entity column and timestamp
             if is_entity_column(self.config, feature=feature, dependent_variable=dependent_variable) \
                     or feature == 'event_timestamp':
                 df.drop(feature, axis=1, inplace=True)
 
         print('Analyzing features')
-        if plot_correlation: # plot pearson correlation
+        if plot_correlation:  # plot pearson correlation
             plt.rcParams['figure.dpi'] = 300
             corr = df.corr(method='pearson')
             plt.figure(figsize=(15, 10))
@@ -332,7 +385,7 @@ class KGFarm:
             plt.show()
 
         # calculate F-value for features
-        y = df[dependent_variable]  # dependent variable
+        y = entity_df[dependent_variable]  # dependent variable
         X = df.drop(dependent_variable, axis=1)  # independent variables
         best_features = SelectKBest(score_func=f_classif, k=5).fit(X, y)
         scores = pd.DataFrame(best_features.scores_)
@@ -356,12 +409,19 @@ class KGFarm:
         if show_f_value:
             print(feature_scores, '\n')
 
-        # filter features based on f_value threshold
-        feature_scores = feature_scores[feature_scores['F_value'] > f_value_threshold]
+        if select_by == 'pipeline':
+            X = entity_df[self.__get_features(entity_df=entity_df, filtered_columns=list(df.columns))]
+            print('{} feature(s) {} were selected based on previously abstracted pipelines'.format(len(X.columns), list(X.columns)))
+            return X, y
 
-        X = df[feature_scores['Feature']]  # features (independent variables)
-        print('Top {} features {} were selected based on highest F-value'.format(len(X.columns), list(X.columns)))
-        return X, y
+        if select_by == 'statistics':
+            # filter features based on f_value threshold
+            feature_scores = feature_scores[feature_scores['F_value'] > f_value_threshold]
+            X = df[feature_scores['Feature']]  # features (independent variables)
+            print('Top {} feature(s) {} were selected based on highest F-value'.format(len(X.columns), list(X.columns)))
+            return X, y
+
+    # TODO: concrete set of ontology is required to know which columns are being dropped (user may drop features for transformations / other experiments)
 
 
 entity_data_types_mapping = {'N_int': 'integer', 'N_float': 'float', 'N_bool': 'boolean',
@@ -370,4 +430,5 @@ entity_data_types_mapping = {'N_int': 'integer', 'N_float': 'float', 'N_bool': '
                              'T_org': 'string (organization)', 'T_code': 'string (code)', 'T_email': 'string (email)'}
 
 if __name__ == "__main__":
-    kgfarm = KGFarm(port=5820, database='kgfarm_test', show_connection_status=False)
+    kgfarm = KGFarm(port=5820, database='test_1', show_connection_status=False)
+    kgfarm.recommend_feature_transformations()

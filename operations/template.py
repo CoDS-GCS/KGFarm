@@ -242,15 +242,36 @@ def search_entity_table(config, columns):
         return subquery
 
     query = """
-    SELECT ?Table
+    SELECT ?Table ?Table_id
     WHERE
     {
     %s
         ?Table_id   schema:name         ?Table.
     }
     """ % generate_subquery()
-    return execute_query(config, query)['Table'][0]
+    return execute_query(config, query)
 
+
+def get_physical_table(config, feature_view):
+    query = """
+    SELECT ?Table_id
+    WHERE
+    {
+        ?Table_id featureView:name ?Feature_view    .
+        FILTER(?Feature_view = '%s')
+    }""" % feature_view
+    return execute_query(config, query)['Table_id'][0]
+
+
+def get_table_name(config, table_id):
+    query = """
+    SELECT ?Table
+    WHERE
+    {
+        <%s>    schema:name ?Table .
+    }
+    """ % table_id
+    return execute_query(config, query)['Table'][0]
 
 def is_entity_column(config, feature, dependent_variable):
     query = """
@@ -284,6 +305,49 @@ def search_entity(config, entity_name, show_query):
         # search entity
         FILTER regex(str(?Entity), "%s", "i") # ignore case sensitivity
     } ORDER BY DESC(?Number_of_rows)""" % entity_name
+    if show_query:
+        display_query(query)
+    return execute_query(config, query)
+
+
+def get_features_to_drop(config, table_id, show_query):
+    query = """
+    SELECT DISTINCT ?Feature_to_drop
+    WHERE
+    {
+        # query pipeline-default graph
+        ?Pipeline_id        rdf:type                kglids:Pipeline     ;
+                            kglids:isPartOf         ?Dataset_id         ;
+                            rdfs:label              ?Pipeline           ;
+                            pipeline:isWrittenBy    ?Author             ;
+                            pipeline:isWrittenOn    ?Written_on         ;
+                            pipeline:hasSourceURL         ?p            . 
+    
+        # querying named-graphs for pipeline               
+        GRAPH ?Pipeline_id
+        {
+            ?Statement      pipeline:callsClass     ?Class_id           .
+            ?Statement_2    pipeline:callsFunction  ?Function_id        ;
+                            pipeline:readsColumn    ?Column_id          .
+        }
+    
+        ?Column_id          schema:name             ?Feature_to_drop    ;
+                            kglids:isPartOf         <%s>                .
+        
+        <%s>                kglids:isPartOf         ?Dataset_id         ;
+                            schema:name             ?Table              .
+    
+        BIND(STRAFTER(str(?Statement_2), str(?Dataset_id)) as ?Call1)   .
+        BIND(STRAFTER(str(?Call1), str('dataResource/')) as ?Call2)     .
+        BIND(STRAFTER(str(?Call2), str('/s')) as ?Call)                 .
+    
+    
+        BIND(STRAFTER(str(?Function_id), str(lib:)) as ?Function1)      .
+        BIND(REPLACE(?Function1, '/', '.', 'i') AS ?Function)           .
+    
+        FILTER(?Function = 'pandas.DataFrame.drop') 
+            
+    } ORDER BY ?Pipeline xsd:integer(?Call) ?Table""" % (table_id, table_id)
     if show_query:
         display_query(query)
     return execute_query(config, query)
