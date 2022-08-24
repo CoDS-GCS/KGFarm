@@ -21,7 +21,7 @@ class KGFarm:
         self.mode = mode
         if mode not in ['HITL (Human in the loop)', 'Automatic']:
             raise ValueError("mode can be either 'HITL (Human in the Loop)' or 'Automatic'")
-        print('Running in {} mode'.format(mode))
+        print('(Running in {} mode)'.format(mode))
         self.config = connect_to_stardog(port, database, show_connection_status)
         self.governor = Governor(self.config)
         # TODO: add info from self.__table_transformations to graph via Governor
@@ -247,7 +247,8 @@ class KGFarm:
                                      axis=1, inplace=True)
 
         if entity_df is not None:
-            print('Narrowing recommendations w.r.t entity_df')
+            if self.mode != 'Automatic':
+                print('Narrowing recommendations w.r.t entity_df')
             table_ids = self.__table_transformations.get(tuple(entity_df.columns))
             if len(table_ids) < 1:
                 return transformation_info
@@ -276,7 +277,8 @@ class KGFarm:
         features = transformation_info['Feature']
         last_column = list(df.columns)[-1]  # for re-arranging columns
         if transformation == 'LabelEncoder':
-            print('Applying LabelEncoder transformation')
+            if self.mode != 'Automatic':
+                print('Applying LabelEncoder transformation')
             for feature in tqdm(features):
                 try:
                     encoder = LabelEncoder()
@@ -284,7 +286,8 @@ class KGFarm:
                 except sklearn.exceptions:
                     print("{} couldn't be transformed".format(transformation_info['Table']))
         elif transformation == 'StandardScaler':
-            print('Applying StandardScaler transformation')
+            if self.mode != 'Automatic':
+                print('Applying StandardScaler transformation')
             try:
                 scaler = StandardScaler(copy=False)
                 df[features] = scaler.fit_transform(df[features])
@@ -293,7 +296,8 @@ class KGFarm:
         else:
             print(transformation, ' not supported yet!')
             return
-        print('{} feature(s) {} transformed successfully!'.format(len(features), features))
+        if self.mode != 'Automatic':
+            print('{} feature(s) {} transformed successfully!'.format(len(features), features))
 
         return self.__re_arrange_columns(last_column, df)
 
@@ -303,12 +307,14 @@ class KGFarm:
             features = self.get_features(enrichment_info=enrichment_info, entity_df_columns=tuple(entity_df.columns),
                                          show_status=False)
             features = [feature.split(':')[-1] for feature in features]
-            print('Enriching {} with {} feature(s) {}'.format('entity_df', len(features), features))
+            if self.mode != 'Automatic':
+                print('Enriching {} with {} feature(s) {}'.format('entity_df', len(features), features))
         else:  # option selected from search_enrichment_options()
             entity_df = pd.read_csv(enrichment_info['Table_path'])
             features = self.get_features(enrichment_info=enrichment_info, entity_df=entity_df, show_status=False)
             features = [feature.split(':')[-1] for feature in features]
-            print('Enriching {} with {} feature(s) {}'.format(enrichment_info['Table'], len(features), features))
+            if self.mode != 'Automatic':
+                print('Enriching {} with {} feature(s) {}'.format(enrichment_info['Table'], len(features), features))
 
         source_table_id = search_entity_table(self.config, entity_df.columns)['Table_id'][0]  # needed to track tables after enrichment
         # parse row passed as the input
@@ -352,7 +358,8 @@ class KGFarm:
     def __get_features(self, entity_df: pd.DataFrame, filtered_columns: list, show_query: bool = False):
         table_id = search_entity_table(self.config, list(entity_df.columns))
         if len(table_id) < 1:
-            print('Searching features for enriched dataframe\n')
+            if self.mode != 'Automatic':
+                print('Searching features for enriched dataframe\n')
             table_ids = self.__table_transformations.get(tuple(entity_df.columns))
             return [feature for feature in list(entity_df.columns) if feature not in
             get_features_to_drop(self.config, table_ids[0], show_query)['Feature_to_drop'].tolist() and feature not in
@@ -379,7 +386,8 @@ class KGFarm:
                     or feature == 'event_timestamp':
                 df.drop(feature, axis=1, inplace=True)
 
-        print('Analyzing features')
+        if self.mode != 'Automatic':
+            print('Analyzing features')
         if plot_correlation:  # plot pearson correlation
             plt.rcParams['figure.dpi'] = 300
             corr = df.corr(method='pearson')
@@ -414,14 +422,16 @@ class KGFarm:
 
         if select_by == 'pipeline':
             X = entity_df[self.__get_features(entity_df=entity_df, filtered_columns=list(df.columns))]
-            print('{} feature(s) {} were selected based on previously abstracted pipelines'.format(len(X.columns), list(X.columns)))
+            if self.mode != 'Automatic':
+                print('{} feature(s) {} were selected based on previously abstracted pipelines'.format(len(X.columns), list(X.columns)))
             return X, y
 
         if select_by == 'statistics':
             # filter features based on f_value threshold
             feature_scores = feature_scores[feature_scores['F_value'] > f_value_threshold]
             X = df[feature_scores['Feature']]  # features (independent variables)
-            print('Top {} feature(s) {} were selected based on highest F-value'.format(len(X.columns), list(X.columns)))
+            if self.mode != 'Automatic':
+                print('Top {} feature(s) {} were selected based on highest F-value'.format(len(X.columns), list(X.columns)))
             return X, y
 
 
