@@ -17,7 +17,11 @@ pd.set_option('display.max_colwidth', None)
 
 
 class KGFarm:
-    def __init__(self, port: object = 5820, database: str = 'kgfarm_test', show_connection_status: bool = True):
+    def __init__(self, mode: str = 'HITL (Human in the loop)', port: object = 5820, database: str = 'kgfarm_test', show_connection_status: bool = True):
+        self.mode = mode
+        if mode not in ['HITL (Human in the loop)', 'Automatic']:
+            raise ValueError("mode can be either 'HITL (Human in the Loop)' or 'Automatic'")
+        print('Running in {} mode'.format(mode))
         self.config = connect_to_stardog(port, database, show_connection_status)
         self.governor = Governor(self.config)
         # TODO: add info from self.__table_transformations to graph via Governor
@@ -185,6 +189,7 @@ class KGFarm:
             print(len(features), 'feature(s) were found!')
         return features
 
+    # TODO: concrete set of ontology is required to know which columns are being dropped (user may drop features for transformations / other experiments)
     def recommend_feature_transformations(self, entity_df: pd.DataFrame = None, show_metadata: bool = True,
                                           show_query: bool = False):
         transformation_info = recommend_feature_transformations(self.config, show_query)
@@ -347,7 +352,7 @@ class KGFarm:
     def __get_features(self, entity_df: pd.DataFrame, filtered_columns: list, show_query: bool = False):
         table_id = search_entity_table(self.config, list(entity_df.columns))
         if len(table_id) < 1:
-            print('Searching features for enriched dataframe')
+            print('Searching features for enriched dataframe\n')
             table_ids = self.__table_transformations.get(tuple(entity_df.columns))
             return [feature for feature in list(entity_df.columns) if feature not in
             get_features_to_drop(self.config, table_ids[0], show_query)['Feature_to_drop'].tolist() and feature not in
@@ -419,8 +424,6 @@ class KGFarm:
             print('Top {} feature(s) {} were selected based on highest F-value'.format(len(X.columns), list(X.columns)))
             return X, y
 
-    # TODO: concrete set of ontology is required to know which columns are being dropped (user may drop features for transformations / other experiments)
-
 
 entity_data_types_mapping = {'N_int': 'integer', 'N_float': 'float', 'N_bool': 'boolean',
                              'T': 'string', 'T_date': 'timestamp', 'T_loc': 'string (location)',
@@ -428,5 +431,5 @@ entity_data_types_mapping = {'N_int': 'integer', 'N_float': 'float', 'N_bool': '
                              'T_org': 'string (organization)', 'T_code': 'string (code)', 'T_email': 'string (email)'}
 
 if __name__ == "__main__":
-    kgfarm = KGFarm(port=5820, database='test_1', show_connection_status=False)
+    kgfarm = KGFarm(port=5820, database='kgfarm_test', show_connection_status=False)
     kgfarm.recommend_feature_transformations()
