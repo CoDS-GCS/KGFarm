@@ -349,8 +349,6 @@ class KGFarm:
         if len(table_id) < 1:
             print('Searching features for enriched dataframe')
             table_ids = self.__table_transformations.get(tuple(entity_df.columns))
-            print('dropped features in ', table_ids[0], get_features_to_drop(self.config, table_ids[0], show_query))
-            print('dropped features in ', table_ids[1], get_features_to_drop(self.config, table_ids[1], show_query))
             return [feature for feature in list(entity_df.columns) if feature not in
             get_features_to_drop(self.config, table_ids[0], show_query)['Feature_to_drop'].tolist() and feature not in
             get_features_to_drop(self.config, table_ids[1], show_query)['Feature_to_drop'].tolist() and feature in
