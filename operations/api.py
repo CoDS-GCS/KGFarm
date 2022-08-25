@@ -1,4 +1,6 @@
 import copy
+
+import numpy as np
 import sklearn
 import datetime
 import pandas as pd
@@ -408,13 +410,15 @@ class KGFarm:
 
         if plot_anova_test:  # plot ANOVA test graph
             plt.rcParams['figure.dpi'] = 300
+            plt.figure(figsize=(15, 10))
             sns.set_color_codes('pastel')
             sns.barplot(x='F_value', y='Feature', data=feature_scores,
                         label='Total', palette="Greens_r", edgecolor='none')
             sns.set_color_codes('muted')
             sns.despine(left=True, bottom=True)
-            plt.xlabel('F value')
+            plt.xlabel('F value', fontsize=15)
             plt.grid(color='lightgray', axis='y')
+            plt.tick_params(axis='both', which='major', labelsize=15)
             plt.show()
 
         if show_f_value:
@@ -434,6 +438,81 @@ class KGFarm:
                 print('Top {} feature(s) {} were selected based on highest F-value'.format(len(X.columns), list(X.columns)))
             return X, y
 
+    def clean_data(self, entity_df: pd.DataFrame, show_query: bool = False):
+
+        def get_columns_to_be_cleaned(df):
+            columns = pd.DataFrame(df.isnull().sum())
+            columns.columns = ['Missing values']
+            columns['Feature'] = columns.index
+            columns = columns[columns['Missing values'] > 0]
+            columns.sort_values(by='Missing values', ascending=False, inplace=True)
+            columns.reset_index(drop=True, inplace=True)
+            return columns
+
+        for na_type in tqdm(['None', 'N/a', 'na']):
+            entity_df.replace(na_type, np.nan, inplace=True)
+
+        # plot heatmap of missing values
+        plt.rcParams['figure.dpi'] = 300
+        plt.figure(figsize=(15, 7))
+        sns.heatmap(entity_df.isnull(), yticklabels=False, cmap='Greens_r')
+        plt.show()
+
+        # plot bar-graph of missing values
+        columns_to_be_cleaned = get_columns_to_be_cleaned(entity_df)
+
+        sns.set_color_codes('pastel')
+        plt.rcParams['figure.dpi'] = 300
+        plt.figure(figsize=(6, 3))
+
+        ax = sns.barplot(x="Feature", y="Missing values", data=columns_to_be_cleaned,
+                         palette='Greens_r', edgecolor=None)
+
+        def change_width(axis, new_value):
+            for patch in axis.patches:
+                current_width = patch.get_width()
+                diff = current_width - new_value
+                patch.set_width(new_value)
+                patch.set_x(patch.get_x() + diff * .5)
+
+        change_width(ax, .20)
+        plt.grid(color='lightgray', axis='y')
+        plt.ylabel('Missing value', fontsize=5.5)
+        plt.xlabel('')
+        ax.tick_params(axis='both', which='major', labelsize=5.5)
+        plt.show()
+
+        table_id = search_entity_table(self.config, list(entity_df.columns))
+        if len(table_id) < 1:
+            table_ids = self.__table_transformations.get(tuple(entity_df.columns))
+
+            data_cleaning_info = pd.concat([get_data_cleaning_info(self.config,
+                                table_id=table_ids[0], show_query=show_query), get_data_cleaning_info(
+                self.config, table_id=table_ids[1], show_query=show_query)])
+        else:
+            data_cleaning_info = get_data_cleaning_info(self.config, table_id=table_id)
+
+        if len(data_cleaning_info) < 1:
+            return None
+
+        for cleaning_info in data_cleaning_info.to_dict('index').values():
+            function = cleaning_info['Function']
+            parameter = cleaning_info['Parameter']
+            value = cleaning_info['Value']
+            if 'pandas.DataFrame.interpolate' == function:
+                entity_df.interpolate(value, inplace=True)
+                if self.mode != 'Automatic':
+                    print("cleaned {} features using '{}' by {} = '{}'".format(len(columns_to_be_cleaned), function, parameter, value))
+
+        if len(get_columns_to_be_cleaned(entity_df)) == 0:
+            if self.mode != 'Automatic':
+                print('nothing to clean')
+            return entity_df
+        else:
+            return get_columns_to_be_cleaned(entity_df)
+
+
+# TODO: refactor (make a generic function to return enrich table_ids from self.__table_transformations)
 
 entity_data_types_mapping = {'N_int': 'integer', 'N_float': 'float', 'N_bool': 'boolean',
                              'T': 'string', 'T_date': 'timestamp', 'T_loc': 'string (location)',
@@ -442,4 +521,3 @@ entity_data_types_mapping = {'N_int': 'integer', 'N_float': 'float', 'N_bool': '
 
 if __name__ == "__main__":
     kgfarm = KGFarm(port=5820, database='kgfarm_test', show_connection_status=False)
-    kgfarm.recommend_feature_transformations()

@@ -352,6 +352,45 @@ def get_features_to_drop(config, table_id, show_query):
         display_query(query)
     return execute_query(config, query)
 
+
+def get_data_cleaning_info(config, table_id, show_query):
+    query = """
+    SELECT DISTINCT ?Table ?Function ?Parameter ?Value ?Feature_view ?Pipeline 
+    WHERE
+    {
+    # query pipeline-default graph
+    ?Pipeline_id            rdf:type                kglids:Pipeline     ;
+                            kglids:isPartOf         ?Dataset_id         ;
+                            rdfs:label              ?Pipeline           ;
+                            pipeline:isWrittenBy    ?Author             ;
+                            pipeline:isWrittenOn    ?Written_on         ;
+                            pipeline:hasSourceURL   ?Pipeline_url       .
+    
+    # querying named-graphs for pipeline               
+    GRAPH ?Pipeline_id
+    {
+        ?Statement          pipeline:callsFunction  ?Function_id        .
+        <<?Statement        pipeline:hasParameter   ?Parameter>> pipeline:withParameterValue ?Value        .
+        ?Statement_2        pipeline:readsTable     <%s>                .          
+    }
+    
+    <%s>                    schema:name             ?Table              ;
+                            featureView:name        ?Feature_view       .
+    
+    FILTER(?Value != 'None' && ?Value != 'False' && ?Parameter != 'axis')
+    
+    # TODO: populate more methods that are responsible for cleaning
+    FILTER(?Function = "pandas.DataFrame.interpolate")
+    
+    # beautify output
+    BIND(STRAFTER(str(?Function_id), str(lib:)) as ?Function1)             
+    BIND(REPLACE(?Function1, '/', '.', 'i') AS ?Function)                               
+    }""" % (table_id, table_id)
+    if show_query:
+        return display_query(query)
+    return execute_query(config, query)
+
+
 # --------------------------------------KGFarm APIs (updation queries) via Governor-------------------------------------
 
 
