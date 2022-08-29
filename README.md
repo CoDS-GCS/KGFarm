@@ -30,8 +30,9 @@ python builder.py -db Database
 * [X] Predict [Feature view](https://docs.feast.dev/getting-started/concepts/feature-view) with multiple [Entities](https://docs.feast.dev/v/v0.6-branch/user-guide/entities)
 * [X] Support for [Entity](https://docs.feast.dev/v/v0.6-branch/user-guide/entities) updation on the fly
 * [X] Predict Features for [Dataset enrichment](https://docs.feast.dev/getting-started/quickstart#step-4-generating-training-data)
-* [X] Predict feature transformations (Alpha)
-* [ ] Automate data cleaning 
+* [X] Automate Data cleaning 
+* [X] Predict Feature transformations
+* [X] Automate Feature selection
 * [ ] Support Unseen datasets
 * [ ] Detect Feature bias
 
