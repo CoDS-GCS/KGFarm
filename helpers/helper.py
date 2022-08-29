@@ -165,28 +165,24 @@ def plot_scores(conventional_approach: dict):
 def plot_comparison(conventional_approach: dict, kgfarm_approach: dict):
     plt.rcParams['figure.dpi'] = 300
     sns.set_style("dark")
-    scores = {}
+
+    classifiers = []
+    conventional_scores = []
+    kgfarm_scores = []
     for classifier in conventional_approach.keys():
-        scores[classifier] = [conventional_approach.get(classifier), kgfarm_approach.get(classifier)]
+        classifiers.append(classifier)
+        conventional_scores.append(conventional_approach.get(classifier))
+        kgfarm_scores.append(kgfarm_approach.get(classifier))
 
-    labels = ["conventional pipeline", "using KGFarm"]
-    x = np.arange(len(labels))
-    width = 0.15  # the width of the bars
+    X = np.arange(len(classifiers))
+    fig, ax = plt.subplots(figsize=(8, 6))
 
-    fig, ax = plt.subplots(figsize=(7, 6))
+    rects1 = ax.bar(X + 0.00, conventional_scores, color='lightgreen', edgecolor='lightgreen', width=0.25,
+                    label='Conventional approach')
+    plt.axhline(y=max(conventional_scores), color='lightgreen', linestyle="--")
 
-    classifier = 'Random forest classifier'
-    color = 'darkgreen'
-    rects1 = ax.bar(x - width, scores.get(classifier), color=color, edgecolor=color, width=width, label=classifier)
-    plt.axhline(y=scores.get(classifier)[1], color=color, linestyle="--")
-    classifier = 'Gradient boosting classifier'
-    color = 'mediumseagreen'
-    rects2 = ax.bar(x, scores.get(classifier), color=color, width=width, edgecolor=color, label=classifier)
-    plt.axhline(y=scores.get(classifier)[1], color=color, linestyle="--")
-    classifier = 'Naive bayes classifier'
-    color = 'lightgreen'
-    rects3 = ax.bar(x + width, scores.get(classifier), color=color, width=width, edgecolor=color, label=classifier)
-    plt.axhline(y=scores.get(classifier)[1], color=color, linestyle="--")
+    rects2 = ax.bar(X + 0.25, kgfarm_scores, color='darkgreen', edgecolor='darkgreen', width=0.25, label='Using KGFarm')
+    plt.axhline(y=max(kgfarm_scores), color='darkgreen', linestyle="--")
 
     def autolabel(rects):
         for rect in rects:
@@ -196,13 +192,13 @@ def plot_comparison(conventional_approach: dict, kgfarm_approach: dict):
 
     autolabel(rects1)
     autolabel(rects2)
-    autolabel(rects3)
 
+    classifiers = list(map(lambda x: '                   ' + x, classifiers))
     ax.set_ylabel('F1-score', fontsize=15)
     ax.set_axisbelow(True)
     ax.grid(color='gray', linestyle='dashed', axis='y')
-    ax.set_xticks(x)
-    ax.set_xticklabels(("conventional ML pipeline", "using KGFarm"), fontsize=15)
+    ax.set_xticks(X)
+    ax.set_xticklabels(classifiers, fontsize=12)
     ax.legend(fontsize=10, bbox_to_anchor=(1.0, 1.02))
     fig.tight_layout()
     plt.subplots_adjust(left=0.2, bottom=0.2, right=1.35)

@@ -417,6 +417,7 @@ class KGFarm:
             sns.set_color_codes('muted')
             sns.despine(left=True, bottom=True)
             plt.xlabel('F value', fontsize=15)
+            plt.ylabel('Feature', fontsize=15)
             plt.grid(color='lightgray', axis='y')
             plt.tick_params(axis='both', which='major', labelsize=15)
             plt.show()
