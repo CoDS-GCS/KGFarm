@@ -137,7 +137,6 @@ class KGFarm:
         return search_entity(self.config, entity_name, show_query)
 
     def search_enrichment_options(self, entity_df: pd.DataFrame = None, show_query: bool = False):
-        # TODO: investigate why some recommendations here have no feature/column to join
         # TODO: support for multiple entities.
         enrichable_tables = search_enrichment_options(self.config, show_query)
         # delete pairs where features are same i.e. nothing to join
@@ -148,10 +147,8 @@ class KGFarm:
             feature_view_table = pairs['Physical_joinable_table']
             features_in_entity_df = get_columns(self.config, entity_table, entity_dataset)
             features_in_feature_view = get_columns(self.config, feature_view_table, feature_view_dataset)
-            # sort features
-            features_in_entity_df.sort()
-            features_in_feature_view.sort()
-            if features_in_entity_df == features_in_feature_view:
+
+            if set(features_in_feature_view).issubset(set(features_in_entity_df)):  # nothing to enrich as those features already exist
                 enrichable_tables = enrichable_tables.drop(index)
 
         enrichable_tables = enrichable_tables.sort_values(by=['Table', 'Joinability_strength', 'Enrich_with'],
@@ -492,7 +489,7 @@ class KGFarm:
                                 table_id=table_ids[0], show_query=show_query), get_data_cleaning_info(
                 self.config, table_id=table_ids[1], show_query=show_query)])
         else:
-            data_cleaning_info = get_data_cleaning_info(self.config, table_id=table_id)
+            data_cleaning_info = get_data_cleaning_info(self.config, table_id=table_id, show_query=show_query)
 
         if len(data_cleaning_info) < 1:
             return None
