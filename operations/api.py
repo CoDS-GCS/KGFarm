@@ -1,5 +1,4 @@
 import copy
-
 import numpy as np
 import sklearn
 import datetime
@@ -159,6 +158,9 @@ class KGFarm:
 
         if entity_df is not None:
             # filter enrichable_tables dataframe based on columns in entity_df
+            if not len(search_entity_table(self.config, list(entity_df.columns))):
+                print('nothing to enrich')
+                return
             entity_table = search_entity_table(self.config, list(entity_df.columns))['Table'][0]
             enrichable_tables = enrichable_tables.loc[enrichable_tables['Table'] == entity_table]
             enrichable_tables.drop(['Table', 'Table_path', 'Dataset'], axis=1, inplace=True)
@@ -450,6 +452,13 @@ class KGFarm:
         for na_type in tqdm(['None', 'N/a', 'na']):
             entity_df.replace(na_type, np.nan, inplace=True)
 
+        columns_to_be_cleaned = get_columns_to_be_cleaned(entity_df)
+
+        if len(columns_to_be_cleaned) == 0:  # no missing values
+            if self.mode != 'Automatic':
+                print('nothing to clean')
+            return entity_df
+
         if visualize_missing_data:
             # plot heatmap of missing values
             plt.rcParams['figure.dpi'] = 300
@@ -458,7 +467,6 @@ class KGFarm:
             plt.show()
 
             # plot bar-graph of missing values
-            columns_to_be_cleaned = get_columns_to_be_cleaned(entity_df)
 
             sns.set_color_codes('pastel')
             plt.rcParams['figure.dpi'] = 300
@@ -489,7 +497,7 @@ class KGFarm:
                                 table_id=table_ids[0], show_query=show_query), get_data_cleaning_info(
                 self.config, table_id=table_ids[1], show_query=show_query)])
         else:
-            data_cleaning_info = get_data_cleaning_info(self.config, table_id=table_id, show_query=show_query)
+            data_cleaning_info = get_data_cleaning_info(self.config, table_id=table_id['Table_id'][0], show_query=show_query)
 
         if len(data_cleaning_info) < 1:
             return None
@@ -503,16 +511,10 @@ class KGFarm:
                 if self.mode != 'Automatic':
                     print("cleaned {} features using '{}' by {} = '{}'".format(len(columns_to_be_cleaned), function, parameter, value))
 
-        if len(get_columns_to_be_cleaned(entity_df)) == 0:
-            if self.mode != 'Automatic':
-                print('nothing to clean')
-            return entity_df
-        else:
-            return get_columns_to_be_cleaned(entity_df)
+        return entity_df
 
 
 # TODO: refactor (make a generic function to return enrich table_ids from self.__table_transformations)
-
 entity_data_types_mapping = {'N_int': 'integer', 'N_float': 'float', 'N_bool': 'boolean',
                              'T': 'string', 'T_date': 'timestamp', 'T_loc': 'string (location)',
                              'T_person': 'string (person)',
