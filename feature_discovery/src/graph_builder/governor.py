@@ -16,7 +16,6 @@ class Governor:
                 raise ValueError(error)
         print('Dropped ', [i['Feature_view'] for i in drop], 'successfully!')
 
-    # TODO: investigate why after updating default entity, kgfarm.get_optional_representations() doesn't returns the removed default entity
     def update_entity(self, entity_updation_info: list):
         for updation_info in tqdm(entity_updation_info):
             feature_view = updation_info['Feature_view']

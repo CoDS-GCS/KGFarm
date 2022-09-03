@@ -670,3 +670,37 @@ def get_table_size_ratio(config, show_query: bool = False):
         display_query(query)
 
     return execute_query(config, query)
+
+# --------------------------------------------Transformation recommender------------------------------------------------
+
+
+def get_transformations_on_columns(config):
+    query = """PREFIX preprocessing:   <http://kglids.org/resource/library/sklearn/preprocessing/>
+    SELECT DISTINCT  ?Transformation ?Column_id
+    WHERE
+    {
+        # query pipeline-default graph
+        ?Pipeline_id        rdf:type                kglids:Pipeline     ;
+                            kglids:isPartOf         ?Dataset_id         ;
+                            rdfs:label              ?Pipeline           ;
+                            pipeline:isWrittenBy    ?Author             ;
+                            pipeline:isWrittenOn    ?Written_on         . 
+    
+        # querying named-graphs for pipeline               
+        GRAPH ?Pipeline_id
+        {
+            ?Statement      pipeline:callsFunction  ?Function_id        ;
+                            pipeline:readsColumn    ?Column_id          .
+            <<?Statement    pipeline:hasParameter   ?Parameter>> pipeline:withParameterValue ?Parameter_value     .
+        }
+        
+        # search for transformations in sklearn.preprocessing
+        FILTER(REGEX(str(?Function_id), 'sklearn/preprocessing/'))
+    
+        # beautify output
+        BIND(STRAFTER(str(?Function_id), str(preprocessing:)) as ?Transformation_1)
+        BIND(REPLACE(?Transformation_1, '/fit_transform', '') as ?Transformation_2)
+        BIND(REPLACE(?Transformation_2, '/fit', '') as ?Transformation_3)
+        BIND(REPLACE(?Transformation_3, '/transform', '') as ?Transformation)   
+    }"""
+    return execute_query(config, query)
