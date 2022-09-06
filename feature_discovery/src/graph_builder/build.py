@@ -11,7 +11,7 @@ from operations.template import *
 
 
 class Builder:
-    def __init__(self, output_path: str = 'Farm.nq', port: int = 5820, database: str = 'kgfarm_test',
+    def __init__(self, output_path: str = 'Farm.ttl', port: int = 5820, database: str = 'kgfarm_test',
                  show_connection_status: bool = False):
         self.config = connect_to_stardog(port, database, show_connection_status)
         self.output_path = output_path
@@ -262,7 +262,7 @@ def generate_farm_graph(db, port=5820):
     builder.summarize_graph()
 
 
-def upload_farm_graph(db: str = 'kgfarm_test', farm_graph: str = 'Farm.nq'):
+def upload_farm_graph(db: str = 'kgfarm_test', farm_graph: str = 'Farm.ttl'):
     print('\nUploading {} to {} database'.format(farm_graph, db))
     os.system('stardog data add --format turtle {} {}'.format(db, farm_graph))
 
@@ -278,4 +278,4 @@ if __name__ == "__main__":
     pd.set_option('display.max_columns', None)
     pd.set_option('display.max_colwidth', None)
     generate_farm_graph(db=target_database)
-    upload_farm_graph(db=target_database, farm_graph='Farm.nq')
+    upload_farm_graph(db=target_database, farm_graph='Farm.ttl')
