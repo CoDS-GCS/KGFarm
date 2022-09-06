@@ -18,7 +18,7 @@ generates [<code>Farm.nq</code>](feature_discovery/src/graph_builder/Farm.nq) an
 
 ```bash
 cd feature_discovery/src/graph_builder
-python builder.py -db Database
+python build.py -db Database
 ```
 4. Start using KGFarm APIs (checkout [<code>KGFarm_notebook.ipynb</code>](KGFarm_notebook.ipynb))
 
