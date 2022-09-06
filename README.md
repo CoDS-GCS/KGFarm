@@ -13,8 +13,8 @@ pip install -r requirements.txt
 ```bash
 stardog-admin server start
 ```
-3. Run KGFarm's [<code>graph_builder</code>](feature_discovery/src/graph_builder/builder.py):<br/>
-generates [<code>Farm.nq</code>](feature_discovery/src/graph_builder/Farm.nq) and uploads it to the [stardog server](https://cloud.stardog.com/)
+3. Run KGFarm's [<code>graph_builder</code>](feature_discovery/src/graph_builder/build.py):<br/>
+generates [<code>Farm.ttl</code>](feature_discovery/src/graph_builder/Farm.ttl) and uploads it to the [stardog server](https://cloud.stardog.com/)
 
 ```bash
 cd feature_discovery/src/graph_builder
