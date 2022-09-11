@@ -298,7 +298,7 @@ def generate(database_list: list, export_features: bool = True):
         # To get the INDs via human in the loop
         ind_by_HITL = pd.read_csv('../../../helpers/IND_Discovery/'+database+'.csv')
         # To get pairs by Content Similarity
-        #content_similar = get_content_similar_pairs(conn)
+        content_similar = get_content_similar_pairs(conn)
         # Generate features for these IND or content similar pairs
         generated_pairs = ind_by_HITL
         features_df = generate_features(conn, generated_pairs,database)

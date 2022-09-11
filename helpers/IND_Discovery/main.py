@@ -4,7 +4,7 @@ def Convert(lst):
     return res_dct
 
 def read_file():
-    name = 'Credit'
+    name = 'Basketball_men'
     file1 = open(name, 'r')
     Lines = file1.readlines()
     line_num = 0
