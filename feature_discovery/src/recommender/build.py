@@ -78,10 +78,11 @@ class Recommender:
     def eda(self, plot: bool = True):
 
         def clean():
-            self.modeling_data.drop(['Column_id', 'Data_type'], axis=1, inplace=True)
             for index, row in self.modeling_data.to_dict('index').items():
-                if not row['Embeddings'] or row['Transformation'] == 'scale':
+                if not row['Embeddings'] or row['Transformation'] == 'scale' or ('Scaler' in row['Transformation'] and
+                                                                               self.feature_type == 'string'):
                     self.modeling_data.drop(index=index, inplace=True)
+            self.modeling_data.drop(['Column_id', 'Data_type'], axis=1, inplace=True)
 
         def plot_class_distribution():
             plt.rcParams['figure.dpi'] = 200
@@ -120,10 +121,10 @@ class Recommender:
 
     def define(self):
         self.classifier = RandomForestClassifier()
-        hyperparameters = {'n_estimators': [100, 200, 300]}
+        hyperparameters = {'n_estimators': [100, 200]}
         return hyperparameters
 
-    def train_test_evaluate(self, parameters: dict):
+    def train_test_evaluate(self, parameters: dict, tune: bool = False):
 
         def optimize():
             self.classifier = GridSearchCV(estimator=self.classifier, param_grid=parameters, cv=inner_cv)
@@ -146,7 +147,8 @@ class Recommender:
         inner_cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=0)
         outer_cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=0)
 
-        optimize()  # Hyperparameter optimization (using nested CV to prevent leakage)
+        if tune:
+            optimize()  # Hyperparameter optimization (using nested CV to prevent leakage)
         true, pred = evaluate()
 
         # Average scores over all folds
@@ -166,8 +168,8 @@ def build():
     for feature_type in ['string', 'numeric']:
         recommender = Recommender(feature_type=feature_type)
         recommender.generate_modelling_data()
-        recommender.eda(plot=False)
-        recommender.save(scores=recommender.train_test_evaluate(parameters=recommender.define()))
+        recommender.eda(plot=True)
+        recommender.save(scores=recommender.train_test_evaluate(parameters=recommender.define(), tune=True))
     print('done.')
 
 
