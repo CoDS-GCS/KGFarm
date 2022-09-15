@@ -1,8 +1,11 @@
 import os
 import json
 import warnings
+
+import numpy as np
 import pandas as pd
 import seaborn as sns
+from tqdm import tqdm
 from matplotlib import pyplot as plt
 
 warnings.filterwarnings('ignore')
@@ -40,53 +43,62 @@ class Recommender:
                         with open(self.metadata + '/' + datatype + '/' + profile_json, 'r') as open_file:
                             yield json.load(open_file)
 
-        # load profiles in self.profiles
+        # load profiles (based on feature-type) in self.profiles
         for profile in get_profiles():
             dtype = profile['dataType']
-            if 'N' in dtype:
+            if 'N' in dtype and self.feature_type == 'numeric':
                 self.profiles['http://kglids.org/resource/' + profile['column_id']] = {'dtype': 'numeric',
                                                                                        'embeddings': profile[
                                                                                            'deep_embedding']}
-            elif 'T' in dtype:
+            elif 'T' in dtype and self.feature_type == 'string':
                 self.profiles['http://kglids.org/resource/' + profile['column_id']] = {'dtype': 'string',
                                                                                        'embeddings': profile['minhash']}
-        print('{} profiles loaded.'.format(len(self.profiles)))
+        print('{} {} profiles loaded.'.format(len(self.profiles), self.feature_type))
 
         # get transformations applied on real columns
         transformations_on_columns = get_transformations_on_columns(self.config)
 
-        # generate modelling data (fetch data-type and embeddings)
+        # associate embeddings and datatype for transformed columns
         transformations_on_columns['Data_type'] = transformations_on_columns['Column_id'] \
             .apply(lambda x: self.profiles.get(x).get('dtype') if self.profiles.get(x) else None)
         transformations_on_columns['Embeddings'] = transformations_on_columns['Column_id'] \
             .apply(lambda x: self.profiles.get(x).get('embeddings') if self.profiles.get(x) else None)
-
-        embeddings = list(transformations_on_columns['Embeddings'])
-        embeddings = [e for e in embeddings if e is not None]
-
-        print('{} embeddings found out of {}'.format(len(embeddings), len(transformations_on_columns)))
-
-        # filter dataset based on feature data-type
-        transformations_on_columns = transformations_on_columns. \
-            loc[transformations_on_columns['Data_type'] == self.feature_type]
-        print('{} {} data points found'.format(len(transformations_on_columns), self.feature_type))
-
         self.modeling_data = transformations_on_columns
 
-        transformations_on_columns.to_csv('data.csv', index=False)
+        # add untransformed columns to modeling data
+        transformed_columns = set(list(self.modeling_data['Column_id']))
+        for column, profile in tqdm(self.profiles.items()):
+            if column not in transformed_columns:
+                self.modeling_data = self.modeling_data.append({'Transformation': 'Negative', 'Column_id': column,
+                'Data_type': self.feature_type, 'Embeddings': profile['embeddings']}, ignore_index=True)
 
-    def eda(self, plot: bool = True):
+    def prepare(self, plot: bool = True):
 
         def clean():
             for index, row in self.modeling_data.to_dict('index').items():
-                if not row['Embeddings'] or row['Transformation'] == 'scale' or ('Scaler' in row['Transformation'] and
-                                                                               self.feature_type == 'string'):
+                """
+                Remove record if:
+                1. Embeddings not found
+                2. Embeddings are incorrect
+                3. Sklearn.preprocessing.scale() is used
+                4. Any scaling technique is used for string/categorical features
+                """
+                if not row['Embeddings'] or row['Transformation'] == 'scale'or row['Embeddings'][:10] == [-1]*10 or ('Scaler' in row['Transformation'] and self.feature_type == 'string'):
                     self.modeling_data.drop(index=index, inplace=True)
             self.modeling_data.drop(['Column_id', 'Data_type'], axis=1, inplace=True)
 
+        def balance():  # take as many non-transformed samples as the most used of transformation technique
+            transformation_statistics = self.modeling_data['Transformation'].value_counts()
+            transformation_counts = list(transformation_statistics)
+            transformation_counts.sort(reverse=True)
+            n = transformation_statistics['Negative'] - transformation_counts[1]
+            drop = np.random.choice(self.modeling_data[self.modeling_data['Transformation'] == 'Negative'].index,
+                                    size=n, replace=False)
+            self.modeling_data = self.modeling_data.drop(drop)
+
         def plot_class_distribution():
             plt.rcParams['figure.dpi'] = 200
-            sns.set_style("dark")
+            sns.set_style('dark')
             fig, ax = plt.subplots(figsize=(7, 3.5))
             sns.countplot(x='Transformation', data=self.modeling_data, palette="Greens_r",
                           order=self.modeling_data['Transformation'].value_counts().index)
@@ -112,12 +124,13 @@ class Recommender:
             self.modeling_data['Transformation'] = self.encoder.fit_transform(self.modeling_data['Transformation'])
 
         clean()
+        balance()
         self.transformations = set(list(self.modeling_data['Transformation']))
         if plot:
             plot_class_distribution()
         transform()
 
-        self.modeling_data.to_csv('data.csv', index=False)
+        self.modeling_data.to_csv('modeling_data_{}'.format(self.feature_type), index=False)
 
     def define(self):
         self.classifier = RandomForestClassifier()
@@ -168,8 +181,8 @@ def build():
     for feature_type in ['string', 'numeric']:
         recommender = Recommender(feature_type=feature_type)
         recommender.generate_modelling_data()
-        recommender.eda(plot=True)
-        recommender.save(scores=recommender.train_test_evaluate(parameters=recommender.define(), tune=True))
+        recommender.prepare(plot=True)
+        recommender.save(scores=recommender.train_test_evaluate(parameters=recommender.define(), tune=False))
     print('done.')
 
 
