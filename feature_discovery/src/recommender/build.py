@@ -1,5 +1,6 @@
 import os
 import json
+import joblib
 import warnings
 
 import numpy as np
@@ -34,7 +35,7 @@ class Recommender:
         self.classifier = None
         self.modeling_data = None
 
-    def generate_modelling_data(self):
+    def generate_modeling_data(self):
 
         def get_profiles():
             for datatype in os.listdir(self.metadata):
@@ -72,7 +73,7 @@ class Recommender:
                 self.modeling_data = self.modeling_data.append({'Transformation': 'Negative', 'Column_id': column,
                 'Data_type': self.feature_type, 'Embeddings': profile['embeddings']}, ignore_index=True)
 
-    def prepare(self, plot: bool = True):
+    def prepare(self, plot: bool = True, save: bool = True):
 
         def clean():
             for index, row in self.modeling_data.to_dict('index').items():
@@ -130,7 +131,8 @@ class Recommender:
             plot_class_distribution()
         transform()
 
-        self.modeling_data.to_csv('modeling_data_{}'.format(self.feature_type), index=False)
+        if save:
+            self.modeling_data.to_csv('modeling_data_{}.csv'.format(self.feature_type), index=False)
 
     def define(self):
         self.classifier = RandomForestClassifier()
@@ -164,25 +166,30 @@ class Recommender:
             optimize()  # Hyperparameter optimization (using nested CV to prevent leakage)
         true, pred = evaluate()
 
+        self.classifier.fit(X, y)  # fitting is done after results are evaluated i.e. no info leakage
+
         # Average scores over all folds
         return classification_report(y_true=true, y_pred=pred,
                                      labels=self.encoder.transform(list(self.transformations)),
                                      target_names=list(self.transformations))
 
-        # TODO: plot all metrics for both feature types
-
-    @staticmethod
-    def save(scores: str):
+    def save(self, scores: str, cache: bool = True):
         print(scores)
-        pass
+        if cache:
+            if not os.path.exists('cache'):
+                os.mkdir('cache')
+            joblib.dump(self.encoder, 'cache/encoder_{}.pkl'.format(self.feature_type), compress=9)
+            print('model saved transformation_recommender_{}.pkl'.format(self.feature_type))
+            joblib.dump(self.classifier, 'cache/transformation_recommender_{}.pkl'.format(self.feature_type), compress=9)
 
 
 def build():
+    # TODO: plot all metrics for both feature types
     for feature_type in ['string', 'numeric']:
         recommender = Recommender(feature_type=feature_type)
-        recommender.generate_modelling_data()
-        recommender.prepare(plot=True)
-        recommender.save(scores=recommender.train_test_evaluate(parameters=recommender.define(), tune=False))
+        recommender.generate_modeling_data()
+        recommender.prepare(plot=False, save=False)
+        recommender.save(scores=recommender.train_test_evaluate(parameters=recommender.define(), tune=False), cache=False)
     print('done.')
 
 
