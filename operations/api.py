@@ -1,18 +1,21 @@
 import copy
-import numpy as np
-import sklearn
 import datetime
+import warnings
+import numpy as np
 import pandas as pd
 import seaborn as sns
-from tqdm import tqdm
+import sklearn
 from datetime import timedelta
 from matplotlib import pyplot as plt
-from operations.template import *
-from sklearn.preprocessing import *
 from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.preprocessing import *
+from tqdm import tqdm
 from feature_discovery.src.graph_builder.governor import Governor
 from helpers.helper import connect_to_stardog
+from operations.recommendation.recommender import Recommender
+from operations.template import *
 
+warnings.filterwarnings('ignore')
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_colwidth', None)
 
@@ -27,6 +30,7 @@ class KGFarm:
         self.governor = Governor(self.config)
         # TODO: add info from self.__table_transformations to graph via Governor
         self.__table_transformations = {}  # cols in enriched_df: tuple -> (entity_df_id, feature_view_id)
+        self.recommender = Recommender()
 
     # re-arranging columns
     @staticmethod
@@ -193,6 +197,10 @@ class KGFarm:
     # TODO: concrete set of ontology is required to know which columns are being dropped (user may drop features for transformations / other experiments)
     def recommend_feature_transformations(self, entity_df: pd.DataFrame = None, show_metadata: bool = True,
                                           show_query: bool = False):
+
+        def handle_unseen_data():
+            return self.recommender.get_transformation_recommendations(entity_df)
+
         transformation_info = recommend_feature_transformations(self.config, show_query)
 
         # group features together per transformation
@@ -248,11 +256,11 @@ class KGFarm:
                                      axis=1, inplace=True)
 
         if entity_df is not None:
-            if self.mode != 'Automatic':
-                print('Narrowing recommendations w.r.t entity_df')
             table_ids = self.__table_transformations.get(tuple(entity_df.columns))
-            if len(table_ids) < 1:
-                return transformation_info
+            if not table_ids:
+                print('processing unseen dataframe')
+                return handle_unseen_data()
+
             tables = list(map(lambda x: get_table_name(self.config, table_id=x), table_ids))
 
             # filtering transformations w.r.t entity_df
@@ -518,7 +526,7 @@ class KGFarm:
 entity_data_types_mapping = {'N_int': 'integer', 'N_float': 'float', 'N_bool': 'boolean',
                              'T': 'string', 'T_date': 'timestamp', 'T_loc': 'string (location)',
                              'T_person': 'string (person)',
-                             'T_org': 'string (organization)', 'T_code': 'string (code)', 'T_email': 'string (email)'}
+                             'T_org': 'string', 'T_code': 'string (code)', 'T_email': 'string (email)'}
 
 if __name__ == "__main__":
     kgfarm = KGFarm(port=5820, database='kgfarm_test', show_connection_status=False)
