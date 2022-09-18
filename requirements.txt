@@ -153,3 +153,5 @@ zipp==3.8.0
 seaborn~=0.11.2
 skimpy~=0.0.6
 nbformat~=5.3.0
+torch~=1.7.1
+bitstring~=3.1.9
