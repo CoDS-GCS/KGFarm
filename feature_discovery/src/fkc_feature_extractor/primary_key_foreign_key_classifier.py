@@ -1,9 +1,10 @@
-import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.svm import SVC
-from sklearn.metrics import f1_score
-from sklearn.ensemble import RandomForestClassifier
+import pandas as pd
 from matplotlib.pyplot import figure
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import f1_score
+from sklearn.svm import SVC
+
 from feature_generator import generate
 
 

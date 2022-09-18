@@ -1,14 +1,14 @@
-import os
 import io
-import yaml
-import stardog
+import os
+
+import SPARQLWrapper.Wrapper
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import SPARQLWrapper.Wrapper
-from matplotlib import pyplot as plt
+import stardog
+import yaml
 from SPARQLWrapper import JSON, SPARQLWrapper
-
+from matplotlib import pyplot as plt
 
 PREFIXES = """
     PREFIX kgfarm:      <http://kgfarm.com/ontology/>

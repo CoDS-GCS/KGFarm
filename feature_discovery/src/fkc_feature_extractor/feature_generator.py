@@ -1,6 +1,7 @@
-from helpers.helper import connect_to_stardog
-from tqdm import tqdm
 import pandas as pd
+from tqdm import tqdm
+
+from helpers.helper import connect_to_stardog
 
 
 def generate_features(conn, ind: pd.DataFrame):

@@ -1,9 +1,10 @@
-import sys
 import argparse
-from time import time
-from tqdm import tqdm
+import sys
 from datetime import datetime
+from time import time
+
 from skimpy import clean_columns
+from tqdm import tqdm
 
 sys.path.append('../../../')
 from helpers.helper import *
