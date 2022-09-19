@@ -1,19 +1,19 @@
 import copy
+import sklearn
 import datetime
 import warnings
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import sklearn
+from tqdm import tqdm
 from datetime import timedelta
+from sklearn.preprocessing import *
 from matplotlib import pyplot as plt
 from sklearn.feature_selection import SelectKBest, f_classif
-from sklearn.preprocessing import *
-from tqdm import tqdm
 from feature_discovery.src.graph_builder.governor import Governor
 from helpers.helper import connect_to_stardog
-from operations.recommendation.recommender import Recommender
 from operations.template import *
+from operations.recommendation.recommender import Recommender
 
 warnings.filterwarnings('ignore')
 pd.set_option('display.max_columns', None)
@@ -208,6 +208,7 @@ class KGFarm:
         feature = []
         pipeline = None
         transformation = None
+        # TODO: test the grouping script (especially for the transformation on single column)
         for row_number, value in transformation_info.to_dict('index').items():
             if transformation == value['Transformation'] and pipeline == value['Pipeline']:
                 feature.append(value['Feature'])

@@ -1,11 +1,10 @@
-import joblib
 import torch
+import joblib
 import bitstring
 import numpy as np
 import pandas as pd
-from datasketch import MinHash
 from tqdm import tqdm
-
+from datasketch import MinHash
 from operations.recommendation.utils.column_embeddings import load_numeric_embedding_model
 
 
@@ -26,8 +25,6 @@ class Recommender:
         categorical_column_embeddings = {}
 
         def compute_embeddings():
-            print('computing feature embeddings')
-
             def get_bin_repr(val):
                 return [int(j) for j in bitstring.BitArray(float=float(val), length=32).bin]
 
@@ -58,7 +55,48 @@ class Recommender:
                     inverse_transform(np.array(self.categorical_transformation_recommender. \
                                                predict(np.array(embedding).reshape(1, -1))[0]).reshape(1, -1))[0]
 
+        def reformat(df):
+            transformation_info_grouped = []
+            feature = []
+            transformation = None
+            for row_number, value in df.to_dict('index').items():
+                if transformation == value['Transformation']:
+                    feature.append(value['Feature'])
+                    if row_number == len(df) - 1:  # last row
+                        row = df.to_dict('index').get(row_number - 1)
+                        transformation_info_grouped.append({'Transformation': transformation,
+                                                            'Package': row['Package'],
+                                                            'Library': row['Library'],
+                                                            'Feature': feature})
+                else:
+                    if row_number == 0:
+                        transformation = value['Transformation']
+                        feature = [value['Feature']]
+                        continue
+                    row = df.to_dict('index').get(row_number - 1)
+                    transformation_info_grouped.append({'Transformation': transformation,
+                                                        'Package': row['Package'],
+                                                        'Library': row['Library'],
+                                                        'Feature': feature})
+                    transformation = value['Transformation']
+                    feature = [value['Feature']]
+                    if row_number == len(df) - 1:  # add if last transformation has single feature
+                        transformation_info_grouped.append({'Transformation': transformation,
+                                                            'Package': row['Package'],
+                                                            'Library': row['Library'],
+                                                            'Feature': feature})
+
+            df = pd.DataFrame(transformation_info_grouped)
+            return df
+
         compute_embeddings()
         classify_numeric_transformation()
         classify_categorical_transformation()
-        return transformation_info
+        transformation_info = pd.DataFrame.from_dict({'Feature': list(transformation_info.keys()),
+                        'Transformation': list(transformation_info.values()),
+                        'Package': 'preprocessing',
+                        'Library': 'sklearn'})
+        transformation_info = transformation_info[transformation_info['Transformation'] != 'Negative']
+        transformation_info.sort_values(by='Transformation', inplace=True)
+        transformation_info.reset_index(drop=True, inplace=True)
+        return reformat(transformation_info)
