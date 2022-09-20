@@ -18,8 +18,11 @@ class Recommender:
         self.categorical_encoder = joblib.load('operations/recommendation/utils/models/encoder_string.pkl')
         self.numeric_embedding_model = load_numeric_embedding_model()
         self.categorical_embedding_model = MinHash(num_perm=512)
+        # TODO: Add insights for robust scalar -> outlier
+        self.auto_insight_report = dict()
 
     def get_transformation_recommendations(self, entity_df: pd.DataFrame):
+        self.auto_insight_report = {}
         transformation_info = {}
         numeric_column_embeddings = {}
         categorical_column_embeddings = {}
@@ -45,15 +48,19 @@ class Recommender:
 
         def classify_numeric_transformation():
             for column, embedding in numeric_column_embeddings.items():
-                transformation_info[column] = self.numeric_encoder. \
+                predicted_transformation = self.numeric_encoder. \
                     inverse_transform(np.array(self.numeric_transformation_recommender. \
                                                predict(np.array(embedding).reshape(1, -1))[0]).reshape(1, -1))[0]
+                transformation_info[column] = predicted_transformation
+                if predicted_transformation == 'LabelEncoder' or predicted_transformation == 'OneHotEncoder':
+                    self.auto_insight_report[column] = predicted_transformation
 
         def classify_categorical_transformation():
             for column, embedding in categorical_column_embeddings.items():
-                transformation_info[column] = self.categorical_encoder. \
+                predicted_transformation = self.categorical_encoder. \
                     inverse_transform(np.array(self.categorical_transformation_recommender. \
                                                predict(np.array(embedding).reshape(1, -1))[0]).reshape(1, -1))[0]
+                transformation_info[column] = predicted_transformation
 
         def reformat(df):
             transformation_info_grouped = []
@@ -89,6 +96,13 @@ class Recommender:
             df = pd.DataFrame(transformation_info_grouped)
             return df
 
+        def show_insights():
+            print('• Insights about your entity_df:')
+            insight_n = 1
+            for column, transformation in self.auto_insight_report.items():
+                print('\t{}. {} (a numeric column) looks like a categorical feature'.format(insight_n, column))
+                insight_n = insight_n + 1
+
         compute_embeddings()
         classify_numeric_transformation()
         classify_categorical_transformation()
@@ -99,4 +113,6 @@ class Recommender:
         transformation_info = transformation_info[transformation_info['Transformation'] != 'Negative']
         transformation_info.sort_values(by='Transformation', inplace=True)
         transformation_info.reset_index(drop=True, inplace=True)
+        if self.auto_insight_report:
+            show_insights()
         return reformat(transformation_info)

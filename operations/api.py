@@ -259,7 +259,7 @@ class KGFarm:
         if entity_df is not None:
             table_ids = self.__table_transformations.get(tuple(entity_df.columns))
             if not table_ids:
-                print('processing unseen dataframe')
+                print('Processing unseen entity_df')
                 return handle_unseen_data()
 
             tables = list(map(lambda x: get_table_name(self.config, table_id=x), table_ids))
@@ -279,6 +279,7 @@ class KGFarm:
 
     def apply_transformation(self, transformation_info: pd.Series, entity_df: pd.DataFrame = None):
         # TODO: add support for other transformations as well (ex. one-hot encoding, min-max scaling, etc.)
+        transformation_model = None
         if entity_df is not None:  # apply transformations directly on entity_df passed by user
             df = entity_df
         else:  # load the table from the choice/row passed by the user from recommend_feature_transformations()
@@ -291,16 +292,16 @@ class KGFarm:
                 print('Applying LabelEncoder transformation')
             for feature in tqdm(features):
                 try:
-                    encoder = LabelEncoder()
-                    df[feature] = encoder.fit_transform(df[feature])
+                    transformation_model = LabelEncoder()
+                    df[feature] = transformation_model.fit_transform(df[feature])
                 except sklearn.exceptions:
                     print("{} couldn't be transformed".format(transformation_info['Table']))
         elif transformation == 'StandardScaler':
             if self.mode != 'Automatic':
                 print('Applying StandardScaler transformation')
             try:
-                scaler = StandardScaler(copy=False)
-                df[features] = scaler.fit_transform(df[features])
+                transformation_model = StandardScaler(copy=False)
+                df[features] = transformation_model.fit_transform(df[features])
             except sklearn.exceptions:
                 print("{} couldn't be transformed".format(transformation_info['Table']))
         else:
@@ -309,7 +310,7 @@ class KGFarm:
         if self.mode != 'Automatic':
             print('{} feature(s) {} transformed successfully!'.format(len(features), features))
 
-        return self.__re_arrange_columns(last_column, df)
+        return self.__re_arrange_columns(last_column, df), transformation_model
 
     def enrich(self, enrichment_info: pd.Series, entity_df: pd.DataFrame = None, ttl: int = 10):
         if entity_df is not None:  # entity_df passed by the user
