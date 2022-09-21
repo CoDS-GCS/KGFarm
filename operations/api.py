@@ -14,6 +14,7 @@ from feature_discovery.src.graph_builder.governor import Governor
 from helpers.helper import connect_to_stardog
 from operations.template import *
 from operations.recommendation.recommender import Recommender
+from operations.recommendation.utils.transformation_mappings import transformation_mapping
 
 warnings.filterwarnings('ignore')
 pd.set_option('display.max_columns', None)
@@ -21,14 +22,13 @@ pd.set_option('display.max_colwidth', None)
 
 
 class KGFarm:
-    def __init__(self, mode: str = 'HITL (Human in the loop)', port: object = 5820, database: str = 'kgfarm_test', show_connection_status: bool = True):
+    def __init__(self, mode: str = 'Human in the loop', port: object = 5820, database: str = 'kgfarm_test', show_connection_status: bool = True):
         self.mode = mode
-        if mode not in ['HITL (Human in the loop)', 'Automatic']:
-            raise ValueError("mode can be either 'HITL (Human in the Loop)' or 'Automatic'")
-        print('(Running in {} mode)'.format(mode))
+        if mode not in ['Human in the loop', 'Automatic']:
+            raise ValueError("mode can be either 'Human in the Loop' or 'Automatic'")
+        print('(KGFarm is running in {} mode)'.format(mode))
         self.config = connect_to_stardog(port, database, show_connection_status)
         self.governor = Governor(self.config)
-        # TODO: add info from self.__table_transformations to graph via Governor
         self.__table_transformations = {}  # cols in enriched_df: tuple -> (entity_df_id, feature_view_id)
         self.recommender = Recommender()
 
@@ -198,8 +198,13 @@ class KGFarm:
     def recommend_feature_transformations(self, entity_df: pd.DataFrame = None, show_metadata: bool = True,
                                           show_query: bool = False):
 
+        # adds the transformation type mapping to the resultant recommendation dataframe
+        def add_transformation_type(df):
+            df['Transformation_type'] = df['Transformation'].apply(lambda x: transformation_mapping.get(x))
+            return df
+
         def handle_unseen_data():
-            return self.recommender.get_transformation_recommendations(entity_df)
+            return add_transformation_type(self.recommender.get_transformation_recommendations(entity_df))
 
         transformation_info = recommend_feature_transformations(self.config, show_query)
 
@@ -275,7 +280,7 @@ class KGFarm:
             transformation_info = transformation_info.reset_index(drop=True)
             transformation_info.drop(['Dataset', 'Written_on', 'Pipeline_url', 'Dataset', 'Author', 'Table'],
                                      axis=1, inplace=True)
-        return transformation_info
+        return add_transformation_type(transformation_info)
 
     def apply_transformation(self, transformation_info: pd.Series, entity_df: pd.DataFrame = None):
         # TODO: add support for other transformations as well (ex. one-hot encoding, min-max scaling, etc.)
@@ -298,6 +303,8 @@ class KGFarm:
                     print("{} couldn't be transformed".format(transformation_info['Table']))
         elif transformation == 'StandardScaler':
             if self.mode != 'Automatic':
+                print('CAUTION: Make sure you apply {} transformation only on the train set (This ensures there is no over-fitting due to feature leakage)\n'.format(transformation)+ \
+                      'Use the transformation_model returned from this api to transform test set independently.\n')
                 print('Applying StandardScaler transformation')
             try:
                 transformation_model = StandardScaler(copy=False)
@@ -477,13 +484,13 @@ class KGFarm:
             plt.show()
 
             # plot bar-graph of missing values
-
             sns.set_color_codes('pastel')
             plt.rcParams['figure.dpi'] = 300
             plt.figure(figsize=(6, 3))
 
             ax = sns.barplot(x="Feature", y="Missing values", data=columns_to_be_cleaned,
-                             palette='Greens_r', edgecolor=None)
+                             palette='Greens_r', edgecolor='gainsboro')
+            ax.bar_label(ax.containers[0], fontsize=6)
 
             def change_width(axis, new_value):
                 for patch in axis.patches:

@@ -18,7 +18,6 @@ class Recommender:
         self.categorical_encoder = joblib.load('operations/recommendation/utils/models/encoder_string.pkl')
         self.numeric_embedding_model = load_numeric_embedding_model()
         self.categorical_embedding_model = MinHash(num_perm=512)
-        # TODO: Add insights for robust scalar -> outlier
         self.auto_insight_report = dict()
 
     def get_transformation_recommendations(self, entity_df: pd.DataFrame):
@@ -97,6 +96,7 @@ class Recommender:
             return df
 
         def show_insights():
+            # TODO: Add insights for robust scalar -> outlier
             print('• Insights about your entity_df:')
             insight_n = 1
             for column, transformation in self.auto_insight_report.items():
