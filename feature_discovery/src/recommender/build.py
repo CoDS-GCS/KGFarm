@@ -209,7 +209,7 @@ def build():
     for feature_type in ['string', 'numeric']:
         recommender = Recommender(feature_type=feature_type)
         recommender.generate_modeling_data()
-        recommender.prepare(plot=True, save=True)
+        recommender.prepare(plot=False, save=False)
         recommender.save(scores=recommender.train_test_evaluate(parameters=recommender.define(), tune=False),
                          cache=False)
     print('done.')

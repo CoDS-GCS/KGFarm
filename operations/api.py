@@ -296,11 +296,8 @@ class KGFarm:
             if self.mode != 'Automatic':
                 print('Applying LabelEncoder transformation')
             for feature in tqdm(features):
-                try:
-                    transformation_model = LabelEncoder()
-                    df[feature] = transformation_model.fit_transform(df[feature])
-                except sklearn.exceptions:
-                    print("{} couldn't be transformed".format(transformation_info['Table']))
+                transformation_model = LabelEncoder()
+                df[feature] = transformation_model.fit_transform(df[feature])
         elif transformation == 'StandardScaler':
             if self.mode != 'Automatic':
                 print('CAUTION: Make sure you apply {} transformation only on the train set (This ensures there is no over-fitting due to feature leakage)\n'.format(transformation)+ \
