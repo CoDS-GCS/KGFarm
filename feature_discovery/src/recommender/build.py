@@ -1,22 +1,20 @@
 import json
 import os
 import warnings
-
 import joblib
 import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 from tqdm import tqdm
-
-warnings.filterwarnings('ignore')
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import StratifiedKFold, cross_val_score, GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, make_scorer
 from helpers.helper import connect_to_stardog
+from word_embeddings import WordEmbedding
 from operations.template import get_transformations_on_columns
-
+warnings.filterwarnings('ignore')
 pd.set_option('display.max_columns', None)
 
 
@@ -30,6 +28,7 @@ class Recommender:
         self.metadata = metadata
         self.config = connect_to_stardog(port, database, show_connection_status)
         self.profiles = dict()  # column_id -> {column embeddings, column datatype}
+        self.word_embedding_model = WordEmbedding()
         self.transformations = set()
         self.encoder = LabelEncoder()
         self.classifier = None
@@ -71,7 +70,12 @@ class Recommender:
         for column, profile in tqdm(self.profiles.items()):
             if column not in transformed_columns:
                 self.modeling_data = self.modeling_data.append({'Transformation': 'Negative', 'Column_id': column,
-                'Data_type': self.feature_type, 'Embeddings': profile['embeddings']}, ignore_index=True)
+                                                                'Data_type': self.feature_type,
+                                                                'Embeddings': profile['embeddings']}, ignore_index=True)
+
+        # add column word-embeddings to modeling data
+        self.modeling_data['Word_embedding'] = self.modeling_data['Column_id'].apply(
+            lambda x: self.word_embedding_model.get_embeddings(x))
 
     def prepare(self, plot: bool = True, save: bool = True):
 
@@ -79,13 +83,18 @@ class Recommender:
             for index, row in self.modeling_data.to_dict('index').items():
                 """
                 Remove record if:
-                1. Embeddings not found
+                1. Embeddings / Word embeddings not found
                 2. Embeddings are incorrect
                 3. Sklearn.preprocessing.scale() is used
                 4. Any scaling technique is used for string/categorical features
                 """
-                if not row['Embeddings'] or row['Transformation'] == 'scale'or row['Embeddings'][:10] == [-1]*10 or ('Scaler' in row['Transformation'] and self.feature_type == 'string'):
+                if not row['Embeddings'] or \
+                        row['Transformation'] == 'scale' or \
+                        row['Embeddings'][:10] == [-1] * 10 or \
+                        ('Scaler' in row['Transformation'] and self.feature_type == 'string') or \
+                        row['Word_embedding'] is None:
                     self.modeling_data.drop(index=index, inplace=True)
+
             self.modeling_data.drop(['Column_id', 'Data_type'], axis=1, inplace=True)
 
         def balance():  # take as many non-transformed samples as the most used of transformation technique
@@ -124,9 +133,20 @@ class Recommender:
             # convert transformations
             self.modeling_data['Transformation'] = self.encoder.fit_transform(self.modeling_data['Transformation'])
 
+        def concatenate_embeddings(rows):
+            embedding = []
+            embedding.extend(rows['Embeddings'])
+            embedding.extend(rows['Word_embedding'])
+            return embedding
+
         clean()
         balance()
+
+        # concatenate embeddings (column + word-embeddings)
+        self.modeling_data['Embeddings'] = self.modeling_data.apply(concatenate_embeddings, axis=1)
+        self.modeling_data.drop('Word_embedding', axis=1, inplace=True)
         self.transformations = set(list(self.modeling_data['Transformation']))
+
         if plot:
             plot_class_distribution()
         transform()
@@ -180,7 +200,8 @@ class Recommender:
                 os.mkdir('cache')
             joblib.dump(self.encoder, 'cache/encoder_{}.pkl'.format(self.feature_type), compress=9)
             print('model saved transformation_recommender_{}.pkl'.format(self.feature_type))
-            joblib.dump(self.classifier, 'cache/transformation_recommender_{}.pkl'.format(self.feature_type), compress=9)
+            joblib.dump(self.classifier, 'cache/transformation_recommender_{}.pkl'.format(self.feature_type),
+                        compress=9)
 
 
 def build():
@@ -188,8 +209,9 @@ def build():
     for feature_type in ['string', 'numeric']:
         recommender = Recommender(feature_type=feature_type)
         recommender.generate_modeling_data()
-        recommender.prepare(plot=False, save=False)
-        recommender.save(scores=recommender.train_test_evaluate(parameters=recommender.define(), tune=False), cache=False)
+        recommender.prepare(plot=True, save=True)
+        recommender.save(scores=recommender.train_test_evaluate(parameters=recommender.define(), tune=False),
+                         cache=False)
     print('done.')
 
 
