@@ -23,7 +23,7 @@ python build.py -db Database
 4. Start using KGFarm APIs (checkout [<code>KGFarm_notebook.ipynb</code>](KGFarm_notebook.ipynb))
 
 ## 🚧 Roadmap
-- <b>List of deliverables for KGFarm v0.0</b> [🔗](https://docs.google.com/presentation/d/14JigzSty4pwJaTXSNbo-SYZBcSaTqanlC4ETbGJVbTU/edit?usp=sharing)
+- <b>List of deliverables for KGFarm v0.1</b> [🔗](https://docs.google.com/document/d/1wy0ZrcUx_d_HeQoy6WMa74KXf9hvv19DTN2wTY5xkOc/edit?usp=sharing)
 * [X] Extract [Entities](https://docs.feast.dev/v/v0.6-branch/user-guide/entities) 
 * [X] Predict [Feature views without Entities](https://docs.feast.dev/getting-started/concepts/feature-view#feature-views-without-entities)
 * [X] Predict [Feature view](https://docs.feast.dev/getting-started/concepts/feature-view) with single [Entity](https://docs.feast.dev/v/v0.6-branch/user-guide/entities)
@@ -34,7 +34,6 @@ python build.py -db Database
 * [X] Predict Feature transformations
 * [X] Automate Feature selection
 * [ ] Support Unseen datasets
-* [ ] Detect Feature bias
 
 ## 📗 Useful resources
 - [Feature discovery slides](https://docs.google.com/presentation/d/14JigzSty4pwJaTXSNbo-SYZBcSaTqanlC4ETbGJVbTU/edit?usp=sharing)
