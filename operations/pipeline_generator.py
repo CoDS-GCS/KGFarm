@@ -3,24 +3,24 @@ import os
 import pickle
 import sys
 import time
-
 import nbformat as nbf
 import pandas as pd
 from tqdm import tqdm
-
-sys.path.append('../')
+sys.path.insert(0, '../')
 from operations.api import KGFarm
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import f1_score
 from helpers.helper import connect_to_stardog, time_taken
+os.chdir('../')
 
 
 class PipelineGenerator:
     def __init__(self, pipeline_name: str, port: object = 5820, database: str = 'kgfarm_test', show_connection_status: bool = False):
         self.config = connect_to_stardog(port, database, show_connection_status)
         self.notebook = nbf.v4.new_notebook()
+
         self.kgfarm = KGFarm(mode='Automatic', show_connection_status=False)
         self.name = pipeline_name + '.ipynb'
         self.cells = list()
@@ -43,7 +43,6 @@ class PipelineGenerator:
         return self.name
 
     def write_to_notebook(self, time_taken_to_generate_notebook: str):
-        # add time taken to documentation
         documentation = self.cells[0]
         source = documentation.get('source')
         source = source.format(time_taken_to_generate_notebook[:-3]+' seconds')
@@ -53,11 +52,11 @@ class PipelineGenerator:
 
         # write to notebook
         self.notebook['cells'] = self.cells
-        nbf.write(self.notebook, 'pipelines/'+self.name)
-        print('pipeline saved at {}/pipelines/{}'.format(os.getcwd(), self.name))
+        nbf.write(self.notebook, 'operations/out/pipelines/'+self.name)
+        print('pipeline saved at {}/operations/out/pipelines/{}'.format(os.getcwd(), self.name))
 
     def instantiate_kgfarm(self):
-        code = """from operations.api import KGFarm\nkgfarm = KGFarm()"""
+        code = """import os\nos.chdir('../../../')\nfrom operations.api import KGFarm\nkgfarm = KGFarm()"""
         self.__add(code)
 
     def import_libraries(self):
@@ -110,6 +109,7 @@ class PipelineGenerator:
         return transformation_info, entity_df
 
     def apply_transformations(self, transformation_info: tuple):
+        # TODO: manage feature-leakage for scaling and normalization
         print('• applying transformations', end=' ')
         enrich_df = transformation_info[1]
         if len(transformation_info):
@@ -117,9 +117,9 @@ class PipelineGenerator:
             print('done.')
             code: str = ''
             for transformation in range(len(transformation_info[0])):
-                enrich_df = self.kgfarm.apply_transformation(transformation_info[0].iloc[transformation],
+                enrich_df, _ = self.kgfarm.apply_transformation(transformation_info[0].iloc[transformation],
                                                              entity_df=enrich_df)
-                code = code + """entity_df = kgfarm.apply_transformation(transformation_info.iloc[{}], entity_df)\n""".\
+                code = code + """entity_df, _ = kgfarm.apply_transformation(transformation_info.iloc[{}], entity_df)\n""".\
                     format(transformation)
             code = code + """entity_df"""
             self.__add(code)
@@ -128,7 +128,7 @@ class PipelineGenerator:
     def select_features(self, selection_info: tuple):
         entity_df = selection_info[0]
         dependent_variable = selection_info[1]
-        print('• Selecting features', end=' ')
+        print('• selecting features', end=' ')
         X, y = self.kgfarm.select_features(entity_df=entity_df, dependent_variable=dependent_variable,
                                            plot_correlation=False,
                                            plot_anova_test=False,
@@ -186,9 +186,9 @@ class PipelineGenerator:
                 'Naive bayes classifier': f1_naive_bayes_classifier}\nfor classifier, f1 in scores.items():\n\tprint(f"{'{} (f1-score):'.format(classifier):<42}{f1:>1}")"""
         print('done.\n', 'F1 Score = {}'.format(f1))
         self.__add(evaluate + plot)
-        with open('models/f1-{}.pkl'.format(f1), 'wb') as f:
+        with open('operations/out/models/f1-{}.pkl'.format(f1), 'wb') as f:
             pickle.dump(model, f)
-        print('model saved at {}'.format(os.getcwd()+'/models/f1-{}.pkl'.format(f1)))
+        print('model saved at {}'.format(os.getcwd()+'/operations/out/models/f1-{}.pkl'.format(f1)))
 
 
 def run(pipeline_name, ml_task: str, entity_name: str):
@@ -198,12 +198,12 @@ def run(pipeline_name, ml_task: str, entity_name: str):
     print('Generating {}...'.format(pipeline_generator.get_notebook_name()))
     start = time.time()
     pipeline_generator.add_documentation()
-    if not os.path.exists('pipelines'):
-        os.mkdir('pipelines')
-    if not os.path.exists('models'):
-        os.mkdir('models')
+    if not os.path.exists('operations/out/pipelines'):
+        os.makedirs('operations/out/pipelines')
+    if not os.path.exists('operations/out/models'):
+        os.makedirs('operations/out/models')
     print('\n• setting up pipeline template done.')
-    status = [step for step in tqdm([pipeline_generator.instantiate_kgfarm(),
+    _ = [step for step in tqdm([pipeline_generator.instantiate_kgfarm(),
                      pipeline_generator.import_libraries(),
                      pipeline_generator.evaluate_model(
                          evaluation_info=pipeline_generator.train_model(
@@ -233,5 +233,4 @@ if __name__ == "__main__":
     pipeline = args['pipeline']
     task = args['task']
     entity = args['entity']
-
     run(pipeline, task, entity)

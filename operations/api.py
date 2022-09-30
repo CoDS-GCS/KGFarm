@@ -1,4 +1,5 @@
 import copy
+import os
 import sklearn
 import datetime
 import warnings
@@ -6,6 +7,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from tqdm import tqdm
+from pathlib import Path
 from datetime import timedelta
 from sklearn.preprocessing import *
 from matplotlib import pyplot as plt
@@ -15,14 +17,16 @@ from helpers.helper import connect_to_stardog
 from operations.template import *
 from operations.recommendation.recommender import Recommender
 from operations.recommendation.utils.transformation_mappings import transformation_mapping
-
 warnings.filterwarnings('ignore')
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_colwidth', None)
+import sys
 
 
 class KGFarm:
-    def __init__(self, mode: str = 'Human in the loop', port: object = 5820, database: str = 'kgfarm_test', show_connection_status: bool = True):
+    def __init__(self, mode: str = 'Human in the loop', port: object = 5820, database: str = 'kgfarm_test',
+                 show_connection_status: bool = True):
+        sys.path.insert(0, str(Path(os.getcwd()).parent.absolute()))
         self.mode = mode
         if mode not in ['Human in the loop', 'Automatic']:
             raise ValueError("mode can be either 'Human in the Loop' or 'Automatic'")
@@ -151,7 +155,8 @@ class KGFarm:
             features_in_entity_df = get_columns(self.config, entity_table, entity_dataset)
             features_in_feature_view = get_columns(self.config, feature_view_table, feature_view_dataset)
 
-            if set(features_in_feature_view).issubset(set(features_in_entity_df)):  # nothing to enrich as those features already exist
+            if set(features_in_feature_view).issubset(
+                    set(features_in_entity_df)):  # nothing to enrich as those features already exist
                 enrichable_tables = enrichable_tables.drop(index)
 
         enrichable_tables = enrichable_tables.sort_values(by=['Table', 'Joinability_strength', 'Enrich_with'],
@@ -217,7 +222,7 @@ class KGFarm:
         for row_number, value in transformation_info.to_dict('index').items():
             if transformation == value['Transformation'] and pipeline == value['Pipeline']:
                 feature.append(value['Feature'])
-                if row_number == len(transformation_info)-1:  # last row
+                if row_number == len(transformation_info) - 1:  # last row
                     row = transformation_info.to_dict('index').get(row_number - 1)
                     transformation_info_grouped.append({'Transformation': transformation,
                                                         'Package': row['Package'],
@@ -300,8 +305,10 @@ class KGFarm:
                 df[feature] = transformation_model.fit_transform(df[feature])
         elif transformation == 'StandardScaler':
             if self.mode != 'Automatic':
-                print('CAUTION: Make sure you apply {} transformation only on the train set (This ensures there is no over-fitting due to feature leakage)\n'.format(transformation)+ \
-                      'Use the transformation_model returned from this api to transform test set independently.\n')
+                print(
+                    'CAUTION: Make sure you apply {} transformation only on the train set (This ensures there is no over-fitting due to feature leakage)\n'.format(
+                        transformation) + \
+                    'Use the transformation_model returned from this api to transform test set independently.\n')
                 print('Applying StandardScaler transformation')
             try:
                 transformation_model = StandardScaler(copy=False)
@@ -331,7 +338,8 @@ class KGFarm:
             if self.mode != 'Automatic':
                 print('Enriching {} with {} feature(s) {}'.format(enrichment_info['Table'], len(features), features))
 
-        source_table_id = search_entity_table(self.config, entity_df.columns)['Table_id'][0]  # needed to track tables after enrichment
+        source_table_id = search_entity_table(self.config, entity_df.columns)['Table_id'][
+            0]  # needed to track tables after enrichment
         # parse row passed as the input
         feature_view = pd.read_csv(enrichment_info['File_source'])
         join_jey = enrichment_info['Join_key']
@@ -367,7 +375,9 @@ class KGFarm:
 
         # maintain enrichment details (columns in enriched dataset : (table_ids of the joined tables))
         self.__table_transformations[tuple(enriched_df.columns)] = (source_table_id,
-                                        get_physical_table(self.config, feature_view=enrichment_info['Enrich_with']))
+                                                                    get_physical_table(self.config,
+                                                                                       feature_view=enrichment_info[
+                                                                                           'Enrich_with']))
         return enriched_df
 
     def __get_features(self, entity_df: pd.DataFrame, filtered_columns: list, show_query: bool = False):
@@ -377,17 +387,21 @@ class KGFarm:
                 print('Searching features for enriched dataframe\n')
             table_ids = self.__table_transformations.get(tuple(entity_df.columns))
             return [feature for feature in list(entity_df.columns) if feature not in
-            get_features_to_drop(self.config, table_ids[0], show_query)['Feature_to_drop'].tolist() and feature not in
-            get_features_to_drop(self.config, table_ids[1], show_query)['Feature_to_drop'].tolist() and feature in
-            filtered_columns]
+                    get_features_to_drop(self.config, table_ids[0], show_query)[
+                        'Feature_to_drop'].tolist() and feature not in
+                    get_features_to_drop(self.config, table_ids[1], show_query)[
+                        'Feature_to_drop'].tolist() and feature in
+                    filtered_columns]
 
         else:
             table_id = table_id['Table_id'][0]
             return [feature for feature in list(entity_df.columns)
-                    if feature not in get_features_to_drop(self.config, table_id, show_query)['Feature_to_drop'].tolist()
+                    if
+                    feature not in get_features_to_drop(self.config, table_id, show_query)['Feature_to_drop'].tolist()
                     and feature in filtered_columns]
 
-    def select_features(self, entity_df: pd.DataFrame, dependent_variable: str, select_by: str = 'pipeline', plot_correlation: bool = False,
+    def select_features(self, entity_df: pd.DataFrame, dependent_variable: str, select_by: str = 'pipeline',
+                        plot_correlation: bool = False,
                         plot_anova_test: bool = False, show_f_value: bool = False,
                         f_value_threshold: float = 2.0):
 
@@ -441,7 +455,8 @@ class KGFarm:
         if select_by == 'pipeline':
             X = entity_df[self.__get_features(entity_df=entity_df, filtered_columns=list(df.columns))]
             if self.mode != 'Automatic':
-                print('{} feature(s) {} were selected based on previously abstracted pipelines'.format(len(X.columns), list(X.columns)))
+                print('{} feature(s) {} were selected based on previously abstracted pipelines'.format(len(X.columns),
+                                                                                                       list(X.columns)))
             return X, y
 
         if select_by == 'statistics':
@@ -449,7 +464,8 @@ class KGFarm:
             feature_scores = feature_scores[feature_scores['F_value'] > f_value_threshold]
             X = df[feature_scores['Feature']]  # features (independent variables)
             if self.mode != 'Automatic':
-                print('Top {} feature(s) {} were selected based on highest F-value'.format(len(X.columns), list(X.columns)))
+                print('Top {} feature(s) {} were selected based on highest F-value'.format(len(X.columns),
+                                                                                           list(X.columns)))
             return X, y
 
     def clean_data(self, entity_df: pd.DataFrame, visualize_missing_data: bool = True, show_query: bool = False):
@@ -508,10 +524,12 @@ class KGFarm:
             table_ids = self.__table_transformations.get(tuple(entity_df.columns))
 
             data_cleaning_info = pd.concat([get_data_cleaning_info(self.config,
-                                table_id=table_ids[0], show_query=show_query), get_data_cleaning_info(
-                self.config, table_id=table_ids[1], show_query=show_query)])
+                                                                   table_id=table_ids[0], show_query=show_query),
+                                            get_data_cleaning_info(
+                                                self.config, table_id=table_ids[1], show_query=show_query)])
         else:
-            data_cleaning_info = get_data_cleaning_info(self.config, table_id=table_id['Table_id'][0], show_query=show_query)
+            data_cleaning_info = get_data_cleaning_info(self.config, table_id=table_id['Table_id'][0],
+                                                        show_query=show_query)
 
         if len(data_cleaning_info) < 1:
             return None
@@ -523,7 +541,8 @@ class KGFarm:
             if 'pandas.DataFrame.interpolate' == function:
                 entity_df.interpolate(value, inplace=True)
                 if self.mode != 'Automatic':
-                    print("cleaned {} features using '{}' by {} = '{}'".format(len(columns_to_be_cleaned), function, parameter, value))
+                    print("cleaned {} features using '{}' by {} = '{}'".format(len(columns_to_be_cleaned), function,
+                                                                               parameter, value))
 
         return entity_df
 
