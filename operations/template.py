@@ -355,7 +355,7 @@ def get_features_to_drop(config, table_id, show_query):
 
 def get_data_cleaning_info(config, table_id, show_query):
     query = """
-    SELECT DISTINCT ?Table ?Function ?Parameter ?Value ?Feature_view ?Pipeline 
+    SELECT DISTINCT ?Table ?Function ?Parameter ?Value ?Feature_view
     WHERE
     {
     # query pipeline-default graph
@@ -376,18 +376,18 @@ def get_data_cleaning_info(config, table_id, show_query):
     
     <%s>                    schema:name             ?Table              ;
                             featureView:name        ?Feature_view       .
-    
-    FILTER(?Value != 'None' && ?Value != 'False' && ?Parameter != 'axis')
-    
-    # TODO: populate more methods that are responsible for cleaning
-    FILTER(?Function = "pandas.DataFrame.interpolate")
+
+    # Methods for dealing with missing data
+    FILTER(?Function = "pandas.DataFrame.interpolate" || ?Function = "pandas.DataFrame.fillna" || ?Function = "pandas.DataFrame.dropna")
+    # Filter out None/False as a value and axis or inplace as a parameter
+    FILTER(?Value != 'None' && ?Value != 'False' && ?Parameter != 'axis' && ?Parameter != 'inplace' && ?Value != 'DataFrame' && ?Value != '()' && ?Value != '[]' && ?Value != '{}' && ?Value != '')
     
     # beautify output
     BIND(STRAFTER(str(?Function_id), str(lib:)) as ?Function1)             
     BIND(REPLACE(?Function1, '/', '.', 'i') AS ?Function)                               
-    }""" % (table_id, table_id)
+    } ORDER BY ?Function ?Pipeline""" % (table_id, table_id)
     if show_query:
-        return display_query(query)
+        display_query(query)
     return execute_query(config, query)
 
 

@@ -316,7 +316,7 @@ class KGFarm:
             except sklearn.exceptions:
                 print("{} couldn't be transformed".format(transformation_info['Table']))
         else:
-            print(transformation, ' not supported yet!')
+            print(transformation, 'not supported yet!')
             return
         if self.mode != 'Automatic':
             print('{} feature(s) {} transformed successfully!'.format(len(features), features))
@@ -468,9 +468,9 @@ class KGFarm:
                                                                                            list(X.columns)))
             return X, y
 
-    def clean_data(self, entity_df: pd.DataFrame, visualize_missing_data: bool = True, show_query: bool = False):
+    def clean_data(self, entity_df: pd.DataFrame, technique: str = None, visualize_missing_data: bool = True, show_query: bool = False):
 
-        def get_columns_to_be_cleaned(df):
+        def get_columns_to_be_cleaned(df: pd.DataFrame):
             columns = pd.DataFrame(df.isnull().sum())
             columns.columns = ['Missing values']
             columns['Feature'] = columns.index
@@ -479,8 +479,41 @@ class KGFarm:
             columns.reset_index(drop=True, inplace=True)
             return columns
 
-        for na_type in tqdm(['None', 'N/a', 'na']):
-            entity_df.replace(na_type, np.nan, inplace=True)
+        def handle_unseen_data(df: pd.DataFrame, columns: pd.DataFrame):
+            print('unseen data')
+            columns = list(columns.columns)
+            if technique == 'drop':
+                df.dropna(how='any', inplace=True)
+                df.reset_index(drop=True, inplace=True)
+                print(f'missing values from {columns} were dropped')
+                return df
+            elif technique == 'fill':
+                # TODO: fill value with mean / median
+                fill_value = input('Enter the value to fill the missing data ')
+                df.fillna(fill_value, inplace=True)
+                df.reset_index(drop=True, inplace=True)
+                print(f'missing values from {columns} were filled with {fill_value}')
+                return df
+            elif technique == 'interpolate':
+                try:
+                    df.interpolate(inplace=True)
+                    df.reset_index(drop=True, inplace=True)
+                    print(f'missing values from {columns} were interpolated')
+                except TypeError:
+                    print('only numerical features can be interpolated')
+                return df
+            else:
+                if technique is None:
+                    raise ValueError(
+                        "pass cleaning technique, technique must be one out of 'drop', 'fill' or 'interpolate'")
+                if technique not in ['drop', 'fill', 'interpolate']:
+                    raise ValueError("technique must be one out of 'drop', 'fill' or 'interpolate'")
+
+        for na_type in tqdm(['none', 'n/a', 'na', 'nan', 'missing', '?', '', ' ']):
+            if na_type in ['?', '', ' ']:
+                entity_df.replace(na_type, np.nan, inplace=True)
+            else:
+                entity_df.replace('(?i)' + na_type, np.nan, inplace=True, regex=True)
 
         columns_to_be_cleaned = get_columns_to_be_cleaned(entity_df)
 
@@ -520,28 +553,41 @@ class KGFarm:
             plt.show()
 
         table_id = search_entity_table(self.config, list(entity_df.columns))
-        if len(table_id) < 1:
+
+        if len(table_id) < 1:  # i.e. table not profiled
             table_ids = self.__table_transformations.get(tuple(entity_df.columns))
+            if table_ids is None:
+                return handle_unseen_data(entity_df, columns_to_be_cleaned)
 
             data_cleaning_info = pd.concat([get_data_cleaning_info(self.config,
                                                                    table_id=table_ids[0], show_query=show_query),
                                             get_data_cleaning_info(
-                                                self.config, table_id=table_ids[1], show_query=show_query)])
+                                                self.config, table_id=table_ids[1], show_query=False)])
         else:
             data_cleaning_info = get_data_cleaning_info(self.config, table_id=table_id['Table_id'][0],
-                                                        show_query=show_query)
+                                                        show_query=False)
 
         if len(data_cleaning_info) < 1:
-            return None
+            print('No cleaning technique found.')
+            return entity_df
 
+        # TODO: provide support for dropna()
+        # TODO: handle all parameters and values
         for cleaning_info in data_cleaning_info.to_dict('index').values():
             function = cleaning_info['Function']
             parameter = cleaning_info['Parameter']
             value = cleaning_info['Value']
-            if 'pandas.DataFrame.interpolate' == function:
+
+            if 'pandas.DataFrame.fillna' == function:
+                entity_df.fillna(value, inplace=True)
+                if self.mode != 'Automatic':
+                    print("filled {} features using '{}' by {} = '{}'".format(len(columns_to_be_cleaned), function,
+                                                                               parameter, value))
+
+            elif 'pandas.DataFrame.interpolate' == function:
                 entity_df.interpolate(value, inplace=True)
                 if self.mode != 'Automatic':
-                    print("cleaned {} features using '{}' by {} = '{}'".format(len(columns_to_be_cleaned), function,
+                    print("interpolated {} features using '{}' by {} = '{}'".format(len(columns_to_be_cleaned), function,
                                                                                parameter, value))
 
         return entity_df
