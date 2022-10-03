@@ -400,14 +400,23 @@ class KGFarm:
                     feature not in get_features_to_drop(self.config, table_id, show_query)['Feature_to_drop'].tolist()
                     and feature in filtered_columns]
 
-    def select_features(self, entity_df: pd.DataFrame, dependent_variable: str, select_by: str = 'pipeline',
-                        plot_correlation: bool = False,
-                        plot_anova_test: bool = False, show_f_value: bool = False,
-                        f_value_threshold: float = 2.0):
+    def select_features(self, entity_df: pd.DataFrame, dependent_variable: str, select_by: str = None,
+                        plot_correlation: bool = True,
+                        plot_anova_test: bool = True, show_f_value: bool = False):
 
-        if select_by not in ['pipeline', 'statistics']:
-            error = 'select_by can either be by pipeline (default) or by statistics'
-            raise ValueError(error)
+        def handle_data_by_statistics(dependent_var, f_score):
+            # TODO: add more feature selection techniques
+            if select_by not in {'anova'}:
+                raise ValueError("select_by can either be 'anova' or 'correlation'")
+            if select_by == 'anova':
+                # filter features based on f_value threshold
+                f_value_threshold = float(input(' Enter F-value threshold '))
+                f_score = f_score[f_score['F_value'] > f_value_threshold]
+                independent_var = df[f_score['Feature']]  # features (X)
+                if self.mode != 'Automatic':
+                    print('Top {} feature(s) {} were selected based on highest F-value'.
+                          format(len(independent_var.columns), list(independent_var.columns)))
+                return independent_var, dependent_var
 
         df = copy.copy(entity_df)
         for feature in tqdm(list(entity_df.columns)):  # drop entity column and timestamp
@@ -452,20 +461,20 @@ class KGFarm:
         if show_f_value:
             print(feature_scores, '\n')
 
-        if select_by == 'pipeline':
+        table_id = search_entity_table(self.config, list(entity_df.columns))
+        if len(table_id) < 1:  # i.e. table not profiled
+            table_ids = self.__table_transformations.get(tuple(entity_df.columns))
+            if table_ids is None:
+                return handle_data_by_statistics(dependent_var=y, f_score=feature_scores)
+
+        if select_by == 'anova':
+            return handle_data_by_statistics(dependent_var=y, f_score=feature_scores)
+
+        elif select_by is None:  # select by pipelines
             X = entity_df[self.__get_features(entity_df=entity_df, filtered_columns=list(df.columns))]
             if self.mode != 'Automatic':
                 print('{} feature(s) {} were selected based on previously abstracted pipelines'.format(len(X.columns),
                                                                                                        list(X.columns)))
-            return X, y
-
-        if select_by == 'statistics':
-            # filter features based on f_value threshold
-            feature_scores = feature_scores[feature_scores['F_value'] > f_value_threshold]
-            X = df[feature_scores['Feature']]  # features (independent variables)
-            if self.mode != 'Automatic':
-                print('Top {} feature(s) {} were selected based on highest F-value'.format(len(X.columns),
-                                                                                           list(X.columns)))
             return X, y
 
     def clean_data(self, entity_df: pd.DataFrame, technique: str = None, visualize_missing_data: bool = True, show_query: bool = False):

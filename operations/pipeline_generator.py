@@ -130,9 +130,7 @@ class PipelineGenerator:
         dependent_variable = selection_info[1]
         print('• selecting features', end=' ')
         X, y = self.kgfarm.select_features(entity_df=entity_df, dependent_variable=dependent_variable,
-                                           plot_correlation=False,
-                                           plot_anova_test=False,
-                                           show_f_value=False, )
+                                           plot_correlation=False, plot_anova_test=False)
         if len(X) & len(y):
             print('done.')
             code = """X, y = kgfarm.select_features(entity_df, dependent_variable='{}',\n""".format(dependent_variable) + \
