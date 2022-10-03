@@ -479,18 +479,30 @@ class KGFarm:
             columns.reset_index(drop=True, inplace=True)
             return columns
 
-        def handle_unseen_data(df: pd.DataFrame, columns: pd.DataFrame):
-            print('unseen data')
-            columns = list(columns.columns)
+        def handle_unseen_data(df: pd.DataFrame, columns_to_clean: pd.DataFrame):
+            columns = list(columns_to_clean['Feature'])
             if technique == 'drop':
                 df.dropna(how='any', inplace=True)
                 df.reset_index(drop=True, inplace=True)
                 print(f'missing values from {columns} were dropped')
                 return df
             elif technique == 'fill':
-                # TODO: fill value with mean / median
                 fill_value = input('Enter the value to fill the missing data ')
-                df.fillna(fill_value, inplace=True)
+                if fill_value not in {'mean', 'median', 'mode'}:  # fill constant value
+                    df.fillna(fill_value, inplace=True)
+                else:
+                    if fill_value == 'median':
+                        df.fillna(df.median(), inplace=True)
+                    elif fill_value == 'mean':
+                        df.fillna(df.mean(), inplace=True)
+                    else:
+                        def get_mode(feature: pd.Series):  # fill categorical data with mode
+                            return feature.mode()[0]
+
+                        for column in tqdm(columns):
+                            mode = get_mode(entity_df[column])
+                            entity_df[column].fillna(mode, inplace=True)
+
                 df.reset_index(drop=True, inplace=True)
                 print(f'missing values from {columns} were filled with {fill_value}')
                 return df
@@ -506,11 +518,11 @@ class KGFarm:
                 if technique is None:
                     raise ValueError(
                         "pass cleaning technique, technique must be one out of 'drop', 'fill' or 'interpolate'")
-                if technique not in ['drop', 'fill', 'interpolate']:
+                if technique not in {'drop', 'fill', 'interpolate'}:
                     raise ValueError("technique must be one out of 'drop', 'fill' or 'interpolate'")
 
-        for na_type in tqdm(['none', 'n/a', 'na', 'nan', 'missing', '?', '', ' ']):
-            if na_type in ['?', '', ' ']:
+        for na_type in tqdm({'none', 'n/a', 'na', 'nan', 'missing', '?', '', ' '}):
+            if na_type in {'?', '', ' '}:
                 entity_df.replace(na_type, np.nan, inplace=True)
             else:
                 entity_df.replace('(?i)' + na_type, np.nan, inplace=True, regex=True)
