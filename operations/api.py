@@ -405,27 +405,26 @@ class KGFarm:
                         plot_anova_test: bool = True, show_f_value: bool = False):
 
         def handle_data_by_statistics(dependent_var, f_score):
-            # TODO: add more feature selection techniques
+            def get_input():
+                return int(input(f'Enter k (where k is the top-k ranked features out of {len(df.columns)} feature(s) '))
+
             if select_by not in {'anova', 'correlation'}:
                 raise ValueError("select_by can either be 'anova' or 'correlation'")
             if select_by == 'anova':
-                # filter features based on f_value threshold
-                f_value_threshold = float(input('Enter F-value threshold '))
-                f_score = f_score[f_score['F_value'] > f_value_threshold]
+                f_score = f_score.head(get_input())
                 independent_var = df[f_score['Feature']]  # features (X)
                 if self.mode != 'Automatic':
                     print('Top {} feature(s) {} were selected based on highest F-value'.
                           format(len(independent_var.columns), list(independent_var.columns)))
                 return independent_var, dependent_var
             elif select_by == 'correlation':
-                k = int(input(f'Enter k where k is the top-k ranked features out of {len(df.columns)} feature(s) '))
                 correlation = df.corr()
                 correlation.drop(index=dependent_variable, inplace=True)
                 columns = list(correlation.columns)
                 columns = [f for f in columns if f != dependent_variable]
                 correlation.drop(columns, axis=1, inplace=True)
                 correlation.sort_values(by=dependent_variable, ascending=False, inplace=True)
-                top_k_features = correlation.head(k)
+                top_k_features = correlation.head(get_input())
                 top_k_features = list(top_k_features.to_dict().get(dependent_variable))
                 independent_var = df[top_k_features]  # features (X)
                 if self.mode != 'Automatic':
