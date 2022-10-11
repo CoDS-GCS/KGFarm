@@ -26,7 +26,7 @@ PREFIXES = """
 
 def refresh_elasticsearch():
     print('Refreshing elasticsearch!')
-    status = os.system("curl -X DELETE 'http://localhost:9200/_all'")
+    _ = os.system("curl -X DELETE 'http://localhost:9200/_all'")
 
 
 def time_taken(start, end):
@@ -99,10 +99,10 @@ def execute_query_blazegraph(sparql: SPARQLWrapper, query: str):
 
 
 # TODO: rename return_type to appropriate variable name to avoid confusion
-def execute_query(conn: stardog.Connection, query: str, return_type: str = 'csv'):
+def execute_query(conn: stardog.Connection, query: str, return_type: str = 'csv', timeout: int = 0):
     query = PREFIXES + query
     if return_type == 'csv':
-        result = conn.select(query, content_type='text/csv')
+        result = conn.select(query, content_type='text/csv', timeout=timeout)
         return pd.read_csv(io.BytesIO(bytes(result)))
     elif return_type == 'json':
         result = conn.select(query)
@@ -203,4 +203,3 @@ def plot_comparison(conventional_approach: dict, kgfarm_approach: dict):
     fig.tight_layout()
     plt.subplots_adjust(left=0.2, bottom=0.2, right=1.35)
     plt.show()
-

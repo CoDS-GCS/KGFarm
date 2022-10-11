@@ -391,6 +391,42 @@ def get_data_cleaning_info(config, table_id, show_query):
     return execute_query(config, query)
 
 
+def get_data_cleaning_recommendation(config, table_id, show_query=False):  # data cleaning for unseen data
+    query = """
+    SELECT DISTINCT  ?Function ?Parameter ?Value ?Column_id ?Pipeline
+    WHERE
+    {
+    # query pipeline-default graph
+    ?Pipeline_id            rdf:type                kglids:Pipeline     ;
+                            kglids:isPartOf         ?Dataset_id         ;
+                            rdfs:label              ?Pipeline           ;
+                            pipeline:isWrittenBy    ?Author             ;
+                            pipeline:isWrittenOn    ?Written_on         ;
+                            pipeline:hasSourceURL   ?Pipeline_url       .
+    
+    # querying named-graphs for pipeline               
+    GRAPH ?Pipeline_id
+    {
+        ?Statement          pipeline:callsFunction  ?Function_id        .
+        <<?Statement        pipeline:hasParameter   ?Parameter>> pipeline:withParameterValue ?Value        .
+        ?Statement          pipeline:readsColumn    ?Column_id          .
+        ?Statement_2        pipeline:readsTable     <%s>                .      
+    }
+    
+    FILTER(?Value != 'None' && ?Value != 'False' && ?Parameter != 'axis' && ?Parameter != 'inplace' && ?Value != 'DataFrame' && ?Value != '()' && ?Value != '[]'  && ?Value != '' && ?Value !='NaN')
+    # Methods for dealing with missing data
+    FILTER(?Function = "pandas.DataFrame.interpolate" || ?Function = "pandas.DataFrame.fillna" || ?Function = "pandas.DataFrame.dropna")
+    
+    # beautify output
+    BIND(STRAFTER(str(?Function_id), str(lib:)) as ?Function1)             
+    BIND(REPLACE(?Function1, '/', '.', 'i') AS ?Function)                               
+    } ORDER BY DESC(?Function) ?Pipeline """ % table_id
+    if show_query:
+        display_query(query)
+
+    return execute_query(config, query, timeout=2000)
+
+
 # --------------------------------------KGFarm APIs (updation queries) via Governor-------------------------------------
 
 

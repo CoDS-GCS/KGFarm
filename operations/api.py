@@ -1,9 +1,10 @@
-import copy
 import os
+import copy
 import sklearn
 import datetime
 import warnings
 import numpy as np
+import urllib.parse
 import pandas as pd
 import seaborn as sns
 from tqdm import tqdm
@@ -11,12 +12,14 @@ from pathlib import Path
 from datetime import timedelta
 from sklearn.preprocessing import *
 from matplotlib import pyplot as plt
+from stardog.exceptions import StardogException
 from sklearn.feature_selection import SelectKBest, f_classif
 from feature_discovery.src.graph_builder.governor import Governor
 from helpers.helper import connect_to_stardog
 from operations.template import *
 from operations.recommendation.recommender import Recommender
 from operations.recommendation.utils.transformation_mappings import transformation_mapping
+
 warnings.filterwarnings('ignore')
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_colwidth', None)
@@ -32,9 +35,11 @@ class KGFarm:
             raise ValueError("mode can be either 'Human in the Loop' or 'Automatic'")
         print('(KGFarm is running in {} mode)'.format(mode))
         self.config = connect_to_stardog(port, database, show_connection_status)
+        if mode == 'Human in the loop':
+            self.recommender = Recommender()
+            self.recommender_config = connect_to_stardog(port, db='kgfarm_recommender', show_status=False)
         self.governor = Governor(self.config)
         self.__table_transformations = {}  # cols in enriched_df: tuple -> (entity_df_id, feature_view_id)
-        self.recommender = Recommender()
 
     # re-arranging columns
     @staticmethod
@@ -491,9 +496,16 @@ class KGFarm:
                                                                                                        list(X.columns)))
             return X, y
 
-    def clean_data(self, entity_df: pd.DataFrame, technique: str = None, visualize_missing_data: bool = True, show_query: bool = False):
+    def clean_data(self, entity_df: pd.DataFrame, technique: str = None, visualize_missing_data: bool = True,
+                   show_query: bool = False):
 
         def get_columns_to_be_cleaned(df: pd.DataFrame):
+            for na_type in tqdm({'none', 'n/a', 'na', 'nan', 'missing', '?', '', ' '}):
+                if na_type in {'?', '', ' '}:
+                    df.replace(na_type, np.nan, inplace=True)
+                else:
+                    df.replace('(?i)' + na_type, np.nan, inplace=True, regex=True)
+
             columns = pd.DataFrame(df.isnull().sum())
             columns.columns = ['Missing values']
             columns['Feature'] = columns.index
@@ -501,6 +513,38 @@ class KGFarm:
             columns.sort_values(by='Missing values', ascending=False, inplace=True)
             columns.reset_index(drop=True, inplace=True)
             return columns
+
+        def plot_heat_map(df: pd.DataFrame):
+            plt.rcParams['figure.dpi'] = 300
+            plt.figure(figsize=(15, 7))
+            sns.heatmap(df.isnull(), yticklabels=False, cmap='Greens_r')
+            plt.show()
+
+        def plot_bar_graph(columns: pd.DataFrame):
+            if len(columns) == 0:
+                return
+            sns.set_color_codes('pastel')
+            plt.rcParams['figure.dpi'] = 300
+            plt.figure(figsize=(6, 3))
+
+            ax = sns.barplot(x="Feature", y="Missing values", data=columns,
+                             palette='Greens_r', edgecolor='gainsboro')
+            ax.bar_label(ax.containers[0], fontsize=6)
+
+            def change_width(axis, new_value):
+                for patch in axis.patches:
+                    current_width = patch.get_width()
+                    diff = current_width - new_value
+                    patch.set_width(new_value)
+                    patch.set_x(patch.get_x() + diff * .5)
+
+            change_width(ax, .20)
+            plt.grid(color='lightgray', axis='y')
+            plt.ylabel('Missing value', fontsize=5.5)
+            plt.xlabel('')
+            ax.tick_params(axis='both', which='major', labelsize=5.5)
+            ax.tick_params(axis='x', labelrotation=90, labelsize=5.5)
+            plt.show()
 
         def handle_unseen_data(df: pd.DataFrame, columns_to_clean: pd.DataFrame):
             columns = list(columns_to_clean['Feature'])
@@ -544,48 +588,16 @@ class KGFarm:
                 if technique not in {'drop', 'fill', 'interpolate'}:
                     raise ValueError("technique must be one out of 'drop', 'fill' or 'interpolate'")
 
-        for na_type in tqdm({'none', 'n/a', 'na', 'nan', 'missing', '?', '', ' '}):
-            if na_type in {'?', '', ' '}:
-                entity_df.replace(na_type, np.nan, inplace=True)
-            else:
-                entity_df.replace('(?i)' + na_type, np.nan, inplace=True, regex=True)
-
         columns_to_be_cleaned = get_columns_to_be_cleaned(entity_df)
 
-        if len(columns_to_be_cleaned) == 0:  # no missing values
+        if visualize_missing_data:
+            plot_heat_map(df=entity_df)
+            plot_bar_graph(columns=columns_to_be_cleaned)
+
+        if len(columns_to_be_cleaned) == 0:
             if self.mode != 'Automatic':
                 print('nothing to clean')
             return entity_df
-
-        if visualize_missing_data:
-            # plot heatmap of missing values
-            plt.rcParams['figure.dpi'] = 300
-            plt.figure(figsize=(15, 7))
-            sns.heatmap(entity_df.isnull(), yticklabels=False, cmap='Greens_r')
-            plt.show()
-
-            # plot bar-graph of missing values
-            sns.set_color_codes('pastel')
-            plt.rcParams['figure.dpi'] = 300
-            plt.figure(figsize=(6, 3))
-
-            ax = sns.barplot(x="Feature", y="Missing values", data=columns_to_be_cleaned,
-                             palette='Greens_r', edgecolor='gainsboro')
-            ax.bar_label(ax.containers[0], fontsize=6)
-
-            def change_width(axis, new_value):
-                for patch in axis.patches:
-                    current_width = patch.get_width()
-                    diff = current_width - new_value
-                    patch.set_width(new_value)
-                    patch.set_x(patch.get_x() + diff * .5)
-
-            change_width(ax, .20)
-            plt.grid(color='lightgray', axis='y')
-            plt.ylabel('Missing value', fontsize=5.5)
-            plt.xlabel('')
-            ax.tick_params(axis='both', which='major', labelsize=5.5)
-            plt.show()
 
         table_id = search_entity_table(self.config, list(entity_df.columns))
 
@@ -617,15 +629,185 @@ class KGFarm:
                 entity_df.fillna(value, inplace=True)
                 if self.mode != 'Automatic':
                     print("filled {} features using '{}' by {} = '{}'".format(len(columns_to_be_cleaned), function,
-                                                                               parameter, value))
+                                                                              parameter, value))
 
             elif 'pandas.DataFrame.interpolate' == function:
                 entity_df.interpolate(value, inplace=True)
                 if self.mode != 'Automatic':
-                    print("interpolated {} features using '{}' by {} = '{}'".format(len(columns_to_be_cleaned), function,
-                                                                               parameter, value))
+                    print(
+                        "interpolated {} features using '{}' by {} = '{}'".format(len(columns_to_be_cleaned), function,
+                                                                                  parameter, value))
 
         return entity_df
+
+    def recommend_cleaning_operations(self, entity_df: pd.DataFrame, visualize_missing_data: bool = True, k: int = 10,
+                                 show_query: bool = False):  # later consumed by handle_unseen_data() in kgfarm.clean_data()
+        def get_columns_to_be_cleaned(df: pd.DataFrame):
+            print('scanning missing values')
+            for na_type in {'none', 'n/a', 'na', 'nan', 'missing', '?', '', ' '}:
+                if na_type in {'?', '', ' '}:
+                    df.replace(na_type, np.nan, inplace=True)
+                else:
+                    df.replace('(?i)' + na_type, np.nan, inplace=True, regex=True)
+
+            columns = pd.DataFrame(df.isnull().sum())
+            columns.columns = ['Missing values']
+            columns['Feature'] = columns.index
+            columns = columns[columns['Missing values'] > 0]
+            columns.sort_values(by='Missing values', ascending=False, inplace=True)
+            columns.reset_index(drop=True, inplace=True)
+            return columns
+
+        def plot_heat_map(df: pd.DataFrame):
+            plt.rcParams['figure.dpi'] = 300
+            plt.figure(figsize=(15, 7))
+            sns.heatmap(df.isnull(), yticklabels=False, cmap='Greens_r')
+            plt.show()
+
+        def plot_bar_graph(columns: pd.DataFrame):
+            if len(columns) == 0:
+                return
+            sns.set_color_codes('pastel')
+            plt.rcParams['figure.dpi'] = 300
+            plt.figure(figsize=(6, 3))
+
+            ax = sns.barplot(x="Feature", y="Missing values", data=columns,
+                             palette='Greens_r', edgecolor='gainsboro')
+            ax.bar_label(ax.containers[0], fontsize=6)
+
+            def change_width(axis, new_value):
+                for patch in axis.patches:
+                    current_width = patch.get_width()
+                    diff = current_width - new_value
+                    patch.set_width(new_value)
+                    patch.set_x(patch.get_x() + diff * .5)
+
+            change_width(ax, .20)
+            plt.grid(color='lightgray', axis='y')
+            plt.ylabel('Missing value', fontsize=5.5)
+            plt.xlabel('')
+            ax.tick_params(axis='both', which='major', labelsize=5.5)
+            ax.tick_params(axis='x', labelrotation=90, labelsize=5.5)
+            plt.show()
+
+        def process(df: pd.DataFrame):
+            def format_columns(c: str):
+                return urllib.parse.unquote_plus(c).split('/')[-1]
+
+            df['Feature'] = df['Column_id'].apply(lambda x: format_columns(x))
+            df = df.drop('Column_id', axis=1).dropna(how='any').reset_index(drop=True)
+
+            pipeline = None
+            operation = None
+            parameters_per_pipeline = {}
+            params = {}
+            features = []
+            for row_number, recommendation_info in df.to_dict('index').items():
+                if pipeline == recommendation_info['Pipeline'] and operation == data_cleaning_operation_mapping.get(
+                        recommendation_info['Function']):
+                    params.update({recommendation_info['Feature']: recommendation_info['Value']})
+                    features.append(recommendation_info['Feature'])
+                    if row_number == len(df) - 1:  # save for last record
+                        parameters_per_pipeline[pipeline] = [operation, features, params]
+                else:
+                    if row_number == 0:  # first pipeline
+                        pipeline = recommendation_info['Pipeline']
+                        operation = data_cleaning_operation_mapping.get(recommendation_info['Function'])
+                        features = [recommendation_info['Feature']]
+                        params.update({recommendation_info['Feature']: recommendation_info['Value']})
+                        continue
+
+                    if row_number == len(df) - 1:  # save for last record
+                        parameters_per_pipeline[pipeline] = [operation, features, params]
+                    else:
+                        # save current pipeline_info
+                        parameters_per_pipeline[pipeline] = [operation, features, params]
+                        # update new pipeline
+                        pipeline = recommendation_info['Pipeline']
+                        operation = data_cleaning_operation_mapping.get(recommendation_info['Function'])
+                        features = [recommendation_info['Feature']]
+                        params = {recommendation_info['Feature']: recommendation_info['Value']}
+
+            operation = []
+            params = []
+            features = []
+            for row in list(parameters_per_pipeline.values()):
+                operation.append(row[0])
+                features.append(row[1])
+                params.append(row[2])
+
+            df = pd.DataFrame({'Operation': operation,
+                                 'Feature': features,
+                                 'Parameters': params,
+                                 'Pipeline': list(parameters_per_pipeline.keys())})
+
+            # check if features are present in actual entity_df
+            updated_params = []
+            for row_number, recommendation_info in df.to_dict('index').items():
+                features = recommendation_info['Feature']
+                parameters = recommendation_info['Parameters']
+                if '<src.Calls' in parameters:
+                    df.drop(index=row_number, axis=1, inplace=True)
+                    continue
+                flag = True
+                params = {}
+                for f in features:
+                    if f.replace(' ', '') in entity_df.columns:
+                        features[features.index(f)] = f.replace(' ', '')
+                        value = parameters.get(f)
+                        params.update({f.replace(' ', ''): value})
+                    else:
+                        flag = False
+                if not flag:
+                    df.drop(index=row_number, axis=1, inplace=True)
+                    continue
+                updated_params.append(params)
+
+            df['Parameters'] = updated_params
+            return df
+
+        columns_to_be_cleaned = get_columns_to_be_cleaned(entity_df)
+
+        if visualize_missing_data:
+            plot_heat_map(df=entity_df)
+            plot_bar_graph(columns=columns_to_be_cleaned)
+
+        if len(columns_to_be_cleaned) == 0:
+            if self.mode != 'Automatic':
+                print('nothing to clean')
+            return entity_df
+
+        print('finding similar columns and tables to entity dataframe')
+        similar_tables = self.recommender.get_cleaning_recommendation(entity_df[columns_to_be_cleaned['Feature']])
+
+        if len(similar_tables) < k:
+            k = len(similar_tables)
+
+        similar_tables = similar_tables[:k]
+
+        # TODO: make a generic function to return no recommendations found
+        if len(similar_tables) == 0:
+            print('no recommendations, try cleaning manually')
+
+        recommendations = []
+        for recommended_table in tqdm(similar_tables):  # gets recommendation for all similar tables
+            try:
+                recommendations.append(get_data_cleaning_recommendation(self.recommender_config,
+                                                                        table_id=recommended_table,
+                                                                        show_query=show_query))
+                show_query = False
+            except StardogException:
+                continue
+
+        if len(recommendations) == 0:
+            print('no recommendations, try cleaning manually')
+            return
+
+        recommendations = process(df=pd.concat(recommendations)).reset_index(drop=True)
+        if len(recommendations) == 0:
+            print('no recommendations, try cleaning manually')
+            return
+        return recommendations
 
 
 # TODO: refactor (make a generic function to return enrich table_ids from self.__table_transformations)
@@ -633,6 +815,10 @@ entity_data_types_mapping = {'N_int': 'integer', 'N_float': 'float', 'N_bool': '
                              'T': 'string', 'T_date': 'timestamp', 'T_loc': 'string (location)',
                              'T_person': 'string (person)',
                              'T_org': 'string', 'T_code': 'string (code)', 'T_email': 'string (email)'}
+
+data_cleaning_operation_mapping = {'pandas.DataFrame.fillna': 'Fill missing values',
+                                   'pandas.DataFrame.interpolate': 'Interpolate',
+                                   'pandas.DataFrame.dropna': 'Drop missing values'}
 
 if __name__ == "__main__":
     kgfarm = KGFarm(port=5820, database='kgfarm_test', show_connection_status=False)
