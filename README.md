@@ -2,7 +2,7 @@
 <b>A Feature Discovery System for Data Science Across the Enterprise</b>
 [🔗](https://www.overleaf.com/read/fwcvhtrxcqbh)
 ## 📐 System Design
-![design](https://user-images.githubusercontent.com/40717058/162835808-3f99b48f-78f6-44c8-a431-88a09da43d7c.png)
+![design](docs/graphics/KGFarm%20architecture.jpeg)
 
 ## ⚡ Quick Start
 1. Install dependencies
@@ -44,7 +44,7 @@ python build.py -db Database
 ## 🦾 Contributors
 <p float="left">
  
-  <img src="helpers/graphics/CoDS.png" width="200"/> 
+  <img src="docs/graphics/CoDS.png" width="200"/> 
 
-  <img src="helpers/graphics/borealisAI.png" width="170"/>
+  <img src="docs/graphics/borealisAI.png" width="170"/>
 </p>
