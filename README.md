@@ -1,15 +1,15 @@
-<div style="text-align: center">
+<p align="center">
     <a href="https://www.mitacs.ca/en/projects/feature-discovery-system-data-science-across-enterprise">
       <img src="docs/graphics/KGFarm_logo.svg" width="550">
     </a>
-</div>
+</p>
 
 ### <b>KGFarm: A Feature Discovery System for Data Science Across the Enterprise</b> [🔗](https://www.overleaf.com/read/fwcvhtrxcqbh)
 ## 📐 System Design
 ![design](docs/graphics/KGFarm%20architecture.jpeg)
 
 
-<div style="text-align: justify">
+<p align="justify">
 Features are one of the essential ingredients for building a machine learning model. In the case of structured data, each feature
 physically represented as a column serves as a measurable property that describes the characteristics of one or more entities. The
 quality and quantity of these features significantly impact how
@@ -34,7 +34,7 @@ features. Additionally, to address the problem of data preparation
 KGFarm learns from information that has been previously applied
 by real data scientists. This allows KGFarm to discover features
 and automate data preparation by learning and sharing knowledge
-with respect to the features throughout the enterprise at scale.</div>
+with respect to the features throughout the enterprise at scale.</p>
 
 ## ⚡ Quick Start
 1. Install dependencies
