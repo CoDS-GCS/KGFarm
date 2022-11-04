@@ -1,5 +1,6 @@
 from helpers.helper import execute_query, display_query
 
+
 # --------------------------------------------KGFarm APIs (SELECT queries)----------------------------------------------
 
 
@@ -12,7 +13,7 @@ def get_table_path(config, table, dataset):
                 kglids:isPartOf     ?Dataset_id     ;
                 data:hasFilePath    ?Table_path     .
     ?Dataset_id schema:name         "%s".
-    }"""% (table, dataset)
+    }""" % (table, dataset)
     return str(execute_query(config, query)['Table_path'][0])
 
 
@@ -236,7 +237,7 @@ def search_entity_table(config, columns):
         subquery = ''
         col_count = 0
         for column in columns:
-            subquery = subquery + "\t?Column_id_{} schema:name '{}';\n\t\t\tkglids:isPartOf ?Table_id.\n\n".\
+            subquery = subquery + "\t?Column_id_{} schema:name '{}';\n\t\t\tkglids:isPartOf ?Table_id.\n\n". \
                 format(col_count, column)
             col_count = col_count + 1
         return subquery
@@ -272,6 +273,7 @@ def get_table_name(config, table_id):
     }
     """ % table_id
     return execute_query(config, query)['Table'][0]
+
 
 def is_entity_column(config, feature, dependent_variable):
     query = """
@@ -391,7 +393,7 @@ def get_data_cleaning_info(config, table_id, show_query):
     return execute_query(config, query)
 
 
-def get_data_cleaning_recommendation(config, table_id, show_query=False):  # data cleaning for unseen data
+def get_data_cleaning_recommendation(config, table_id, show_query=False, timeout=2000):  # data cleaning for unseen data
     query = """
     SELECT DISTINCT  ?Function ?Parameter ?Value ?Column_id ?Pipeline
     WHERE
@@ -424,7 +426,7 @@ def get_data_cleaning_recommendation(config, table_id, show_query=False):  # dat
     if show_query:
         display_query(query)
 
-    return execute_query(config, query, timeout=2000)
+    return execute_query(config, query, timeout=timeout)
 
 
 # --------------------------------------KGFarm APIs (updation queries) via Governor-------------------------------------
@@ -477,6 +479,7 @@ def insert_current_physical_representation_of_an_entity(config, feature_view, co
         ?Table_id       featureView:name            '%s'                                    .
     }""" % (entity, column, feature_view)
     execute_query(config, query, return_type='update')
+
 
 # --------------------------------------------Farm Builder--------------------------------------------------------------
 
@@ -706,6 +709,7 @@ def get_table_size_ratio(config, show_query: bool = False):
         display_query(query)
 
     return execute_query(config, query)
+
 
 # --------------------------------------------Transformation recommender------------------------------------------------
 

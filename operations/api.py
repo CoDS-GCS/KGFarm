@@ -50,6 +50,13 @@ class KGFarm:
         df = df[features]
         return df
 
+    def __check_if_profiled(self, df: pd.DataFrame):
+        table_id = search_entity_table(self.config, list(df.columns))
+        if len(table_id) == 0:
+            return False
+        else:
+            return table_id['Table_id'][0]
+
     # wrapper around pd.read_csv()
     def load_table(self, table_info: pd.Series, print_table_name: bool = True):
         table = table_info['Table']
@@ -640,8 +647,13 @@ class KGFarm:
 
         return entity_df
 
-    def recommend_cleaning_operations(self, entity_df: pd.DataFrame, visualize_missing_data: bool = True, k: int = 10,
-                                 show_query: bool = False):  # later consumed by handle_unseen_data() in kgfarm.clean_data()
+    def recommend_cleaning_operations(self, entity_df: pd.DataFrame, visualize_missing_data: bool = True, top_k: int = 10,
+                   show_query: bool = False, query_timeout: int = 10000):
+        """
+        1. visualize missing data
+        2. check if data is profiled or unseen
+        3. if unseen align and query else query directly
+        """
         def get_columns_to_be_cleaned(df: pd.DataFrame):
             print('scanning missing values')
             for na_type in {'none', 'n/a', 'na', 'nan', 'missing', '?', '', ' '}:
@@ -690,7 +702,21 @@ class KGFarm:
             ax.tick_params(axis='x', labelrotation=90, labelsize=5.5)
             plt.show()
 
-        def process(df: pd.DataFrame):
+        def recommend_cleaning_operations_for_unseen_data(list_of_similar_tables: list, display: bool):
+            recommendations = []
+            for recommended_table in tqdm(list_of_similar_tables):
+                try:
+                    recommendations.append(get_data_cleaning_recommendation(self.recommender_config,
+                                                                            table_id=recommended_table,
+                                                                            timeout=query_timeout, show_query=display))
+                    display = False
+                except StardogException:
+                    continue
+            if len(recommendations) == 0:
+                return False
+            return pd.concat(recommendations).reset_index(drop=True)
+
+        def reformat_recommendations(df: pd.DataFrame):
             def format_columns(c: str):
                 return urllib.parse.unquote_plus(c).split('/')[-1]
 
@@ -777,37 +803,45 @@ class KGFarm:
                 print('nothing to clean')
             return entity_df
 
-        print('finding similar columns and tables to entity dataframe')
-        similar_tables = self.recommender.get_cleaning_recommendation(entity_df[columns_to_be_cleaned['Feature']])
+        table_id = self.__check_if_profiled(df=entity_df)
 
-        if len(similar_tables) < k:
-            k = len(similar_tables)
+        if table_id is not False:  # seen data
+            data_cleaning_info = get_data_cleaning_info(self.config, table_id=table_id,
+                                                        show_query=False)
+            return data_cleaning_info
 
-        similar_tables = similar_tables[:k]
+        elif table_id is False:  # unseen data
+            print('finding similar columns and tables to entity dataframe')
+            similar_tables = self.recommender.get_cleaning_recommendation(entity_df[columns_to_be_cleaned['Feature']])  # align
 
-        # TODO: make a generic function to return no recommendations found
-        if len(similar_tables) == 0:
-            print('no recommendations, try cleaning manually')
+            if len(similar_tables) < top_k:
+                top_k = len(similar_tables)
 
-        recommendations = []
-        for recommended_table in tqdm(similar_tables):  # gets recommendation for all similar tables
-            try:
-                recommendations.append(get_data_cleaning_recommendation(self.recommender_config,
-                                                                        table_id=recommended_table,
-                                                                        show_query=show_query))
-                show_query = False
-            except StardogException:
-                continue
+            similar_tables = similar_tables[:top_k]
 
-        if len(recommendations) == 0:
-            print('no recommendations, try cleaning manually')
-            return
+            if len(similar_tables) == 0:
+                print('no recommendations, try using kgfarm.clean()')
+                return
 
-        recommendations = process(df=pd.concat(recommendations)).reset_index(drop=True)
-        if len(recommendations) == 0:
-            print('no recommendations, try cleaning manually')
-            return
-        return recommendations
+            raw_recommendations = recommend_cleaning_operations_for_unseen_data(list_of_similar_tables=similar_tables, display=show_query)  # query
+
+            if raw_recommendations is False or raw_recommendations.empty:
+                print('no recommendations, try using kgfarm.clean()')
+                return
+            else:
+                df = reformat_recommendations(df=raw_recommendations)
+                if df.empty:
+                    print('no recommendations, try using kgfarm.clean()')
+                    return
+                else:
+                    return df
+
+    @staticmethod
+    def clean(cleaning_info: pd.Series, entity_df: pd.DataFrame = pd.DataFrame):
+        """
+        cleans entity_df from info coming from kgfarm.recommend_cleaning_operations
+        """
+        print('Under construction')
 
 
 # TODO: refactor (make a generic function to return enrich table_ids from self.__table_transformations)

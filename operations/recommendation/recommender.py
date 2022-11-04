@@ -3,7 +3,6 @@ import joblib
 import bitstring
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 from datasketch import MinHash
 from collections import Counter
 from operations.storage.embeddings import Embeddings
@@ -33,7 +32,7 @@ class Recommender:
         def get_bin_repr(val):
             return [int(j) for j in bitstring.BitArray(float=float(val), length=32).bin]
 
-        for column in tqdm(entity_df.columns):
+        for column in entity_df.columns:
             if pd.api.types.is_numeric_dtype(entity_df[column]):
                 bin_repr = entity_df[column].apply(get_bin_repr, convert_dtype=False).to_list()
                 bin_tensor = torch.FloatTensor(bin_repr).to('cpu')
