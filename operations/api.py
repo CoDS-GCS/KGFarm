@@ -648,7 +648,7 @@ class KGFarm:
         return entity_df
 
     def recommend_cleaning_operations(self, entity_df: pd.DataFrame, visualize_missing_data: bool = True, top_k: int = 10,
-                   show_query: bool = False, query_timeout: int = 10000):
+                   show_query: bool = False):
         """
         1. visualize missing data
         2. check if data is profiled or unseen
@@ -708,10 +708,10 @@ class KGFarm:
                 try:
                     recommendations.append(get_data_cleaning_recommendation(self.recommender_config,
                                                                             table_id=recommended_table,
-                                                                            timeout=query_timeout, show_query=display))
-                    display = False
+                                                                            show_query=display))
                 except StardogException:
                     continue
+                display = False
             if len(recommendations) == 0:
                 return False
             return pd.concat(recommendations).reset_index(drop=True)

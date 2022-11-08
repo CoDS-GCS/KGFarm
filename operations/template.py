@@ -400,11 +400,7 @@ def get_data_cleaning_recommendation(config, table_id, show_query=False, timeout
     {
     # query pipeline-default graph
     ?Pipeline_id            rdf:type                kglids:Pipeline     ;
-                            kglids:isPartOf         ?Dataset_id         ;
-                            rdfs:label              ?Pipeline           ;
-                            pipeline:isWrittenBy    ?Author             ;
-                            pipeline:isWrittenOn    ?Written_on         ;
-                            pipeline:hasSourceURL   ?Pipeline_url       .
+                            rdfs:label              ?Pipeline           .
     
     # querying named-graphs for pipeline               
     GRAPH ?Pipeline_id
@@ -415,6 +411,7 @@ def get_data_cleaning_recommendation(config, table_id, show_query=False, timeout
         ?Statement_2        pipeline:readsTable     <%s>                .      
     }
     
+    ?Function_id kglids:isPartOf <http://kglids.org/resource/library/pandas/DataFrame>                     .
     FILTER(?Value != 'None' && ?Value != 'False' && ?Parameter != 'axis' && ?Parameter != 'inplace' && ?Value != 'DataFrame' && ?Value != '()' && ?Value != '[]'  && ?Value != '' && ?Value !='NaN')
     # Methods for dealing with missing data
     FILTER(?Function = "pandas.DataFrame.interpolate" || ?Function = "pandas.DataFrame.fillna" || ?Function = "pandas.DataFrame.dropna")
