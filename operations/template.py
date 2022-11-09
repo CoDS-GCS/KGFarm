@@ -718,11 +718,7 @@ def get_transformations_on_columns(config):
     {
         # query pipeline-default graph
         ?Pipeline_id        rdf:type                kglids:Pipeline     ;
-                            kglids:isPartOf         ?Dataset_id         ;
-                            rdfs:label              ?Pipeline           ;
-                            pipeline:isWrittenBy    ?Author             ;
-                            pipeline:isWrittenOn    ?Written_on         . 
-    
+                            rdfs:label              ?Pipeline           .
         # querying named-graphs for pipeline               
         GRAPH ?Pipeline_id
         {
@@ -737,7 +733,8 @@ def get_transformations_on_columns(config):
         # beautify output
         BIND(STRAFTER(str(?Function_id), str(preprocessing:)) as ?Transformation_1)
         BIND(REPLACE(?Transformation_1, '/fit_transform', '') as ?Transformation_2)
-        BIND(REPLACE(?Transformation_2, '/fit', '') as ?Transformation_3)
-        BIND(REPLACE(?Transformation_3, '/transform', '') as ?Transformation)   
+        BIND(REPLACE(?Transformation_2, '/inverse_transform', '') as ?Transformation_3)
+        BIND(REPLACE(?Transformation_3, '/fit', '') as ?Transformation_4)
+        BIND(REPLACE(?Transformation_4, '/transform', '') as ?Transformation)   
     }"""
     return execute_query(config, query)

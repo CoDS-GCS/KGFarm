@@ -14,6 +14,7 @@ from sklearn.metrics import classification_report, make_scorer
 from helpers.helper import connect_to_stardog
 from word_embeddings import WordEmbedding
 from operations.template import get_transformations_on_columns
+
 warnings.filterwarnings('ignore')
 pd.set_option('display.max_columns', None)
 
@@ -21,8 +22,8 @@ pd.set_option('display.max_columns', None)
 class Recommender:
     """A classifier that recommends type of feature transformation based on column (feature) embeddings"""
 
-    def __init__(self, feature_type: str, port: int = 5820, database: str = 'recommender',
-                 metadata: str = '../../../helpers/sample_data/metadata/profiles/',
+    def __init__(self, feature_type: str, port: int = 5820, database: str = 'kgfarm_recommender',
+                 metadata: str = '../../storage/metadata/profiles/',
                  show_connection_status: bool = False):
         self.feature_type = feature_type
         self.metadata = metadata
@@ -85,11 +86,9 @@ class Recommender:
                 Remove record if:
                 1. Embeddings / Word embeddings not found
                 2. Embeddings are incorrect
-                3. Sklearn.preprocessing.scale() is used
-                4. Any scaling technique is used for string/categorical features
+                3. Any scaling technique is used for string/categorical features
                 """
                 if not row['Embeddings'] or \
-                        row['Transformation'] == 'scale' or \
                         row['Embeddings'][:10] == [-1] * 10 or \
                         ('Scaler' in row['Transformation'] and self.feature_type == 'string') or \
                         row['Word_embedding'] is None:
@@ -97,24 +96,24 @@ class Recommender:
 
             self.modeling_data.drop(['Column_id', 'Data_type'], axis=1, inplace=True)
 
-        def balance():  # take as many non-transformed samples as the most used of transformation technique
-            transformation_statistics = self.modeling_data['Transformation'].value_counts()
-            transformation_counts = list(transformation_statistics)
-            transformation_counts.sort(reverse=True)
-            n = transformation_statistics['Negative'] - transformation_counts[1]
-            drop = np.random.choice(self.modeling_data[self.modeling_data['Transformation'] == 'Negative'].index,
-                                    size=n, replace=False)
-            self.modeling_data = self.modeling_data.drop(drop)
+        # def balance():  # take as many non-transformed samples as the most used of transformation technique
+        #     transformation_statistics = self.modeling_data['Transformation'].value_counts()
+        #     transformation_counts = list(transformation_statistics)
+        #     transformation_counts.sort(reverse=True)
+        #     n = transformation_statistics['Negative'] - transformation_counts[1]
+        #     drop = np.random.choice(self.modeling_data[self.modeling_data['Transformation'] == 'Negative'].index,
+        #                             size=n, replace=False)
+        #     self.modeling_data = self.modeling_data.drop(drop)
 
         def plot_class_distribution():
             plt.rcParams['figure.dpi'] = 200
             sns.set_style('dark')
-            fig, ax = plt.subplots(figsize=(7, 3.5))
+            fig, ax = plt.subplots(figsize=(8.5, 5))
             sns.countplot(x='Transformation', data=self.modeling_data, palette="Greens_r",
                           order=self.modeling_data['Transformation'].value_counts().index)
             plt.grid(color='gray', linestyle='dashed', axis='y')
-            plt.ylabel('No. of columns')
-            plt.xlabel('Transformation type (for {} features)'.format(self.feature_type))
+            plt.ylabel('columns')
+            plt.xlabel(f'{self.feature_type} transformations')
             ax.bar_label(ax.containers[0])
 
             def change_width(axis, new_value):
@@ -125,6 +124,7 @@ class Recommender:
                     patch.set_x(patch.get_x() + diff * .5)
 
             change_width(ax, .65)
+            ax.tick_params(axis='x', labelrotation=55, labelsize=9)
             fig.tight_layout()
             plt.show()
 
@@ -140,7 +140,7 @@ class Recommender:
             return embedding
 
         clean()
-        balance()
+        # balance()
 
         # concatenate embeddings (column + word-embeddings)
         self.modeling_data['Embeddings'] = self.modeling_data.apply(concatenate_embeddings, axis=1)
@@ -151,6 +151,7 @@ class Recommender:
             plot_class_distribution()
         transform()
 
+        print(f'{self.feature_type}: {len(self.modeling_data)}')
         if save:
             self.modeling_data.to_csv('modeling_data_{}.csv'.format(self.feature_type), index=False)
 
@@ -209,9 +210,9 @@ def build():
     for feature_type in ['string', 'numeric']:
         recommender = Recommender(feature_type=feature_type)
         recommender.generate_modeling_data()
-        recommender.prepare(plot=False, save=False)
-        recommender.save(scores=recommender.train_test_evaluate(parameters=recommender.define(), tune=False),
-                         cache=False)
+        recommender.prepare(plot=True, save=False)
+        # recommender.save(scores=recommender.train_test_evaluate(parameters=recommender.define(), tune=False),
+        #                  cache=False)
     print('done.')
 
 
