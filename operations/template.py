@@ -393,7 +393,7 @@ def get_data_cleaning_info(config, table_id, show_query):
     return execute_query(config, query)
 
 
-def get_data_cleaning_recommendation(config, table_id, show_query=False, timeout=2000):  # data cleaning for unseen data
+def get_data_cleaning_recommendation(config, table_id, show_query=False, timeout=10000):  # data cleaning for unseen data
     query = """
     SELECT DISTINCT  ?Function ?Parameter ?Value ?Column_id ?Pipeline
     WHERE
@@ -407,8 +407,11 @@ def get_data_cleaning_recommendation(config, table_id, show_query=False, timeout
     {
         ?Statement          pipeline:callsFunction  ?Function_id        .
         <<?Statement        pipeline:hasParameter   ?Parameter>> pipeline:withParameterValue ?Value        .
-        ?Statement          pipeline:readsColumn    ?Column_id          .
-        ?Statement_2        pipeline:readsTable     <%s>                .      
+        ?Statement_2        pipeline:readsTable     <%s>                .   
+        OPTIONAL
+        {
+            ?Statement      pipeline:readsColumn    ?Column_id          .
+        }   
     }
     
     ?Function_id kglids:isPartOf <http://kglids.org/resource/library/pandas/DataFrame>                     .

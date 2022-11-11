@@ -74,6 +74,7 @@ class PipelineGenerator:
         return entity_info
 
     def search_enrichment_options(self, entity_info: pd.DataFrame):
+        print('• attempting to enrich data (via point-in-time correct join)', end=' ')
         entity_df = pd.read_csv(entity_info.iloc[0].File_source)
         enrichment_info = self.kgfarm.search_enrichment_options(entity_df=entity_df)
         if len(enrichment_info):
@@ -82,7 +83,6 @@ class PipelineGenerator:
             return enrichment_info, entity_df
 
     def enrich(self, enrich_info: tuple):
-        print('• attempting to enrich data (via point-in-time correct join)', end=' ')
         entity_df = self.kgfarm.enrich(enrichment_info=enrich_info[0].iloc[0], entity_df=enrich_info[1])
         if len(entity_df):
             print('done.')
@@ -90,17 +90,24 @@ class PipelineGenerator:
             self.__add(code)
         return entity_df
 
-    def clean_data(self, entity_df: pd.DataFrame):
+    def search_data_cleaning_operations(self, entity_df: pd.DataFrame):
         print('• cleaning messy data (if any)', end=' ')
-        entity_df = self.kgfarm.clean_data(entity_df=entity_df, visualize_missing_data=False)
+        cleaning_info = self.kgfarm.recommend_cleaning_operations(entity_df=entity_df, visualize_missing_data=False)
+        if len(entity_df):
+            code = """cleaning_info = kgfarm.recommend_cleaning_operations(entity_df)\ncleaning_info"""
+            self.__add(code)
+        return entity_df, cleaning_info
+
+    def clean(self, cleaning_info: tuple):
+        entity_df = self.kgfarm.clean(entity_df=cleaning_info[0], cleaning_info=cleaning_info[1].iloc[0])
         if len(entity_df):
             print('done.')
-            code = """entity_df = kgfarm.clean_data(entity_df)\nentity_df"""
+            code = """entity_df = kgfarm.clean(entity_df, cleaning_info.iloc[0])\nentity_df"""
             self.__add(code)
         return entity_df
 
     def search_transformations(self, entity_df: pd.DataFrame):
-        print('• looking for transformations', end=' ')
+        print('• applying transformations', end=' ')
         transformation_info = self.kgfarm.recommend_feature_transformations(entity_df=entity_df)
         if len(transformation_info):
             print('found {} transformations'.format(len(transformation_info)))
@@ -110,7 +117,6 @@ class PipelineGenerator:
 
     def apply_transformations(self, transformation_info: tuple):
         # TODO: manage feature-leakage for scaling and normalization
-        print('• applying transformations', end=' ')
         enrich_df = transformation_info[1]
         if len(transformation_info):
 
@@ -209,11 +215,12 @@ def run(pipeline_name, ml_task: str, entity_name: str):
                                 data=pipeline_generator.select_features(
                                     selection_info=pipeline_generator.apply_transformations(
                                         transformation_info=pipeline_generator.search_transformations(
-                                            entity_df=pipeline_generator.clean_data(
-                                                entity_df=pipeline_generator.enrich(
+                                            entity_df=pipeline_generator.clean(
+                                                cleaning_info=pipeline_generator.search_data_cleaning_operations(
+                                                    entity_df=pipeline_generator.enrich(
                                                     enrich_info=pipeline_generator.search_enrichment_options(
                                                         entity_info=pipeline_generator.search_entity(
-                                                            entity_name=entity_name))))))))))])]
+                                                            entity_name=entity_name)))))))))))])]
     pipeline_generator.write_to_notebook(time_taken(start, time.time()))
     print('Done in ', time_taken(start, time.time()))
 

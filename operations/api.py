@@ -53,9 +53,15 @@ class KGFarm:
     def __check_if_profiled(self, df: pd.DataFrame):
         table_id = search_entity_table(self.config, list(df.columns))
         if len(table_id) == 0:
-            return False
+            # search for enriched tables
+            table_ids = self.__table_transformations.get(tuple(df.columns))
+            if table_ids is None:
+                return False  # unseen table
+            else:
+                return table_ids  # enriched table (return table urls which make the enriched table)
+
         else:
-            return table_id['Table_id'][0]
+            return table_id['Table_id'][0]  # seen / profiled table
 
     # wrapper around pd.read_csv()
     def load_table(self, table_info: pd.Series, print_table_name: bool = True):
@@ -310,18 +316,16 @@ class KGFarm:
         features = transformation_info['Feature']
         last_column = list(df.columns)[-1]  # for re-arranging columns
         if transformation == 'LabelEncoder':
-            if self.mode != 'Automatic':
-                print('Applying LabelEncoder transformation')
+            print('Applying LabelEncoder transformation')
             for feature in tqdm(features):
                 transformation_model = LabelEncoder()
                 df[feature] = transformation_model.fit_transform(df[feature])
         elif transformation == 'StandardScaler':
-            if self.mode != 'Automatic':
-                print(
-                    'CAUTION: Make sure you apply {} transformation only on the train set (This ensures there is no over-fitting due to feature leakage)\n'.format(
-                        transformation) + \
-                    'Use the transformation_model returned from this api to transform test set independently.\n')
-                print('Applying StandardScaler transformation')
+            print(
+                'CAUTION: Make sure you apply {} transformation only on the train set (This ensures there is no over-fitting due to feature leakage)\n'.format(
+                    transformation) + \
+                'Use the transformation_model returned from this api to transform test set independently.\n')
+            print('Applying StandardScaler transformation')
             try:
                 transformation_model = StandardScaler(copy=False)
                 df[features] = transformation_model.fit_transform(df[features])
@@ -330,8 +334,7 @@ class KGFarm:
         else:
             print(transformation, 'not supported yet!')
             return
-        if self.mode != 'Automatic':
-            print('{} feature(s) {} transformed successfully!'.format(len(features), features))
+        print('{} feature(s) {} transformed successfully!'.format(len(features), features))
 
         return self.__re_arrange_columns(last_column, df), transformation_model
 
@@ -341,14 +344,12 @@ class KGFarm:
             features = self.get_features(enrichment_info=enrichment_info, entity_df_columns=tuple(entity_df.columns),
                                          show_status=False)
             features = [feature.split(':')[-1] for feature in features]
-            if self.mode != 'Automatic':
-                print('Enriching {} with {} feature(s) {}'.format('entity_df', len(features), features))
+            print('Enriching {} with {} feature(s) {}'.format('entity_df', len(features), features))
         else:  # option selected from search_enrichment_options()
             entity_df = pd.read_csv(enrichment_info['Table_path'])
             features = self.get_features(enrichment_info=enrichment_info, entity_df=entity_df, show_status=False)
             features = [feature.split(':')[-1] for feature in features]
-            if self.mode != 'Automatic':
-                print('Enriching {} with {} feature(s) {}'.format(enrichment_info['Table'], len(features), features))
+            print('Enriching {} with {} feature(s) {}'.format(enrichment_info['Table'], len(features), features))
 
         source_table_id = search_entity_table(self.config, entity_df.columns)['Table_id'][
             0]  # needed to track tables after enrichment
@@ -395,8 +396,7 @@ class KGFarm:
     def __get_features(self, entity_df: pd.DataFrame, filtered_columns: list, show_query: bool = False):
         table_id = search_entity_table(self.config, list(entity_df.columns))
         if len(table_id) < 1:
-            if self.mode != 'Automatic':
-                print('Searching features for enriched dataframe\n')
+            print('Searching features for enriched dataframe\n')
             table_ids = self.__table_transformations.get(tuple(entity_df.columns))
             return [feature for feature in list(entity_df.columns) if feature not in
                     get_features_to_drop(self.config, table_ids[0], show_query)[
@@ -425,8 +425,7 @@ class KGFarm:
             if select_by == 'anova':
                 f_score = f_score.head(get_input())
                 independent_var = df[f_score['Feature']]  # features (X)
-                if self.mode != 'Automatic':
-                    print('Top {} feature(s) {} were selected based on highest F-value'.
+                print('Top {} feature(s) {} were selected based on highest F-value'.
                           format(len(independent_var.columns), list(independent_var.columns)))
                 return independent_var, dependent_var
             elif select_by == 'correlation':
@@ -450,8 +449,7 @@ class KGFarm:
                     or feature == 'event_timestamp':
                 df.drop(feature, axis=1, inplace=True)
 
-        if self.mode != 'Automatic':
-            print('Analyzing features')
+        print('Analyzing features')
         if plot_correlation:  # plot pearson correlation
             plt.rcParams['figure.dpi'] = 300
             corr = df.corr(method='pearson')
@@ -498,154 +496,25 @@ class KGFarm:
 
         elif select_by is None:  # select by pipelines
             X = entity_df[self.__get_features(entity_df=entity_df, filtered_columns=list(df.columns))]
-            if self.mode != 'Automatic':
-                print('{} feature(s) {} were selected based on previously abstracted pipelines'.format(len(X.columns),
+            print('{} feature(s) {} were selected based on previously abstracted pipelines'.format(len(X.columns),
                                                                                                        list(X.columns)))
             return X, y
 
-    def clean_data(self, entity_df: pd.DataFrame, technique: str = None, visualize_missing_data: bool = True,
-                   show_query: bool = False):
-
-        def get_columns_to_be_cleaned(df: pd.DataFrame):
-            for na_type in tqdm({'none', 'n/a', 'na', 'nan', 'missing', '?', '', ' '}):
-                if na_type in {'?', '', ' '}:
-                    df.replace(na_type, np.nan, inplace=True)
-                else:
-                    df.replace('(?i)' + na_type, np.nan, inplace=True, regex=True)
-
-            columns = pd.DataFrame(df.isnull().sum())
-            columns.columns = ['Missing values']
-            columns['Feature'] = columns.index
-            columns = columns[columns['Missing values'] > 0]
-            columns.sort_values(by='Missing values', ascending=False, inplace=True)
-            columns.reset_index(drop=True, inplace=True)
-            return columns
-
-        def plot_heat_map(df: pd.DataFrame):
-            plt.rcParams['figure.dpi'] = 300
-            plt.figure(figsize=(15, 7))
-            sns.heatmap(df.isnull(), yticklabels=False, cmap='Greens_r')
-            plt.show()
-
-        def plot_bar_graph(columns: pd.DataFrame):
-            if len(columns) == 0:
-                return
-            sns.set_color_codes('pastel')
-            plt.rcParams['figure.dpi'] = 300
-            plt.figure(figsize=(6, 3))
-
-            ax = sns.barplot(x="Feature", y="Missing values", data=columns,
-                             palette='Greens_r', edgecolor='gainsboro')
-            ax.bar_label(ax.containers[0], fontsize=6)
-
-            def change_width(axis, new_value):
-                for patch in axis.patches:
-                    current_width = patch.get_width()
-                    diff = current_width - new_value
-                    patch.set_width(new_value)
-                    patch.set_x(patch.get_x() + diff * .5)
-
-            change_width(ax, .20)
-            plt.grid(color='lightgray', axis='y')
-            plt.ylabel('Missing value', fontsize=5.5)
-            plt.xlabel('')
-            ax.tick_params(axis='both', which='major', labelsize=5.5)
-            ax.tick_params(axis='x', labelrotation=90, labelsize=5.5)
-            plt.show()
-
-        def handle_unseen_data(df: pd.DataFrame, columns_to_clean: pd.DataFrame):
-            columns = list(columns_to_clean['Feature'])
-            if technique == 'drop':
-                df.dropna(how='any', inplace=True)
-                df.reset_index(drop=True, inplace=True)
-                print(f'missing values from {columns} were dropped')
-                return df
-            elif technique == 'fill':
-                fill_value = input('Enter the value to fill the missing data ')
-                if fill_value not in {'mean', 'median', 'mode'}:  # fill constant value
-                    df.fillna(fill_value, inplace=True)
-                else:
-                    if fill_value == 'median':
-                        df.fillna(df.median(), inplace=True)
-                    elif fill_value == 'mean':
-                        df.fillna(df.mean(), inplace=True)
-                    else:
-                        def get_mode(feature: pd.Series):  # fill categorical data with mode
-                            return feature.mode()[0]
-
-                        for column in tqdm(columns):
-                            mode = get_mode(entity_df[column])
-                            entity_df[column].fillna(mode, inplace=True)
-
-                df.reset_index(drop=True, inplace=True)
-                print(f'missing values from {columns} were filled with {fill_value}')
-                return df
-            elif technique == 'interpolate':
-                try:
-                    df.interpolate(inplace=True)
-                    df.reset_index(drop=True, inplace=True)
-                    print(f'missing values from {columns} were interpolated')
-                except TypeError:
-                    print('only numerical features can be interpolated')
-                return df
+    @staticmethod
+    def get_columns_to_be_cleaned(df: pd.DataFrame):
+        for na_type in {'none', 'n/a', 'na', 'nan', 'missing', '?', '', ' '}:
+            if na_type in {'?', '', ' '}:
+                df.replace(na_type, np.nan, inplace=True)
             else:
-                if technique is None:
-                    raise ValueError(
-                        "pass cleaning technique, technique must be one out of 'drop', 'fill' or 'interpolate'")
-                if technique not in {'drop', 'fill', 'interpolate'}:
-                    raise ValueError("technique must be one out of 'drop', 'fill' or 'interpolate'")
+                df.replace('(?i)' + na_type, np.nan, inplace=True, regex=True)
 
-        columns_to_be_cleaned = get_columns_to_be_cleaned(entity_df)
-
-        if visualize_missing_data:
-            plot_heat_map(df=entity_df)
-            plot_bar_graph(columns=columns_to_be_cleaned)
-
-        if len(columns_to_be_cleaned) == 0:
-            if self.mode != 'Automatic':
-                print('nothing to clean')
-            return entity_df
-
-        table_id = search_entity_table(self.config, list(entity_df.columns))
-
-        if len(table_id) < 1:  # i.e. table not profiled
-            table_ids = self.__table_transformations.get(tuple(entity_df.columns))
-            if table_ids is None:
-                return handle_unseen_data(entity_df, columns_to_be_cleaned)
-
-            data_cleaning_info = pd.concat([get_data_cleaning_info(self.config,
-                                                                   table_id=table_ids[0], show_query=show_query),
-                                            get_data_cleaning_info(
-                                                self.config, table_id=table_ids[1], show_query=False)])
-        else:
-            data_cleaning_info = get_data_cleaning_info(self.config, table_id=table_id['Table_id'][0],
-                                                        show_query=False)
-
-        if len(data_cleaning_info) < 1:
-            print('No cleaning technique found.')
-            return entity_df
-
-        # TODO: provide support for dropna()
-        # TODO: handle all parameters and values
-        for cleaning_info in data_cleaning_info.to_dict('index').values():
-            function = cleaning_info['Function']
-            parameter = cleaning_info['Parameter']
-            value = cleaning_info['Value']
-
-            if 'pandas.DataFrame.fillna' == function:
-                entity_df.fillna(value, inplace=True)
-                if self.mode != 'Automatic':
-                    print("filled {} features using '{}' by {} = '{}'".format(len(columns_to_be_cleaned), function,
-                                                                              parameter, value))
-
-            elif 'pandas.DataFrame.interpolate' == function:
-                entity_df.interpolate(value, inplace=True)
-                if self.mode != 'Automatic':
-                    print(
-                        "interpolated {} features using '{}' by {} = '{}'".format(len(columns_to_be_cleaned), function,
-                                                                                  parameter, value))
-
-        return entity_df
+        columns = pd.DataFrame(df.isnull().sum())
+        columns.columns = ['Missing values']
+        columns['Feature'] = columns.index
+        columns = columns[columns['Missing values'] > 0]
+        columns.sort_values(by='Missing values', ascending=False, inplace=True)
+        columns.reset_index(drop=True, inplace=True)
+        return columns
 
     def recommend_cleaning_operations(self, entity_df: pd.DataFrame, visualize_missing_data: bool = True, top_k: int = 10,
                    show_query: bool = False):
@@ -654,21 +523,6 @@ class KGFarm:
         2. check if data is profiled or unseen
         3. if unseen align and query else query directly
         """
-        def get_columns_to_be_cleaned(df: pd.DataFrame):
-            print('scanning missing values')
-            for na_type in {'none', 'n/a', 'na', 'nan', 'missing', '?', '', ' '}:
-                if na_type in {'?', '', ' '}:
-                    df.replace(na_type, np.nan, inplace=True)
-                else:
-                    df.replace('(?i)' + na_type, np.nan, inplace=True, regex=True)
-
-            columns = pd.DataFrame(df.isnull().sum())
-            columns.columns = ['Missing values']
-            columns['Feature'] = columns.index
-            columns = columns[columns['Missing values'] > 0]
-            columns.sort_values(by='Missing values', ascending=False, inplace=True)
-            columns.reset_index(drop=True, inplace=True)
-            return columns
 
         def plot_heat_map(df: pd.DataFrame):
             plt.rcParams['figure.dpi'] = 300
@@ -716,9 +570,13 @@ class KGFarm:
                 return False
             return pd.concat(recommendations).reset_index(drop=True)
 
+        # TODO: fix and test formatting for interpolation
         def reformat_recommendations(df: pd.DataFrame):
             def format_columns(c: str):
-                return urllib.parse.unquote_plus(c).split('/')[-1]
+                if isinstance(c, str):
+                    return urllib.parse.unquote_plus(c).split('/')[-1]
+                else:
+                    return list(columns_to_be_cleaned['Feature'])
 
             df['Feature'] = df['Column_id'].apply(lambda x: format_columns(x))
             df = df.drop('Column_id', axis=1).dropna(how='any').reset_index(drop=True)
@@ -728,7 +586,10 @@ class KGFarm:
             parameters_per_pipeline = {}
             params = {}
             features = []
+
             for row_number, recommendation_info in df.to_dict('index').items():
+                if isinstance(recommendation_info['Feature'], list):
+                    continue
                 if pipeline == recommendation_info['Pipeline'] and operation == data_cleaning_operation_mapping.get(
                         recommendation_info['Function']):
                     params.update({recommendation_info['Feature']: recommendation_info['Value']})
@@ -790,24 +651,38 @@ class KGFarm:
                 updated_params.append(params)
 
             df['Parameters'] = updated_params
-            return df
+            return df.dropna(how='any').reset_index(drop=True)
 
-        columns_to_be_cleaned = get_columns_to_be_cleaned(entity_df)
+        print('scanning missing values')
+        columns_to_be_cleaned = self.get_columns_to_be_cleaned(entity_df)
 
         if visualize_missing_data:
             plot_heat_map(df=entity_df)
             plot_bar_graph(columns=columns_to_be_cleaned)
 
         if len(columns_to_be_cleaned) == 0:
-            if self.mode != 'Automatic':
-                print('nothing to clean')
+            print('nothing to clean')
             return entity_df
 
         table_id = self.__check_if_profiled(df=entity_df)
 
         if table_id is not False:  # seen data
-            data_cleaning_info = get_data_cleaning_info(self.config, table_id=table_id,
-                                                        show_query=False)
+            if isinstance(table_id, tuple):
+                recommendations_for_enriched_tables = []
+                for ids in table_id:
+                    recommendations_for_enriched_tables.append(get_data_cleaning_recommendation(self.config,
+                                                                       table_id=ids, show_query=show_query))
+                data_cleaning_info = pd.concat(recommendations_for_enriched_tables)
+
+            else:
+                data_cleaning_info = get_data_cleaning_recommendation(self.config, table_id=table_id,
+                                                        show_query=show_query)
+
+            # reformat seen cleaning info
+            data_cleaning_info['Parameters'] = data_cleaning_info.apply(lambda x: {x.Parameter: x.Value}, axis=1)
+            data_cleaning_info['Operation'] = data_cleaning_info['Function'].apply(lambda x: data_cleaning_operation_mapping.get(x))
+            data_cleaning_info['Feature'] = data_cleaning_info['Column_id'].apply(lambda x: list(columns_to_be_cleaned['Feature']))
+            data_cleaning_info = data_cleaning_info[['Operation', 'Feature', 'Parameters', 'Pipeline']]
             return data_cleaning_info
 
         elif table_id is False:  # unseen data
@@ -829,19 +704,82 @@ class KGFarm:
                 print('no recommendations, try using kgfarm.clean()')
                 return
             else:
-                df = reformat_recommendations(df=raw_recommendations)
-                if df.empty:
+                cleaning_recommendations = reformat_recommendations(df=raw_recommendations)
+                if cleaning_recommendations.empty:
                     print('no recommendations, try using kgfarm.clean()')
                     return
                 else:
-                    return df
+                    return cleaning_recommendations
 
-    @staticmethod
-    def clean(cleaning_info: pd.Series, entity_df: pd.DataFrame = pd.DataFrame):
+    def clean(self, entity_df: pd.DataFrame, cleaning_info: pd.Series = None, technique: str = None):
         """
         cleans entity_df from info coming from kgfarm.recommend_cleaning_operations
         """
-        print('Under construction')
+        def check_for_uncleaned_features(df: pd.DataFrame):  # clean by recommendations
+            uncleaned_features = list(self.get_columns_to_be_cleaned(df=df)['Feature'])
+            if len(uncleaned_features) == 0:
+                print('\nall features look clean')
+            else:
+                print(f'\n{uncleaned_features} are still uncleaned')
+
+        if cleaning_info is not None:
+            if cleaning_info['Operation'] == 'Fill missing values':
+                entity_df.fillna(cleaning_info['Parameters'], inplace=True)
+                print(f'filled missing values for {cleaning_info["Feature"]} feature(s)')
+            elif cleaning_info['Operation'] == 'Interpolate':
+                params = cleaning_info['Parameters']
+                method = params.get('method')
+                print(f'interpolated missing values for {cleaning_info["Feature"]} feature(s)')
+                entity_df.interpolate(method=method, inplace=True)
+            else:
+                features = list(cleaning_info['Feature'])
+                entity_df.dropna(subset=features, how='any', inplace=True)
+                print(f'dropped missing values for {cleaning_info["Feature"]} feature(s)')
+
+            check_for_uncleaned_features(df=entity_df)
+            return entity_df
+
+        elif technique is not None:  # clean by human-in-the-loop
+            columns = list(self.get_columns_to_be_cleaned(df=entity_df)['Feature'])
+            if technique == 'drop':
+                entity_df.dropna(how='any', inplace=True)
+                entity_df.reset_index(drop=True, inplace=True)
+                print(f'missing values from {columns} were dropped')
+                check_for_uncleaned_features(df=entity_df)
+                return entity_df
+            elif technique == 'fill':
+                fill_value = input("Enter the value to fill the missing data or 'mean', 'median', 'mode' to fill by statistics")
+                if fill_value not in {'mean', 'median', 'mode'}:  # fill constant value
+                    entity_df.fillna(fill_value, inplace=True)
+                else:
+                    if fill_value == 'median':
+                        entity_df.fillna(entity_df.median(), inplace=True)
+                    elif fill_value == 'mean':
+                        entity_df.fillna(entity_df.mean(), inplace=True)
+                    else:
+                        def get_mode(feature: pd.Series):  # fill categorical data with mode
+                            return feature.mode()[0]
+
+                        for column in tqdm(columns):
+                            mode = get_mode(entity_df[column])
+                            entity_df[column].fillna(mode, inplace=True)
+
+                entity_df.reset_index(drop=True, inplace=True)
+                print(f'missing values from {columns} were filled with {fill_value}')
+                check_for_uncleaned_features(df=entity_df)
+                return entity_df
+            elif technique == 'interpolate':
+                try:
+                    entity_df.interpolate(inplace=True)
+                    entity_df.reset_index(drop=True, inplace=True)
+                    print(f'missing values from {columns} were interpolated')
+                except TypeError:
+                    print('only numerical features can be interpolated')
+                check_for_uncleaned_features(df=entity_df)
+                return entity_df
+            else:
+                if technique not in {'drop', 'fill', 'interpolate'}:
+                    raise ValueError("technique must be one out of 'drop', 'fill' or 'interpolate'")
 
 
 # TODO: refactor (make a generic function to return enrich table_ids from self.__table_transformations)
