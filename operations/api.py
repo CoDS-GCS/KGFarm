@@ -18,7 +18,6 @@ from feature_discovery.src.graph_builder.governor import Governor
 from helpers.helper import connect_to_stardog
 from operations.template import *
 from operations.recommendation.recommender import Recommender
-from operations.recommendation.utils.transformation_mappings import transformation_mapping
 
 warnings.filterwarnings('ignore')
 pd.set_option('display.max_columns', None)
@@ -218,12 +217,51 @@ class KGFarm:
         return features
 
     # TODO: concrete set of ontology is required to know which columns are being dropped (user may drop features for transformations / other experiments)
-    def recommend_feature_transformations(self, entity_df: pd.DataFrame = None, show_metadata: bool = True,
+    def recommend_feature_transformations(self, entity_df: pd.DataFrame = None, show_metadata: bool = False,
                                           show_query: bool = False):
 
         # adds the transformation type mapping to the resultant recommendation dataframe
         def add_transformation_type(df):
-            df['Transformation_type'] = df['Transformation'].apply(lambda x: transformation_mapping.get(x))
+            if df.empty:
+                print('\nno recommendations found, did you clean your data?\n'
+                      'try using kgfarm.recommend_cleaning_operations()')
+                return
+
+            def get_transformation_technique(t, f):
+                if t == 'Ordinal encoding' and len(f) > 1:
+                    return 'OrdinalEncoder'
+                elif t == 'Ordinal encoding' and len(f) == 1:
+                    return 'LabelEncoder'
+                elif t == 'Scaling concerning outliers':
+                    return 'RobustScaler'
+                elif t == 'Normalization':
+                    return 'MinMaxScaler'
+                elif t == 'Scaling':
+                    return 'StandardScaler'
+                elif t == 'Nominal encoding':
+                    return 'OneHotEncoder'
+                elif t == 'Gaussian distribution':
+                    return 'PowerTransformer'
+
+            df['Transformation_type'] = df['Transformation']
+            df['Transformation'] = df.apply(lambda x: get_transformation_technique(x.Transformation, x.Feature), axis=1)
+
+            # TODO: fix this temporary hack
+            if None in list(transformation_info['Transformation']):
+                df['Transformation'] = df['Transformation_type']
+                for n_row, v in df.to_dict('index').items():
+                    if v['Transformation'] == 'OrdinalEncoder' or v['Transformation'] == 'LabelEncoder':
+                        df.loc[n_row, 'Transformation_type'] = 'Ordinal encoding'
+                    elif v['Transformation'] == 'RobustEncoder':
+                        df.loc[n_row, 'Transformation_type'] = 'Scaling concerning outliers'
+                    elif v['Transformation'] == 'MinMaxScaler':
+                        df.loc[n_row, 'Transformation_type'] = 'Normalization'
+                    elif v['Transformation'] == 'StandardScaler':
+                        df.loc[n_row, 'Transformation_type'] = 'Scaling'
+                    elif v['Transformation'] == 'OneHotEncoding':
+                        df.loc[n_row, 'Transformation_type'] = 'Nominal encoding'
+                    elif v['Transformation'] == 'PowerTransformer':
+                        df.loc[n_row, 'Transformation_type'] = 'Gaussian distribution'
             return df
 
         def handle_unseen_data():
@@ -287,7 +325,7 @@ class KGFarm:
         if entity_df is not None:
             table_ids = self.__table_transformations.get(tuple(entity_df.columns))
             if not table_ids:
-                print('Processing unseen entity_df')
+                print('Processing entity_df')
                 return handle_unseen_data()
 
             tables = list(map(lambda x: get_table_name(self.config, table_id=x), table_ids))

@@ -2,7 +2,6 @@ import json
 import os
 import warnings
 import joblib
-import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
@@ -47,12 +46,12 @@ class Recommender:
         # load profiles (based on feature-type) in self.profiles
         for profile in get_profiles():
             dtype = profile['dataType']
-            if 'N' in dtype and self.feature_type == 'numeric':
-                self.profiles['http://kglids.org/resource/' + profile['column_id']] = {'dtype': 'numeric',
+            if 'N' in dtype and self.feature_type == 'numerical':
+                self.profiles['http://kglids.org/resource/' + profile['column_id']] = {'dtype': 'numerical',
                                                                                        'embeddings': profile[
                                                                                            'deep_embedding']}
-            elif 'T' in dtype and self.feature_type == 'string':
-                self.profiles['http://kglids.org/resource/' + profile['column_id']] = {'dtype': 'string',
+            elif 'T' in dtype and self.feature_type == 'categorical':
+                self.profiles['http://kglids.org/resource/' + profile['column_id']] = {'dtype': 'categorical',
                                                                                        'embeddings': profile['minhash']}
         print('{} {} profiles loaded.'.format(len(self.profiles), self.feature_type))
 
@@ -68,7 +67,7 @@ class Recommender:
 
         # add untransformed columns to modeling data
         transformed_columns = set(list(self.modeling_data['Column_id']))
-        for column, profile in tqdm(self.profiles.items()):
+        for column, profile in self.profiles.items():
             if column not in transformed_columns:
                 self.modeling_data = self.modeling_data.append({'Transformation': 'Negative', 'Column_id': column,
                                                                 'Data_type': self.feature_type,
@@ -80,33 +79,28 @@ class Recommender:
 
     def prepare(self, plot: bool = True, save: bool = True):
 
-        def clean():
-            for index, row in self.modeling_data.to_dict('index').items():
+        def pre_process_and_clean():
+            for index, row in tqdm(self.modeling_data.to_dict('index').items()):
                 """
                 Remove record if:
                 1. Embeddings / Word embeddings not found
                 2. Embeddings are incorrect
-                3. Any scaling technique is used for string/categorical features
+                3. Any scaling technique is used for categorical features
+                and 
+                Re-map transformations
                 """
                 if not row['Embeddings'] or \
                         row['Embeddings'][:10] == [-1] * 10 or \
-                        ('Scaler' in row['Transformation'] and self.feature_type == 'string') or \
-                        row['Word_embedding'] is None:
+                        ('Scaler' in row['Transformation'] and self.feature_type == 'categorical') or \
+                        row['Word_embedding'] is None or \
+                        row['Transformation'] not in transformation_mapping.get(self.feature_type):
                     self.modeling_data.drop(index=index, inplace=True)
-
+                else:
+                    self.modeling_data.loc[index, 'Transformation'] = transformation_mapping.get(self.feature_type).get(row['Transformation'])
             self.modeling_data.drop(['Column_id', 'Data_type'], axis=1, inplace=True)
 
-        # def balance():  # take as many non-transformed samples as the most used of transformation technique
-        #     transformation_statistics = self.modeling_data['Transformation'].value_counts()
-        #     transformation_counts = list(transformation_statistics)
-        #     transformation_counts.sort(reverse=True)
-        #     n = transformation_statistics['Negative'] - transformation_counts[1]
-        #     drop = np.random.choice(self.modeling_data[self.modeling_data['Transformation'] == 'Negative'].index,
-        #                             size=n, replace=False)
-        #     self.modeling_data = self.modeling_data.drop(drop)
-
         def plot_class_distribution():
-            plt.rcParams['figure.dpi'] = 200
+            plt.rcParams['figure.dpi'] = 300
             sns.set_style('dark')
             fig, ax = plt.subplots(figsize=(8.5, 5))
             sns.countplot(x='Transformation', data=self.modeling_data, palette="Greens_r",
@@ -123,8 +117,8 @@ class Recommender:
                     patch.set_width(new_value)
                     patch.set_x(patch.get_x() + diff * .5)
 
-            change_width(ax, .65)
-            ax.tick_params(axis='x', labelrotation=55, labelsize=9)
+            change_width(ax, .35)
+            ax.tick_params(axis='x', labelsize=9, rotation=35)
             fig.tight_layout()
             plt.show()
 
@@ -139,8 +133,8 @@ class Recommender:
             embedding.extend(rows['Word_embedding'])
             return embedding
 
-        clean()
-        # balance()
+        pre_process_and_clean()
+        print(pd.DataFrame(self.modeling_data['Transformation'].value_counts()))
 
         # concatenate embeddings (column + word-embeddings)
         self.modeling_data['Embeddings'] = self.modeling_data.apply(concatenate_embeddings, axis=1)
@@ -157,7 +151,7 @@ class Recommender:
 
     def define(self):
         self.classifier = RandomForestClassifier()
-        hyperparameters = {'n_estimators': [100, 200]}
+        hyperparameters = {'n_estimators': [100, 200, 300]}
         return hyperparameters
 
     def train_test_evaluate(self, parameters: dict, tune: bool = False):
@@ -180,8 +174,8 @@ class Recommender:
         y = self.modeling_data['Transformation']
 
         # Nested CV with parameter optimization
-        inner_cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=0)
-        outer_cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=0)
+        inner_cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
+        outer_cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
 
         if tune:
             optimize()  # Hyperparameter optimization (using nested CV to prevent leakage)
@@ -194,26 +188,48 @@ class Recommender:
                                      labels=self.encoder.transform(list(self.transformations)),
                                      target_names=list(self.transformations))
 
-    def save(self, scores: str, cache: bool = True):
+    def save(self, scores: str, export: bool = True):
         print(scores)
-        if cache:
-            if not os.path.exists('cache'):
-                os.mkdir('cache')
-            joblib.dump(self.encoder, 'cache/encoder_{}.pkl'.format(self.feature_type), compress=9)
+        if export:
+            if not os.path.exists('out'):
+                os.mkdir('out')
+            joblib.dump(self.encoder, 'out/encoder_{}.pkl'.format(self.feature_type), compress=9)
             print('model saved transformation_recommender_{}.pkl'.format(self.feature_type))
-            joblib.dump(self.classifier, 'cache/transformation_recommender_{}.pkl'.format(self.feature_type),
+            joblib.dump(self.classifier, 'out/transformation_recommender_{}.pkl'.format(self.feature_type),
                         compress=9)
 
 
 def build():
     # TODO: plot all metrics for both feature types
-    for feature_type in ['string', 'numeric']:
+    for feature_type in ['categorical', 'numerical']:
         recommender = Recommender(feature_type=feature_type)
         recommender.generate_modeling_data()
-        recommender.prepare(plot=True, save=False)
-        # recommender.save(scores=recommender.train_test_evaluate(parameters=recommender.define(), tune=False),
-        #                  cache=False)
+        recommender.prepare(plot=False, save=False)
+        recommender.save(scores=recommender.train_test_evaluate(parameters=recommender.define(), tune=False),
+                         export=True)
     print('done.')
+
+
+transformation_mapping = {'categorical':
+                              {'LabelEncoder': 'Ordinal encoding',
+                               'LabelBinarizer': 'Nominal encoding',
+                               'OrdinalEncoder': 'Ordinal encoding',
+                               'OneHotEncoder': 'Nominal encoding',
+                               'label_binarize': 'Nominal encoding'},
+                          'numerical':
+                              {'StandardScaler': 'Scaling',
+                               'scale': 'Scaling',
+                               'MinMaxScaler': 'Normalization',
+                               'normalize': 'Normalization',
+                               'Normalizer': 'Normalization',
+                               'minmax_scale': 'Normalization',
+                               'RobustScaler': 'Scaling concerning outliers',
+                               'robust_scale': 'Scaling concerning outliers',
+                               'PowerTransformer': 'Gaussian distribution',
+                               'power_transform': 'Gaussian distribution',
+                                'LabelEncoder': 'Ordinal encoding',
+                               'OrdinalEncoder': 'Ordinal encoding',
+                               'OneHotEncoder': 'Nominal encoding'}}
 
 
 if __name__ == '__main__':

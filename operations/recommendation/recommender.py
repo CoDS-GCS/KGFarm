@@ -13,17 +13,19 @@ from operations.recommendation.utils.column_embeddings import load_numeric_embed
 class Recommender:
     def __init__(self):
         self.numeric_transformation_recommender = joblib.load(
-            'operations/recommendation/utils/models/transformation_recommender_numeric.pkl')
+            'operations/recommendation/utils/models/transformation_recommender_numerical.pkl')
         self.categorical_transformation_recommender = joblib.load(
-            'operations/recommendation/utils/models/transformation_recommender_string.pkl')
-        self.numeric_encoder = joblib.load('operations/recommendation/utils/models/encoder_numeric.pkl')
-        self.categorical_encoder = joblib.load('operations/recommendation/utils/models/encoder_string.pkl')
+            'operations/recommendation/utils/models/transformation_recommender_categorical.pkl')
+        self.numeric_encoder = joblib.load('operations/recommendation/utils/models/encoder_numerical.pkl')
+        self.categorical_encoder = joblib.load('operations/recommendation/utils/models/encoder_categorical.pkl')
         self.numeric_embedding_model = load_numeric_embedding_model()
         self.categorical_embedding_model = MinHash(num_perm=512)
         self.word_embedding = WordEmbedding(
             'feature_discovery/src/recommender/utils/glove_embeddings/glove.6B.100d.pickle')
         self.embeddings = Embeddings('operations/storage/embedding_store/embeddings_120K.pickle')  # column embeddings, ~120k column profile embeddings, solves cold start
         self.auto_insight_report = dict()
+        self.categorical_thresh = 0.85
+        self.numerical_thresh = 0.65
 
     def __compute_content_embeddings(self, entity_df: pd.DataFrame):  # DDE for numeric columns, Minhash for string columns
         numeric_column_embeddings = {}
@@ -62,19 +64,29 @@ class Recommender:
         def classify_numeric_transformation(numeric_column_embeddings: dict, word_embeddings: dict):
             for column, embedding in numeric_column_embeddings.items():
                 embedding.extend(word_embeddings.get(column))
-                predicted_transformation = self.numeric_encoder. \
-                    inverse_transform(np.array(self.numeric_transformation_recommender. \
-                                               predict(np.array(embedding).reshape(1, -1))[0]).reshape(1, -1))[0]
+                probability = self.numeric_transformation_recommender.predict_proba(np.array(embedding).
+                                                                                    reshape(1, -1))[0]
+                if max(probability) >= self.numerical_thresh:
+                    predicted_transformation = self.numeric_encoder. \
+                        inverse_transform(np.array(self.numeric_transformation_recommender. \
+                                                   predict(np.array(embedding).reshape(1, -1))[0]).reshape(1, -1))[0]
+                else:
+                    predicted_transformation = 'Negative'
                 transformation_info[column] = predicted_transformation
-                if predicted_transformation == 'LabelEncoder' or predicted_transformation == 'OneHotEncoder':
+                if predicted_transformation == 'Nominal encoding' or predicted_transformation == 'Ordinal encoding':
                     self.auto_insight_report[column] = predicted_transformation
 
         def classify_categorical_transformation(categorical_column_embeddings: dict, word_embeddings: dict):
             for column, embedding in categorical_column_embeddings.items():
                 embedding.extend(word_embeddings.get(column))
-                predicted_transformation = self.categorical_encoder. \
-                    inverse_transform(np.array(self.categorical_transformation_recommender. \
+                probability = self.categorical_transformation_recommender.predict_proba(np.array(embedding).
+                                                                                        reshape(1, -1))[0]
+                if max(probability) >= self.categorical_thresh:
+                    predicted_transformation = self.categorical_encoder. \
+                        inverse_transform(np.array(self.categorical_transformation_recommender. \
                                                predict(np.array(embedding).reshape(1, -1))[0]).reshape(1, -1))[0]
+                else:
+                    predicted_transformation = 'Negative'
                 transformation_info[column] = predicted_transformation
 
         def reformat(df):
@@ -116,7 +128,7 @@ class Recommender:
             print('• Insights about your entity_df:')
             insight_n = 1
             for column, transformation in self.auto_insight_report.items():
-                print('\t{}. {} (a numeric column) looks like a categorical feature'.format(insight_n, column))
+                print(f'{insight_n}. {column} is a numeric column that looks like a categorical feature')
                 insight_n = insight_n + 1
 
         numeric_embeddings, string_embeddings = self.__compute_content_embeddings(entity_df=entity_df)
