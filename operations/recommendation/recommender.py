@@ -24,7 +24,7 @@ class Recommender:
             'feature_discovery/src/recommender/utils/glove_embeddings/glove.6B.100d.pickle')
         self.embeddings = Embeddings('operations/storage/embedding_store/embeddings_120K.pickle')  # column embeddings, ~120k column profile embeddings, solves cold start
         self.auto_insight_report = dict()
-        self.categorical_thresh = 0.85
+        self.categorical_thresh = 0.90
         self.numerical_thresh = 0.65
 
     def __compute_content_embeddings(self, entity_df: pd.DataFrame):  # DDE for numeric columns, Minhash for string columns
@@ -66,6 +66,7 @@ class Recommender:
                 embedding.extend(word_embeddings.get(column))
                 probability = self.numeric_transformation_recommender.predict_proba(np.array(embedding).
                                                                                     reshape(1, -1))[0]
+                # print(f'{column} - {probability}')
                 if max(probability) >= self.numerical_thresh:
                     predicted_transformation = self.numeric_encoder. \
                         inverse_transform(np.array(self.numeric_transformation_recommender. \
@@ -81,6 +82,7 @@ class Recommender:
                 embedding.extend(word_embeddings.get(column))
                 probability = self.categorical_transformation_recommender.predict_proba(np.array(embedding).
                                                                                         reshape(1, -1))[0]
+                # print(f'{column} - {probability}')
                 if max(probability) >= self.categorical_thresh:
                     predicted_transformation = self.categorical_encoder. \
                         inverse_transform(np.array(self.categorical_transformation_recommender. \

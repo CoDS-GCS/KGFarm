@@ -1,6 +1,5 @@
 import os
 import copy
-import sklearn
 import datetime
 import warnings
 import numpy as np
@@ -364,11 +363,21 @@ class KGFarm:
                     transformation) + \
                 'Use the transformation_model returned from this api to transform test set independently.\n')
             print('Applying StandardScaler transformation')
-            try:
-                transformation_model = StandardScaler(copy=False)
-                df[features] = transformation_model.fit_transform(df[features])
-            except sklearn.exceptions:
-                print("{} couldn't be transformed".format(transformation_info['Table']))
+            transformation_model = StandardScaler(copy=False)
+            df[features] = transformation_model.fit_transform(df[features])
+        elif transformation == 'OrdinalEncoder':
+            print('Applying OrdinalEncoder transformation')
+            transformation_model = OrdinalEncoder()
+            transformation_model.fit_transform(df[features])
+            df[features] = transformation_model.fit_transform(df[features])
+        elif transformation == 'MinMaxScaler':
+            print('Applying MinMaxScaler transformation')
+            transformation_model = MinMaxScaler()
+            df[features] = transformation_model.fit_transform(df[features])
+        elif transformation == 'OneHotEncoder':
+            print('Applying OneHotEncoder transformation')
+            transformation_model = OneHotEncoder(handle_unknown='ignore')
+            df[features] = transformation_model.fit_transform(df[features])
         else:
             print(transformation, 'not supported yet!')
             return
