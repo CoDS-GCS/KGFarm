@@ -156,8 +156,20 @@ class KGFarm:
         self.governor.update_entity(entity_to_update_info)
         return self.get_feature_views(message_status=False)
 
-    def search_entity(self, entity_name: str, show_query: bool = False):
-        return search_entity(self.config, entity_name, show_query)
+    def identify_features(self, entity: str, target: str, show_query: bool = False):
+        feature_identification_info = identify_features(self.config, entity, target, show_query)
+        feature_identification_info['Features'] = feature_identification_info.apply(lambda x:
+                                get_columns(self.config, table=x.Physical_table, dataset=x.Dataset), axis=1)
+
+        for index, value in feature_identification_info.to_dict('index').items():
+            features = []
+            for feature_name in value['Features']:
+                if entity not in feature_name and target not in feature_name and feature_name != 'event_timestamp':
+                    features.append(feature_name)
+            feature_identification_info.at[index, 'Features'] = features
+
+        return feature_identification_info[['Entity', 'Physical_representation', 'Features', 'Feature_view',
+       'Physical_table', 'Number_of_rows', 'File_source']]
 
     def search_enrichment_options(self, entity_df: pd.DataFrame = None, show_query: bool = False):
         # TODO: support for multiple entities.
@@ -338,7 +350,7 @@ class KGFarm:
                 return transformation_info
 
             transformation_info = transformation_info.reset_index(drop=True)
-            transformation_info.drop(['Dataset', 'Written_on', 'Pipeline_url', 'Dataset', 'Author', 'Table'],
+            transformation_info.drop(['Dataset', 'Dataset', 'Table'],
                                      axis=1, inplace=True)
         return add_transformation_type(transformation_info)
 
@@ -385,7 +397,7 @@ class KGFarm:
 
         return self.__re_arrange_columns(last_column, df), transformation_model
 
-    def enrich(self, enrichment_info: pd.Series, entity_df: pd.DataFrame = None, ttl: int = 10):
+    def enrich(self, enrichment_info: pd.Series, entity_df: pd.DataFrame = None, freshness: int = 10):
         if entity_df is not None:  # entity_df passed by the user
             # get features to be enriched with
             features = self.get_features(enrichment_info=enrichment_info, entity_df_columns=tuple(entity_df.columns),
@@ -416,10 +428,10 @@ class KGFarm:
             """
             delete record if the following either of the following 2 conditions were violated:
             1. Timestamp of entity < Timestamp of feature view or
-            2. Timestamp of entity - ttl > timestamp of feature view 
+            2. Timestamp of entity - freshness > timestamp of feature view 
             """
             if timestamp_entity < timestamp_feature_view or timestamp_entity - timedelta(
-                    days=ttl) > timestamp_feature_view:
+                    days=freshness) > timestamp_feature_view:
                 enriched_df.drop(index=row, axis=0, inplace=True)
 
         enriched_df.drop('event_timestamp_y', axis=1, inplace=True)

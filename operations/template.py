@@ -290,23 +290,30 @@ def is_entity_column(config, feature, dependent_variable):
     return execute_query(config, query, return_type='ask')
 
 
-def search_entity(config, entity_name, show_query):
+def identify_features(config, entity_name, target_name, show_query):
     query = """
-    SELECT DISTINCT ?Entity ?Physical_representation ?Feature_view ?Physical_table ?Number_of_rows ?File_source
+    SELECT DISTINCT ?Entity ?Feature ?Physical_representation ?Feature_view ?Physical_table ?Number_of_rows ?File_source ?Dataset
     WHERE
     {
         ?Column_id  entity:name             ?Entity                     ;  
                     schema:name             ?Physical_representation    ;  
                     kglids:isPartOf         ?Table_id                   ;
                     data:hasTotalValueCount ?Number_of_rows             .               
-         
+            
         ?Table_id   schema:name             ?Physical_table             ;
                     featureView:name        ?Feature_view               ;
-                    data:hasFilePath        ?File_source                .
-    
+                    data:hasFilePath        ?File_source                ;
+                    kglids:isPartOf         ?Dataset_id                 .
+        
+        ?Feature_id kglids:isPartOf         ?Table_id                   ;
+                    schema:name             ?Feature                    .
+                    
+        ?Dataset_id schema:name             ?Dataset                    .
+        
         # search entity
-        FILTER regex(str(?Entity), "%s", "i") # ignore case sensitivity
-    } ORDER BY DESC(?Number_of_rows)""" % entity_name
+        FILTER regex(str(?Entity), "%s", "i")    # 'i' ignore case sensitivity
+        FILTER regex(str(?Feature), "%s", "i")   # 'i' ignore case sensitivity
+    } ORDER BY DESC(?Number_of_rows)""" % (entity_name, target_name)
     if show_query:
         display_query(query)
     return execute_query(config, query)

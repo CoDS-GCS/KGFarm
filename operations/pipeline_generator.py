@@ -32,7 +32,7 @@ class PipelineGenerator:
             self.cells.append(nbf.v4.new_code_cell(info))
 
     def __print_dataframe(self):
-        code = """entity_df = pd.read_csv(entity_info.iloc[0].File_source)\nprint(entity_info.iloc[0].Physical_table)\nentity_df"""
+        code = """entity_df = pd.read_csv(feature_info.iloc[0].File_source)\nprint(feature_info.iloc[0].Physical_table)\nentity_df"""
         self.__add(code)
 
     def add_documentation(self):
@@ -63,19 +63,19 @@ class PipelineGenerator:
         code = """import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier\nfrom sklearn.naive_bayes import GaussianNB\nfrom sklearn.metrics import f1_score"""
         self.__add(code)
 
-    def search_entity(self, entity_name: str):
-        entity_info = self.kgfarm.search_entity(entity_name=entity_name)
-        print('• searching for entity', end=' ')
-        if len(entity_info):
+    def identify_features(self, entity_name: str, target_name: str):
+        feature_info = self.kgfarm.identify_features(entity=entity_name, target=target_name)
+        print(f'• identifying features for {entity_name}', end=' ')
+        if len(feature_info):
             print('done.')
-            code = """entity_info = kgfarm.search_entity('{}')\nentity_info""".format(entity_name)
+            code = f"""feature_info = kgfarm.identify_features(entity='{entity_name}', target='{target_name}')\nfeature_info"""
             self.__add(code)
             self.__print_dataframe()
-        return entity_info
+        return feature_info
 
-    def search_enrichment_options(self, entity_info: pd.DataFrame):
+    def search_enrichment_options(self, feature_info: pd.DataFrame):
         print('• attempting to enrich data (via point-in-time correct join)', end=' ')
-        entity_df = pd.read_csv(entity_info.iloc[0].File_source)
+        entity_df = pd.read_csv(feature_info.iloc[0].File_source)
         enrichment_info = self.kgfarm.search_enrichment_options(entity_df=entity_df)
         if len(enrichment_info):
             code = """enrichment_info = kgfarm.search_enrichment_options(entity_df)\nenrichment_info"""
@@ -86,7 +86,7 @@ class PipelineGenerator:
         entity_df = self.kgfarm.enrich(enrichment_info=enrich_info[0].iloc[0], entity_df=enrich_info[1])
         if len(entity_df):
             print('done.')
-            code = """entity_df = kgfarm.enrich(enrichment_info.iloc[0], entity_df, ttl=10)\nentity_df"""
+            code = """entity_df = kgfarm.enrich(enrichment_info.iloc[0], entity_df)\nentity_df"""
             self.__add(code)
         return entity_df
 
@@ -129,11 +129,9 @@ class PipelineGenerator:
                     format(transformation)
             code = code + """entity_df"""
             self.__add(code)
-        return enrich_df, list(enrich_df.columns)[-1]
+        return enrich_df
 
-    def select_features(self, selection_info: tuple):
-        entity_df = selection_info[0]
-        dependent_variable = selection_info[1]
+    def select_features(self, entity_df: pd.DataFrame, dependent_variable: str):
         print('• selecting features', end=' ')
         X, y = self.kgfarm.select_features(entity_df=entity_df, dependent_variable=dependent_variable,
                                            plot_correlation=False, plot_anova_test=False)
@@ -195,7 +193,7 @@ class PipelineGenerator:
         print('model saved at {}'.format(os.getcwd()+'/operations/out/models/f1-{}.pkl'.format(f1)))
 
 
-def run(pipeline_name, ml_task: str, entity_name: str):
+def run(pipeline_name, ml_task: str, entity_name: str, target_name: str):
     if pipeline_name is None:
         pipeline_name = 'my_pipeline'
     pipeline_generator = PipelineGenerator(pipeline_name=pipeline_name)
@@ -212,15 +210,15 @@ def run(pipeline_name, ml_task: str, entity_name: str):
                      pipeline_generator.evaluate_model(
                          evaluation_info=pipeline_generator.train_model(
                              machine_learning_problem=ml_task, data=pipeline_generator.split_data(
-                                data=pipeline_generator.select_features(
-                                    selection_info=pipeline_generator.apply_transformations(
+                                data=pipeline_generator.select_features(dependent_variable=target_name,
+                                    entity_df=pipeline_generator.apply_transformations(
                                         transformation_info=pipeline_generator.search_transformations(
                                             entity_df=pipeline_generator.clean(
                                                 cleaning_info=pipeline_generator.search_data_cleaning_operations(
                                                     entity_df=pipeline_generator.enrich(
                                                     enrich_info=pipeline_generator.search_enrichment_options(
-                                                        entity_info=pipeline_generator.search_entity(
-                                                            entity_name=entity_name)))))))))))])]
+                                                        feature_info=pipeline_generator.identify_features(
+                                                            entity_name=entity_name, target_name=target_name)))))))))))])]
     pipeline_generator.write_to_notebook(time_taken(start, time.time()))
     print('Done in ', time_taken(start, time.time()))
 
@@ -231,11 +229,14 @@ if __name__ == "__main__":
     ap.add_argument('-pipeline', '--pipeline', required=False,
                     help='name of your new pipeline')
     ap.add_argument('-task', '--task', required=True,
-                    help='classification, regression , clustering, etc.')
+                    help='classification, regression, etc.')
     ap.add_argument('-entity', '--entity', required=True,
                     help='entity associated with the task')
+    ap.add_argument('-target', '--target', required=True,
+                    help='target i.e. the dependent variable')
     args = vars(ap.parse_args())
     pipeline = args['pipeline']
     task = args['task']
     entity = args['entity']
-    run(pipeline, task, entity)
+    target = args['target']
+    run(pipeline, task, entity, target)
