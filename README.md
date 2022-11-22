@@ -52,7 +52,7 @@ generates [<code>Farm.ttl</code>](feature_discovery/src/graph_builder/Farm.ttl) 
 cd feature_discovery/src/graph_builder
 python build.py -db Database
 ```
-4. Start using KGFarm APIs (checkout [<code>KGFarm_notebook.ipynb</code>](KGFarm_notebook.ipynb))
+4. Start using KGFarm APIs (checkout [<code>KGFarm Demo.ipynb</code>](KGFarm Demo.ipynb))
 
 ## 🚧 Roadmap
 - <b>List of deliverables for KGFarm v0.1</b> [🔗](https://docs.google.com/document/d/1wy0ZrcUx_d_HeQoy6WMa74KXf9hvv19DTN2wTY5xkOc/edit?usp=sharing)
