@@ -50,9 +50,9 @@ generates [<code>Farm.ttl</code>](feature_discovery/src/graph_builder/Farm.ttl) 
 
 ```bash
 cd feature_discovery/src/graph_builder
-python build.py -db Database
+python build.py -db Databaseg
 ```
-4. Start using KGFarm APIs (checkout [<code>KGFarm Demo.ipynb</code>](KGFarm Demo.ipynb))
+4. Start using KGFarm APIs (checkout [<code>KGFarm_demo.ipynb</code>](KGFarm_demo.ipynb))
 
 ## 🚧 Roadmap
 - <b>List of deliverables for KGFarm v0.1</b> [🔗](https://docs.google.com/document/d/1wy0ZrcUx_d_HeQoy6WMa74KXf9hvv19DTN2wTY5xkOc/edit?usp=sharing)
