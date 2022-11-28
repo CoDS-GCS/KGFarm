@@ -2,16 +2,17 @@ import json
 import os
 import warnings
 import joblib
+import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import StratifiedKFold, cross_val_score, GridSearchCV
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import classification_report, make_scorer
 from helpers.helper import connect_to_stardog
-from word_embeddings import WordEmbedding
+# from word_embeddings import WordEmbedding
 from operations.template import get_transformations_on_columns
 
 warnings.filterwarnings('ignore')
@@ -28,7 +29,7 @@ class Recommender:
         self.metadata = metadata
         self.config = connect_to_stardog(port, database, show_connection_status)
         self.profiles = dict()  # column_id -> {column embeddings, column datatype}
-        self.word_embedding_model = WordEmbedding()
+        # self.word_embedding_model = WordEmbedding()
         self.transformations = set()
         self.encoder = LabelEncoder()
         self.classifier = None
@@ -74,10 +75,10 @@ class Recommender:
                                                                 'Embeddings': profile['embeddings']}, ignore_index=True)
 
         # add column word-embeddings to modeling data
-        self.modeling_data['Word_embedding'] = self.modeling_data['Column_id'].apply(
-            lambda x: self.word_embedding_model.get_embeddings(x))
+        # self.modeling_data['Word_embedding'] = self.modeling_data['Column_id'].apply(
+        #     lambda x: self.word_embedding_model.get_embeddings(x))
 
-    def prepare(self, plot: bool = True, save: bool = True):
+    def prepare(self, plot: bool = True, save: bool = True, balance: bool = True):
 
         def pre_process_and_clean():
             for index, row in tqdm(self.modeling_data.to_dict('index').items()):
@@ -92,11 +93,13 @@ class Recommender:
                 if not row['Embeddings'] or \
                         row['Embeddings'][:10] == [-1] * 10 or \
                         ('Scaler' in row['Transformation'] and self.feature_type == 'categorical') or \
-                        row['Word_embedding'] is None or \
                         row['Transformation'] not in transformation_mapping.get(self.feature_type):
                     self.modeling_data.drop(index=index, inplace=True)
                 else:
-                    self.modeling_data.loc[index, 'Transformation'] = transformation_mapping.get(self.feature_type).get(row['Transformation'])
+                    self.modeling_data.loc[index, 'Transformation'] = transformation_mapping.get(self.feature_type).get(
+                        row['Transformation'])
+
+            # self.modeling_data.to_csv('modeling_data_{}.csv'.format(self.feature_type), index=False)
             self.modeling_data.drop(['Column_id', 'Data_type'], axis=1, inplace=True)
 
         def plot_class_distribution():
@@ -127,31 +130,59 @@ class Recommender:
             # convert transformations
             self.modeling_data['Transformation'] = self.encoder.fit_transform(self.modeling_data['Transformation'])
 
+        def balance_classes():
+            transformation_statistics = self.modeling_data['Transformation'].value_counts()
+            transformation_statistics = dict(transformation_statistics)
+            lowest_occurring_transformation = min(transformation_statistics, key=transformation_statistics.get)
+            np.random.seed(1)
+            for transformation_class in transformation_statistics.keys():
+                if transformation_class != lowest_occurring_transformation:
+                    drop = np.random.choice(
+                        self.modeling_data[self.modeling_data['Transformation'] == transformation_class].index,
+                        size=transformation_statistics.get(transformation_class)-transformation_statistics.
+                        get(lowest_occurring_transformation), replace=False)
+                    self.modeling_data.drop(drop, inplace=True)
+
+        """
         def concatenate_embeddings(rows):
             embedding = []
             embedding.extend(rows['Embeddings'])
             embedding.extend(rows['Word_embedding'])
             return embedding
+        """
 
         pre_process_and_clean()
-        print(pd.DataFrame(self.modeling_data['Transformation'].value_counts()))
 
-        # concatenate embeddings (column + word-embeddings)
+        if balance and self.feature_type == 'numerical':
+            balance_classes()
+
+        print(f"Class distribution: {pd.DataFrame(self.modeling_data['Transformation'].value_counts())}")
+
+        """
+        concatenate embeddings (column + word-embeddings)
         self.modeling_data['Embeddings'] = self.modeling_data.apply(concatenate_embeddings, axis=1)
         self.modeling_data.drop('Word_embedding', axis=1, inplace=True)
+        """
+
         self.transformations = set(list(self.modeling_data['Transformation']))
 
         if plot:
             plot_class_distribution()
+
         transform()
 
         print(f'{self.feature_type}: {len(self.modeling_data)}')
+
         if save:
             self.modeling_data.to_csv('modeling_data_{}.csv'.format(self.feature_type), index=False)
 
     def define(self):
-        self.classifier = RandomForestClassifier()
-        hyperparameters = {'n_estimators': [100, 200, 300]}
+        self.classifier = MLPClassifier(max_iter=10, activation='relu', solver='adam', learning_rate='adaptive')
+        hyperparameters = {'hidden_layer_sizes': [(50, 50, 50), (50, 100, 50), (100,)],
+                           'activation': ['tanh', 'relu'],
+                           'solver': ['sgd', 'adam'],
+                           'alpha': [0.0001, 0.05],
+                           'learning_rate': ['constant', 'adaptive']}
         return hyperparameters
 
     def train_test_evaluate(self, parameters: dict, tune: bool = False):
@@ -199,17 +230,6 @@ class Recommender:
                         compress=9)
 
 
-def build():
-    # TODO: plot all metrics for both feature types
-    for feature_type in ['categorical', 'numerical']:
-        recommender = Recommender(feature_type=feature_type)
-        recommender.generate_modeling_data()
-        recommender.prepare(plot=False, save=False)
-        recommender.save(scores=recommender.train_test_evaluate(parameters=recommender.define(), tune=False),
-                         export=True)
-    print('done.')
-
-
 transformation_mapping = {'categorical':
                               {'LabelEncoder': 'Ordinal encoding',
                                'LabelBinarizer': 'Nominal encoding',
@@ -227,9 +247,20 @@ transformation_mapping = {'categorical':
                                'robust_scale': 'Scaling concerning outliers',
                                'PowerTransformer': 'Gaussian distribution',
                                'power_transform': 'Gaussian distribution',
-                                'LabelEncoder': 'Ordinal encoding',
+                               'LabelEncoder': 'Ordinal encoding',
                                'OrdinalEncoder': 'Ordinal encoding',
                                'OneHotEncoder': 'Nominal encoding'}}
+
+
+def build():
+    # TODO: plot all metrics for both feature types
+    for feature_type in ['categorical', 'numerical']:
+        recommender = Recommender(feature_type=feature_type)
+        recommender.generate_modeling_data()
+        recommender.prepare(plot=True, save=True, balance=False)
+        recommender.save(scores=recommender.train_test_evaluate(parameters=recommender.define(), tune=False),
+                         export=True)
+    print('done.')
 
 
 if __name__ == '__main__':

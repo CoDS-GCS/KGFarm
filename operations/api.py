@@ -159,7 +159,10 @@ class KGFarm:
     def identify_features(self, entity: str, target: str, show_query: bool = False):
         feature_identification_info = identify_features(self.config, entity, target, show_query)
         feature_identification_info['Features'] = feature_identification_info.apply(lambda x:
-                                get_columns(self.config, table=x.Physical_table, dataset=x.Dataset), axis=1)
+                                                                                    get_columns(self.config,
+                                                                                                table=x.Physical_table,
+                                                                                                dataset=x.Dataset),
+                                                                                    axis=1)
 
         for index, value in feature_identification_info.to_dict('index').items():
             features = []
@@ -169,7 +172,7 @@ class KGFarm:
             feature_identification_info.at[index, 'Features'] = features
 
         return feature_identification_info[['Entity', 'Physical_representation', 'Features', 'Feature_view',
-       'Physical_table', 'Number_of_rows', 'File_source']]
+                                            'Physical_table', 'Number_of_rows', 'File_source']]
 
     def search_enrichment_options(self, entity_df: pd.DataFrame = None, show_query: bool = False):
         # TODO: support for multiple entities.
@@ -273,6 +276,18 @@ class KGFarm:
                         df.loc[n_row, 'Transformation_type'] = 'Nominal encoding'
                     elif v['Transformation'] == 'PowerTransformer':
                         df.loc[n_row, 'Transformation_type'] = 'Gaussian distribution'
+
+            # post-processing to reduce false positives
+            for n_row, v in df.to_dict('index').items():
+                features_to_be_encoded = []
+                if v['Transformation'] == 'OneHotEncoder':
+                    for f in v['Feature']:
+                        if len(entity_df[f].value_counts()) <= 5:
+                            features_to_be_encoded.append(f)
+                    if len(features_to_be_encoded) == 0:
+                        df.drop(index=n_row, inplace=True)
+                    else:
+                        df.loc[n_row, ['Feature']] = features_to_be_encoded
             return df
 
         def handle_unseen_data():
@@ -336,7 +351,7 @@ class KGFarm:
         if entity_df is not None:
             table_ids = self.__table_transformations.get(tuple(entity_df.columns))
             if not table_ids:
-                print('Processing entity_df')
+                print('Processing unseen data')
                 return handle_unseen_data()
 
             tables = list(map(lambda x: get_table_name(self.config, table_id=x), table_ids))
@@ -355,20 +370,17 @@ class KGFarm:
         return add_transformation_type(transformation_info)
 
     def apply_transformation(self, transformation_info: pd.Series, entity_df: pd.DataFrame = None):
-        # TODO: add support for other transformations as well (ex. one-hot encoding, min-max scaling, etc.)
-        transformation_model = None
+        # TODO: add support for PowerTransformer
         if entity_df is not None:  # apply transformations directly on entity_df passed by user
             df = entity_df
         else:  # load the table from the choice/row passed by the user from recommend_feature_transformations()
             df = self.load_table(transformation_info, print_table_name=False)
         transformation = transformation_info['Transformation']
         features = transformation_info['Feature']
-        last_column = list(df.columns)[-1]  # for re-arranging columns
         if transformation == 'LabelEncoder':
             print('Applying LabelEncoder transformation')
-            for feature in tqdm(features):
-                transformation_model = LabelEncoder()
-                df[feature] = transformation_model.fit_transform(df[feature])
+            transformation_model = LabelEncoder()
+            df[features] = transformation_model.fit_transform(df[features])
         elif transformation == 'StandardScaler':
             print(
                 'CAUTION: Make sure you apply {} transformation only on the train set (This ensures there is no over-fitting due to feature leakage)\n'.format(
@@ -389,13 +401,15 @@ class KGFarm:
         elif transformation == 'OneHotEncoder':
             print('Applying OneHotEncoder transformation')
             transformation_model = OneHotEncoder(handle_unknown='ignore')
-            df[features] = transformation_model.fit_transform(df[features])
+            print(features)
+            one_hot_encoded_features = pd.DataFrame(transformation_model.fit_transform(df[features]).toarray())
+            df = df.join(one_hot_encoded_features)
+            df.drop(features, axis=1, inplace=True)
         else:
             print(transformation, 'not supported yet!')
             return
         print('{} feature(s) {} transformed successfully!'.format(len(features), features))
-
-        return self.__re_arrange_columns(last_column, df), transformation_model
+        return df, transformation_model
 
     def enrich(self, enrichment_info: pd.Series, entity_df: pd.DataFrame = None, freshness: int = 10):
         if entity_df is not None:  # entity_df passed by the user
@@ -485,7 +499,7 @@ class KGFarm:
                 f_score = f_score.head(get_input())
                 independent_var = df[f_score['Feature']]  # features (X)
                 print('Top {} feature(s) {} were selected based on highest F-value'.
-                          format(len(independent_var.columns), list(independent_var.columns)))
+                      format(len(independent_var.columns), list(independent_var.columns)))
                 return independent_var, dependent_var
             elif select_by == 'correlation':
                 correlation = df.corr()
@@ -556,7 +570,7 @@ class KGFarm:
         elif select_by is None:  # select by pipelines
             X = entity_df[self.__get_features(entity_df=entity_df, filtered_columns=list(df.columns))]
             print('{} feature(s) {} were selected based on previously abstracted pipelines'.format(len(X.columns),
-                                                                                                       list(X.columns)))
+                                                                                                   list(X.columns)))
             return X, y
 
     @staticmethod
@@ -575,8 +589,9 @@ class KGFarm:
         columns.reset_index(drop=True, inplace=True)
         return columns
 
-    def recommend_cleaning_operations(self, entity_df: pd.DataFrame, visualize_missing_data: bool = True, top_k: int = 10,
-                   show_query: bool = False):
+    def recommend_cleaning_operations(self, entity_df: pd.DataFrame, visualize_missing_data: bool = True,
+                                      top_k: int = 10,
+                                      show_query: bool = False):
         """
         1. visualize missing data
         2. check if data is profiled or unseen
@@ -683,9 +698,9 @@ class KGFarm:
                 params.append(row[2])
 
             df = pd.DataFrame({'Operation': operation,
-                                 'Feature': features,
-                                 'Parameters': params,
-                                 'Pipeline': list(parameters_per_pipeline.keys())})
+                               'Feature': features,
+                               'Parameters': params,
+                               'Pipeline': list(parameters_per_pipeline.keys())})
 
             # check if features are present in actual entity_df
             updated_params = []
@@ -730,23 +745,27 @@ class KGFarm:
                 recommendations_for_enriched_tables = []
                 for ids in table_id:
                     recommendations_for_enriched_tables.append(get_data_cleaning_recommendation(self.config,
-                                                                       table_id=ids, show_query=show_query))
+                                                                                                table_id=ids,
+                                                                                                show_query=show_query))
                 data_cleaning_info = pd.concat(recommendations_for_enriched_tables)
 
             else:
                 data_cleaning_info = get_data_cleaning_recommendation(self.config, table_id=table_id,
-                                                        show_query=show_query)
+                                                                      show_query=show_query)
 
             # reformat seen cleaning info
             data_cleaning_info['Parameters'] = data_cleaning_info.apply(lambda x: {x.Parameter: x.Value}, axis=1)
-            data_cleaning_info['Operation'] = data_cleaning_info['Function'].apply(lambda x: data_cleaning_operation_mapping.get(x))
-            data_cleaning_info['Feature'] = data_cleaning_info['Column_id'].apply(lambda x: list(columns_to_be_cleaned['Feature']))
+            data_cleaning_info['Operation'] = data_cleaning_info['Function'].apply(
+                lambda x: data_cleaning_operation_mapping.get(x))
+            data_cleaning_info['Feature'] = data_cleaning_info['Column_id'].apply(
+                lambda x: list(columns_to_be_cleaned['Feature']))
             data_cleaning_info = data_cleaning_info[['Operation', 'Feature', 'Parameters', 'Pipeline']]
             return data_cleaning_info
 
         elif table_id is False:  # unseen data
             print('finding similar columns and tables to entity dataframe')
-            similar_tables = self.recommender.get_cleaning_recommendation(entity_df[columns_to_be_cleaned['Feature']])  # align
+            similar_tables = self.recommender.get_cleaning_recommendation(
+                entity_df[columns_to_be_cleaned['Feature']])  # align
 
             if len(similar_tables) < top_k:
                 top_k = len(similar_tables)
@@ -757,7 +776,8 @@ class KGFarm:
                 print('no recommendations, try using kgfarm.clean()')
                 return
 
-            raw_recommendations = recommend_cleaning_operations_for_unseen_data(list_of_similar_tables=similar_tables, display=show_query)  # query
+            raw_recommendations = recommend_cleaning_operations_for_unseen_data(list_of_similar_tables=similar_tables,
+                                                                                display=show_query)  # query
 
             if raw_recommendations is False or raw_recommendations.empty:
                 print('no recommendations, try using kgfarm.clean()')
@@ -774,6 +794,7 @@ class KGFarm:
         """
         cleans entity_df from info coming from kgfarm.recommend_cleaning_operations
         """
+
         def check_for_uncleaned_features(df: pd.DataFrame):  # clean by recommendations
             uncleaned_features = list(self.get_columns_to_be_cleaned(df=df)['Feature'])
             if len(uncleaned_features) == 0:
@@ -806,8 +827,18 @@ class KGFarm:
                 print(f'missing values from {columns} were dropped')
                 check_for_uncleaned_features(df=entity_df)
                 return entity_df
-            elif technique == 'fill':
-                fill_value = input("Enter the value to fill the missing data or 'mean', 'median', 'mode' to fill by statistics")
+            elif technique == 'fill' or technique == 'quick clean':
+                def get_mode(feature: pd.Series):  # fill categorical data with mode
+                    return feature.mode()[0]
+
+                if technique == 'quick clean':
+                    for column in tqdm(columns):
+                        mode = get_mode(entity_df[column])
+                        entity_df[column].fillna(mode, inplace=True)
+                    return entity_df
+
+                fill_value = input(
+                    "Enter the value to fill the missing data or 'mean', 'median', 'mode' to fill by statistics")
                 if fill_value not in {'mean', 'median', 'mode'}:  # fill constant value
                     entity_df.fillna(fill_value, inplace=True)
                 else:
@@ -816,9 +847,6 @@ class KGFarm:
                     elif fill_value == 'mean':
                         entity_df.fillna(entity_df.mean(), inplace=True)
                     else:
-                        def get_mode(feature: pd.Series):  # fill categorical data with mode
-                            return feature.mode()[0]
-
                         for column in tqdm(columns):
                             mode = get_mode(entity_df[column])
                             entity_df[column].fillna(mode, inplace=True)
