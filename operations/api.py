@@ -287,7 +287,7 @@ class KGFarm:
                     if len(features_to_be_encoded) == 0:
                         df.drop(index=n_row, inplace=True)
                     else:
-                        df.loc[n_row, ['Feature']] = features_to_be_encoded
+                        df.loc[n_row, ['Feature']] = [features_to_be_encoded]
             return df
 
         def handle_unseen_data():
@@ -402,10 +402,12 @@ class KGFarm:
         elif transformation == 'OneHotEncoder':
             print('Applying OneHotEncoder transformation')
             transformation_model = OneHotEncoder(handle_unknown='ignore')
-            print(features)
             one_hot_encoded_features = pd.DataFrame(transformation_model.fit_transform(df[features]).toarray())
+            print(one_hot_encoded_features.head())
             df = df.join(one_hot_encoded_features)
-            df.drop(features, axis=1, inplace=True)
+            print('after join', df.head())
+            df = df.drop(features, axis=1)
+            print('after dropping: ', df.head())
         elif transformation == 'RobustScaler':
             print('Applying RobustScalar transformation')
             transformation_model = RobustScaler()
@@ -414,6 +416,7 @@ class KGFarm:
             print(transformation, 'not supported yet!')
             return
         print('{} feature(s) {} transformed successfully!'.format(len(features), features))
+        print('final: ', list(df.columns))
         return df, transformation_model
 
     def enrich(self, enrichment_info: pd.Series, entity_df: pd.DataFrame = None, freshness: int = 10):
