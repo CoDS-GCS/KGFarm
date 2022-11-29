@@ -138,3 +138,4 @@ websocket-client==0.58.0
 wheel==0.37.1
 widgetsnbextension==3.5.2
 zipp==3.8.0
+skimpy==0.0.5
