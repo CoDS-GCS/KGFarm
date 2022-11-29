@@ -241,10 +241,10 @@ class KGFarm:
                       'try using kgfarm.recommend_cleaning_operations()')
                 return
 
-            def get_transformation_technique(t, f):
-                if t == 'Ordinal encoding' and len(f) > 1:
+            def get_transformation_technique(t, f_values):
+                if t == 'Ordinal encoding' and len(f_values) > 1:
                     return 'OrdinalEncoder'
-                elif t == 'Ordinal encoding' and len(f) == 1:
+                elif t == 'Ordinal encoding' and len(f_values) == 1:
                     return 'LabelEncoder'
                 elif t == 'Scaling concerning outliers':
                     return 'RobustScaler'
@@ -883,6 +883,3 @@ entity_data_types_mapping = {'N_int': 'integer', 'N_float': 'float', 'N_bool': '
 data_cleaning_operation_mapping = {'pandas.DataFrame.fillna': 'Fill missing values',
                                    'pandas.DataFrame.interpolate': 'Interpolate',
                                    'pandas.DataFrame.dropna': 'Drop missing values'}
-
-if __name__ == "__main__":
-    kgfarm = KGFarm(port=5820, database='kgfarm_test', show_connection_status=False)
