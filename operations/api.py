@@ -380,12 +380,13 @@ class KGFarm:
         if transformation == 'LabelEncoder':
             print('Applying LabelEncoder transformation')
             transformation_model = LabelEncoder()
-            df[features] = transformation_model.fit_transform(df[features])
+            f = features[0]  # label encoding is applied on single feature
+            df[f] = transformation_model.fit_transform(df[f])
         elif transformation == 'StandardScaler':
-            print(
-                'CAUTION: Make sure you apply {} transformation only on the train set (This ensures there is no over-fitting due to feature leakage)\n'.format(
-                    transformation) + \
-                'Use the transformation_model returned from this api to transform test set independently.\n')
+            # print(
+            #     'CAUTION: Make sure you apply {} transformation only on the train set (This ensures there is no over-fitting due to feature leakage)\n'.format(
+            #         transformation) + \
+            #     'Use the transformation_model returned from this api to transform test set independently.\n')
             print('Applying StandardScaler transformation')
             transformation_model = StandardScaler(copy=False)
             df[features] = transformation_model.fit_transform(df[features])
@@ -405,6 +406,10 @@ class KGFarm:
             one_hot_encoded_features = pd.DataFrame(transformation_model.fit_transform(df[features]).toarray())
             df = df.join(one_hot_encoded_features)
             df.drop(features, axis=1, inplace=True)
+        elif transformation == 'RobustScaler':
+            print('Applying RobustScalar transformation')
+            transformation_model = RobustScaler()
+            df[features] = transformation_model.fit_transform(df[features])
         else:
             print(transformation, 'not supported yet!')
             return

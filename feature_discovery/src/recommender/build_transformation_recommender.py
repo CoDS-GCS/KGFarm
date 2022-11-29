@@ -8,6 +8,7 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 from sklearn.preprocessing import LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedKFold, cross_val_score, GridSearchCV
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import classification_report, make_scorer
@@ -133,14 +134,13 @@ class Recommender:
         def balance_classes():
             transformation_statistics = self.modeling_data['Transformation'].value_counts()
             transformation_statistics = dict(transformation_statistics)
-            lowest_occurring_transformation = min(transformation_statistics, key=transformation_statistics.get)
+            # lowest_occurring_transformation = min(transformation_statistics, key=transformation_statistics.get)
             np.random.seed(1)
             for transformation_class in transformation_statistics.keys():
-                if transformation_class != lowest_occurring_transformation:
+                if transformation_class == 'Scaling':
                     drop = np.random.choice(
                         self.modeling_data[self.modeling_data['Transformation'] == transformation_class].index,
-                        size=transformation_statistics.get(transformation_class)-transformation_statistics.
-                        get(lowest_occurring_transformation), replace=False)
+                        size=transformation_statistics.get(transformation_class)-transformation_statistics.get('Ordinal encoding'), replace=False)
                     self.modeling_data.drop(drop, inplace=True)
 
         """
@@ -177,12 +177,16 @@ class Recommender:
             self.modeling_data.to_csv('modeling_data_{}.csv'.format(self.feature_type), index=False)
 
     def define(self):
-        self.classifier = MLPClassifier(max_iter=10, activation='relu', solver='adam', learning_rate='adaptive')
-        hyperparameters = {'hidden_layer_sizes': [(50, 50, 50), (50, 100, 50), (100,)],
+        if self.feature_type == 'categorical':
+            self.classifier = MLPClassifier(max_iter=20, activation='relu', solver='adam', learning_rate='adaptive')
+            hyperparameters = {'hidden_layer_sizes': [(50, 50, 50), (50, 100, 50), (100,)],
                            'activation': ['tanh', 'relu'],
                            'solver': ['sgd', 'adam'],
                            'alpha': [0.0001, 0.05],
                            'learning_rate': ['constant', 'adaptive']}
+        else:
+            self.classifier = RandomForestClassifier()
+            hyperparameters = {}
         return hyperparameters
 
     def train_test_evaluate(self, parameters: dict, tune: bool = False):
@@ -257,7 +261,7 @@ def build():
     for feature_type in ['categorical', 'numerical']:
         recommender = Recommender(feature_type=feature_type)
         recommender.generate_modeling_data()
-        recommender.prepare(plot=True, save=True, balance=False)
+        recommender.prepare(plot=True, save=True, balance=True)
         recommender.save(scores=recommender.train_test_evaluate(parameters=recommender.define(), tune=False),
                          export=True)
     print('done.')
