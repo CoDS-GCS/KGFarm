@@ -234,28 +234,32 @@ class KGFarm:
     def recommend_feature_transformations(self, entity_df: pd.DataFrame = None, show_metadata: bool = False,
                                           show_query: bool = False):
 
+        def get_transformation_technique(t, f_values):
+            if t == 'Ordinal encoding' and len(f_values) > 1:
+                return 'OrdinalEncoder'
+            elif t == 'Ordinal encoding' and len(f_values) == 1:
+                return 'LabelEncoder'
+            elif t == 'Scaling concerning outliers':
+                return 'RobustScaler'
+            elif t == 'Normalization':
+                return 'MinMaxScaler'
+            elif t == 'Scaling':
+                return 'StandardScaler'
+            elif t == 'Nominal encoding':
+                return 'OneHotEncoder'
+            elif t == 'Gaussian distribution':
+                return 'PowerTransformer'
+            elif t == 'LabelEncoder' and len(f_values) == 1:
+                return 'LabelEncoder'
+            elif t == 'OrdinalEncoder' and len(f_values) > 1:
+                return 'OrdinalEncoder'
+
         # adds the transformation type mapping to the resultant recommendation dataframe
         def add_transformation_type(df):
             if df.empty:
                 print('\nno recommendations found, did you clean your data?\n'
                       'try using kgfarm.recommend_cleaning_operations()')
                 return
-
-            def get_transformation_technique(t, f_values):
-                if t == 'Ordinal encoding' and len(f_values) > 1:
-                    return 'OrdinalEncoder'
-                elif t == 'Ordinal encoding' and len(f_values) == 1:
-                    return 'LabelEncoder'
-                elif t == 'Scaling concerning outliers':
-                    return 'RobustScaler'
-                elif t == 'Normalization':
-                    return 'MinMaxScaler'
-                elif t == 'Scaling':
-                    return 'StandardScaler'
-                elif t == 'Nominal encoding':
-                    return 'OneHotEncoder'
-                elif t == 'Gaussian distribution':
-                    return 'PowerTransformer'
 
             df['Transformation_type'] = df['Transformation']
             df['Transformation'] = df.apply(lambda x: get_transformation_technique(x.Transformation, x.Feature), axis=1)
@@ -288,6 +292,7 @@ class KGFarm:
                         df.drop(index=n_row, inplace=True)
                     else:
                         df.loc[n_row, ['Feature']] = [features_to_be_encoded]
+
             return df
 
         def handle_unseen_data():
@@ -367,7 +372,14 @@ class KGFarm:
             transformation_info = transformation_info.reset_index(drop=True)
             transformation_info.drop(['Dataset', 'Dataset', 'Table'],
                                      axis=1, inplace=True)
-        return add_transformation_type(transformation_info)
+
+        recommended_transformation = add_transformation_type(transformation_info)
+
+        for index, value in recommended_transformation.to_dict('index').items():
+            if value['Transformation_type'] == 'Ordinal encoding' and len(value['Feature']) > 1:
+                recommended_transformation.at[index, 'Transformation'] = 'OrdinalEncoder'
+
+        return recommended_transformation
 
     def apply_transformation(self, transformation_info: pd.Series, entity_df: pd.DataFrame = None):
         # TODO: add support for PowerTransformer
@@ -416,7 +428,6 @@ class KGFarm:
             print(transformation, 'not supported yet!')
             return
         print('{} feature(s) {} transformed successfully!'.format(len(features), features))
-        print('final: ', list(df.columns))
         return df, transformation_model
 
     def enrich(self, enrichment_info: pd.Series, entity_df: pd.DataFrame = None, freshness: int = 10):
