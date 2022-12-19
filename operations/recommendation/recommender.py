@@ -3,11 +3,11 @@ import joblib
 import bitstring
 import numpy as np
 import pandas as pd
-from datasketch import MinHash
+import chars2vec
 from collections import Counter
 from operations.storage.embeddings import Embeddings
 # from feature_discovery.src.recommender.word_embeddings import WordEmbedding
-from operations.recommendation.utils.column_embeddings import load_numeric_embedding_model
+from operations.recommendation.utils.column_embeddings import load_embedding_model
 
 
 class Recommender:
@@ -18,8 +18,8 @@ class Recommender:
             'operations/recommendation/utils/models/transformation_recommender_categorical.pkl')
         self.numeric_encoder = joblib.load('operations/recommendation/utils/models/encoder_numerical.pkl')
         self.categorical_encoder = joblib.load('operations/recommendation/utils/models/encoder_categorical.pkl')
-        self.numeric_embedding_model = load_numeric_embedding_model()
-        self.categorical_embedding_model = MinHash(num_perm=512)
+        self.numeric_embedding_model = load_embedding_model(model_type='numerical')
+        self.categorical_embedding_model = load_embedding_model(model_type='categorical')
         # self.word_embedding = WordEmbedding(
         #     'feature_discovery/src/recommender/utils/glove_embeddings/glove.6B.100d.pickle')
         self.embeddings = Embeddings(
@@ -28,36 +28,41 @@ class Recommender:
         self.categorical_thresh = 0.60
         self.numerical_thresh = 0.50
 
-    def __compute_content_embeddings(self,
-                                     entity_df: pd.DataFrame):  # DDE for numeric columns, Minhash for string columns
+    def __compute_content_embeddings(self, entity_df: pd.DataFrame):  # DDE for numeric columns, Minhash for string columns
         numeric_column_embeddings = {}
         categorical_column_embeddings = {}
 
+        """
         def get_bin_repr(val):
             return [int(j) for j in bitstring.BitArray(float=float(val), length=32).bin]
+        """
 
         for column in entity_df.columns:
             if pd.api.types.is_numeric_dtype(entity_df[column]):
-                bin_repr = entity_df[column].apply(get_bin_repr, convert_dtype=False).to_list()
+                # bin_repr = entity_df[column].apply(get_bin_repr, convert_dtype=False).to_list()
+                bin_repr = [[int(j) for j in bitstring.BitArray(float=float(i), length=32).bin]
+                            for i in column.dropna().values]
                 bin_tensor = torch.FloatTensor(bin_repr).to('cpu')
-                with torch.no_grad():
+                with torch.inference_mode():
                     embedding_tensor = self.numeric_embedding_model(bin_tensor).mean(axis=0)
                 numeric_column_embeddings[column] = embedding_tensor.tolist()
             else:
-                column_value = list(entity_df[column])
-                self.categorical_embedding_model = MinHash(num_perm=512)
-                for word in column_value:
-                    if isinstance(word, str):
-                        self.categorical_embedding_model.update(word.lower().encode('utf8'))
-                categorical_column_embeddings[column] = self.categorical_embedding_model.hashvalues.tolist()
+                char_level_embed_model = chars2vec.load_model('eng_50')
+                input_vector = char_level_embed_model.vectorize_words(column.dropna().tolist())
+                input_tensor = torch.FloatTensor(input_vector).to('cpu')
+                with torch.inference_mode():
+                    embedding_tensor = self.categorical_embedding_model(input_tensor).mean(axis=0)
+                categorical_column_embeddings[column] = embedding_tensor.tolist()
         return numeric_column_embeddings, categorical_column_embeddings
 
-    # def __compute_word_embeddings(self, entity_df: pd.DataFrame):  # glove embeddings
-    #     word_embeddings = {}
-    #     for column in entity_df.columns:
-    #         tokens = self.word_embedding.tokenize(column)
-    #         word_embeddings[column] = self.word_embedding.calculate_word_embeddings(tokens)
-    #     return word_embeddings
+    """
+    def __compute_word_embeddings(self, entity_df: pd.DataFrame):  # glove embeddings
+        word_embeddings = {}
+        for column in entity_df.columns:
+            tokens = self.word_embedding.tokenize(column)
+            word_embeddings[column] = self.word_embedding.calculate_word_embeddings(tokens)
+        return word_embeddings
+    """
 
     def get_transformation_recommendations(self, entity_df: pd.DataFrame):
         self.auto_insight_report = {}
