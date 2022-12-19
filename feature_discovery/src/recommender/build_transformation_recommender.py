@@ -2,6 +2,7 @@ import json
 import os
 import warnings
 import joblib
+from urllib.parse import quote_plus
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -24,11 +25,12 @@ class Recommender:
     """A classifier that recommends type of feature transformation based on column (feature) embeddings"""
 
     def __init__(self, feature_type: str, port: int = 5820, database: str = 'kgfarm_recommender',
-                 metadata: str = '../../storage/metadata/profiles/',
+                 metadata: str = '../../storage/CoLR_embeddings/',
                  show_connection_status: bool = False):
         self.feature_type = feature_type
+        self.database = database
         self.metadata = metadata
-        self.config = connect_to_stardog(port, database, show_connection_status)
+        self.config = connect_to_stardog(port, self.database, show_connection_status)
         self.profiles = dict()  # column_id -> {column embeddings, column datatype}
         # self.word_embedding_model = WordEmbedding()
         self.transformations = set()
@@ -40,25 +42,35 @@ class Recommender:
 
         def get_profiles():
             for datatype in os.listdir(self.metadata):
+                if datatype == '.DS_Store':
+                    continue
                 for profile_json in os.listdir(self.metadata + '/' + datatype):
                     if profile_json.endswith('.json'):
                         with open(self.metadata + '/' + datatype + '/' + profile_json, 'r') as open_file:
                             yield json.load(open_file)
 
+        def generate_column_id(profile_path: str, column_name: str):
+            profile_path = profile_path.split('/')
+            table_name = profile_path[-1]
+            dataset_name = profile_path[-3]
+            column_id = f'http://kglids.org/resource/kaggle/{quote_plus(dataset_name)}/dataResource/{quote_plus(table_name)}/{quote_plus(column_name)}'
+            return column_id
+
         # load profiles (based on feature-type) in self.profiles
         for profile in get_profiles():
-            dtype = profile['dataType']
-            if 'N' in dtype and self.feature_type == 'numerical':
-                self.profiles['http://kglids.org/resource/' + profile['column_id']] = {'dtype': 'numerical',
-                                                                                       'embeddings': profile[
-                                                                                           'deep_embedding']}
-            elif 'T' in dtype and self.feature_type == 'categorical':
-                self.profiles['http://kglids.org/resource/' + profile['column_id']] = {'dtype': 'categorical',
-                                                                                       'embeddings': profile['minhash']}
-        print('{} {} profiles loaded.'.format(len(self.profiles), self.feature_type))
+            dtype = profile['data_type']
+            if dtype in 'int' or dtype == 'float':
+                self.profiles[generate_column_id(profile['path'], profile['column_name'])] = {'dtype': 'numerical',
+                                                                                       'embeddings': profile['embedding']}
+            elif dtype == 'string' or dtype == 'named_entity':
+                self.profiles[generate_column_id(profile['path'], profile['column_name'])] = {'dtype': 'categorical',
+                                                                                       'embeddings': profile['embedding']}
+
+        print(f'{len(self.profiles)} {self.feature_type} profiles loaded from {self.metadata}')
 
         # get transformations applied on real columns
         transformations_on_columns = get_transformations_on_columns(self.config)
+        print(f'found {len(transformations_on_columns)} distinct feature-transformations by querying {self.database}')
 
         # associate embeddings and datatype for transformed columns
         transformations_on_columns['Data_type'] = transformations_on_columns['Column_id'] \
@@ -68,16 +80,22 @@ class Recommender:
         self.modeling_data = transformations_on_columns
 
         # add untransformed columns to modeling data
+        """ 
         transformed_columns = set(list(self.modeling_data['Column_id']))
         for column, profile in self.profiles.items():
             if column not in transformed_columns:
                 self.modeling_data = self.modeling_data.append({'Transformation': 'Negative', 'Column_id': column,
                                                                 'Data_type': self.feature_type,
                                                                 'Embeddings': profile['embeddings']}, ignore_index=True)
+        """
 
         # add column word-embeddings to modeling data
-        # self.modeling_data['Word_embedding'] = self.modeling_data['Column_id'].apply(
-        #     lambda x: self.word_embedding_model.get_embeddings(x))
+        """ 
+        self.modeling_data['Word_embedding'] = self.modeling_data['Column_id'].apply(
+            lambda x: self.word_embedding_model.get_embeddings(x))
+        """
+        # self.modeling_data.dropna(how='any', inplace=True)
+        # self.modeling_data.to_csv('modeling_data_{}.csv'.format(self.feature_type), index=False)
 
     def prepare(self, plot: bool = True, save: bool = True, balance: bool = True):
 
@@ -137,10 +155,10 @@ class Recommender:
             # lowest_occurring_transformation = min(transformation_statistics, key=transformation_statistics.get)
             np.random.seed(1)
             for transformation_class in transformation_statistics.keys():
-                if transformation_class == 'Scaling':
+                if transformation_class == 'Scaling' or transformation_class == 'Ordinal encoding':
                     drop = np.random.choice(
                         self.modeling_data[self.modeling_data['Transformation'] == transformation_class].index,
-                        size=transformation_statistics.get(transformation_class)-transformation_statistics.get('Ordinal encoding'), replace=False)
+                        size=transformation_statistics.get(transformation_class)-transformation_statistics.get('Normalization'), replace=False)
                     self.modeling_data.drop(drop, inplace=True)
 
         """
