@@ -32,23 +32,21 @@ class Recommender:
         numeric_column_embeddings = {}
         categorical_column_embeddings = {}
 
-        """
         def get_bin_repr(val):
             return [int(j) for j in bitstring.BitArray(float=float(val), length=32).bin]
-        """
 
         for column in entity_df.columns:
             if pd.api.types.is_numeric_dtype(entity_df[column]):
-                # bin_repr = entity_df[column].apply(get_bin_repr, convert_dtype=False).to_list()
-                bin_repr = [[int(j) for j in bitstring.BitArray(float=float(i), length=32).bin]
-                            for i in column.dropna().values]
+                bin_repr = entity_df[column].apply(get_bin_repr, convert_dtype=False).to_list()
+                # bin_repr = [[int(j) for j in bitstring.BitArray(float=float(i), length=32).bin]
+                #             for i in column.dropna().values]
                 bin_tensor = torch.FloatTensor(bin_repr).to('cpu')
                 with torch.inference_mode():
                     embedding_tensor = self.numeric_embedding_model(bin_tensor).mean(axis=0)
                 numeric_column_embeddings[column] = embedding_tensor.tolist()
             else:
                 char_level_embed_model = chars2vec.load_model('eng_50')
-                input_vector = char_level_embed_model.vectorize_words(column.dropna().tolist())
+                input_vector = char_level_embed_model.vectorize_words(entity_df[column].dropna().tolist())
                 input_tensor = torch.FloatTensor(input_vector).to('cpu')
                 with torch.inference_mode():
                     embedding_tensor = self.categorical_embedding_model(input_tensor).mean(axis=0)
