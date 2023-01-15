@@ -20,7 +20,7 @@ warnings.filterwarnings('ignore')
 pd.set_option('display.max_columns', None)
 
 
-class Recommender:
+class TransformationRecommender:
     """A classifier that recommends type of feature transformation based on column (feature) embeddings"""
 
     def __init__(self, feature_type: str, port: int = 5820, database: str = 'kgfarm_recommender',
@@ -259,11 +259,11 @@ transformation_mapping = {'categorical':
 def build():
     # TODO: plot all metrics for both feature types
     for feature_type in ['categorical', 'numerical']:
-        recommender = Recommender(feature_type=feature_type)
+        recommender = TransformationRecommender(feature_type=feature_type)
         recommender.generate_modeling_data()
-        recommender.prepare(plot=True, save=True, balance=True)
+        recommender.prepare(plot=True, save=False, balance=True)
         recommender.save(scores=recommender.train_test_evaluate(parameters=recommender.define(), tune=False),
-                         export=True)
+                         export=False)
     print('done.')
 
 
