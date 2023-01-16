@@ -7,6 +7,7 @@ import pandas as pd
 import seaborn as sns
 import stardog
 import yaml
+from urllib.parse import quote_plus
 from SPARQLWrapper import JSON, SPARQLWrapper
 from matplotlib import pyplot as plt
 
@@ -203,3 +204,19 @@ def plot_comparison(conventional_approach: dict, kgfarm_approach: dict):
     fig.tight_layout()
     plt.subplots_adjust(left=0.2, bottom=0.2, right=1.35)
     plt.show()
+
+
+def generate_column_id(profile_path: str, column_name: str):
+    profile_path = profile_path.split('/')
+    table_name = profile_path[-1]
+    dataset_name = profile_path[-3]
+    column_id = f'http://kglids.org/resource/kaggle/{quote_plus(dataset_name)}/dataResource/{quote_plus(table_name)}/{quote_plus(column_name)}'
+    return column_id
+
+
+def generate_table_id(profile_path: str):
+    profile_path = profile_path.split('/')
+    table_name = profile_path[-1]
+    dataset_name = profile_path[-3]
+    table_id = f'http://kglids.org/resource/kaggle/{quote_plus(dataset_name)}/dataResource/{quote_plus(table_name)}'
+    return table_id
