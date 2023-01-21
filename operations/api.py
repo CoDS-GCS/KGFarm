@@ -140,6 +140,10 @@ class KGFarm:
             raise ValueError("feature_view_type must be 'single', 'multiple', 'single and multiple', or 'all'")
         feature_view_df = pd.concat([feature_view_df, pd.DataFrame(update_info)], ignore_index=True)
         feature_view_df = feature_view_df.reset_index(drop=True)
+
+        # add here
+        feature_view_df['Features'] = feature_view_df['Feature_view'].apply(lambda x: get_features_in_feature_views(self.config, x, show_query))
+
         return feature_view_df
 
     def drop_feature_view(self, drop: list):
