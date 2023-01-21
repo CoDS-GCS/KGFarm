@@ -3,6 +3,24 @@ from helpers.helper import execute_query, display_query
 
 # --------------------------------------------KGFarm APIs (SELECT queries)----------------------------------------------
 
+def get_features_in_feature_views(config, feature_view, show_query):
+    query = """
+    SELECT DISTINCT ?Columns 
+    WHERE
+    {
+        ?Table_id       rdf:type                    kglids:Table        ;
+                        featureView:name            "%s"                .
+        
+        ?Column_id      kglids:isPartOf             ?Table_id           ;
+                        schema:name                 ?Columns             . 
+    }
+    """ % feature_view
+
+    if show_query:
+        display_query(query)
+
+    return list(execute_query(config, query)['Columns'])
+
 
 def get_table_path(config, table, dataset):
     query = """
@@ -400,7 +418,8 @@ def get_data_cleaning_info(config, table_id, show_query):
     return execute_query(config, query)
 
 
-def get_data_cleaning_recommendation(config, table_id, show_query=False, timeout=10000):  # data cleaning for unseen data
+def get_data_cleaning_recommendation(config, table_id, show_query=False,
+                                     timeout=10000):  # data cleaning for unseen data
     query = """
     SELECT DISTINCT  ?Function ?Parameter ?Value ?Column_id ?Pipeline
     WHERE
@@ -747,4 +766,27 @@ def get_transformations_on_columns(config):
         BIND(REPLACE(?Transformation_3, '/fit', '') as ?Transformation_4)
         BIND(REPLACE(?Transformation_4, '/transform', '') as ?Transformation)   
     }"""
+    return execute_query(config, query)
+
+
+# --------------------------------------------Transformation recommender------------------------------------------------
+def get_features_and_targets(config, n_samples: None, show_query: bool = False):
+    limit = ''
+    if n_samples is not None:
+        limit = f'LIMIT {n_samples}'
+
+    query = """
+    SELECT DISTINCT ?Pipeline_id ?Selected_feature ?Discarded_feature ?Target
+    WHERE
+    {
+        ?Pipeline_id        rdf:type                        kglids:Pipeline     ;
+        GRAPH ?Pipeline_id
+        {
+            ?Statement      pipeline:hasSelectedFeature     ?Selected_feature   ;
+                            pipeline:hasTarget              ?Target             ;
+                            pipeline:hasNotSelectedFeature  ?Discarded_feature  .
+        }  
+    } ORDER BY ?Pipeline_id ?Target %s"""% limit
+    if show_query:
+        display_query(query)
     return execute_query(config, query)

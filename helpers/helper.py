@@ -1,6 +1,6 @@
 import io
 import os
-
+import urllib.parse
 import SPARQLWrapper.Wrapper
 import numpy as np
 import pandas as pd
@@ -207,11 +207,16 @@ def plot_comparison(conventional_approach: dict, kgfarm_approach: dict):
 
 
 def generate_column_id(profile_path: str, column_name: str):
+    def url_encode(string):
+        return urllib.parse.quote(str(string), safe='')  # safe parameter is important.
+
     profile_path = profile_path.split('/')
     table_name = profile_path[-1]
     dataset_name = profile_path[-3]
-    column_id = f'http://kglids.org/resource/kaggle/{quote_plus(dataset_name)}/dataResource/{quote_plus(table_name)}/{quote_plus(column_name)}'
-    return column_id
+
+    return f"http://kglids.org/resource/{url_encode('kaggle')}/" \
+           f"{url_encode(dataset_name)}/dataResource/{url_encode(table_name)}/" \
+           f"{url_encode(column_name)}"
 
 
 def generate_table_id(profile_path: str):

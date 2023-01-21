@@ -1,13 +1,14 @@
 import json
 import os
 import joblib
+import numpy as np
 import pandas as pd
 import seaborn as sns
 from tqdm import tqdm
 from matplotlib import pyplot as plt
 from sklearn.neural_network import MLPClassifier
-from sklearn.metrics import make_scorer, classification_report
-from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.metrics import classification_report
+from sklearn.model_selection import train_test_split
 from operations.template import get_features_and_targets
 from helpers.helper import connect_to_stardog, generate_column_id, generate_table_id
 
@@ -20,7 +21,11 @@ class FeatureSelector:
                  metadata='../../storage/CoLR_embeddings/', show_connection_status: bool = True):
         self.config = connect_to_stardog(port, database, show_connection_status)
         self.metadata = metadata
-        self.classifier = MLPClassifier()
+        self.classifier = MLPClassifier(hidden_layer_sizes=(50, 100, 50),
+                                        max_iter=100,
+                                        solver='adam',
+                                        activation='relu',
+                                        learning_rate='adaptive')
 
         self.embeddings_table_to_column = {}  # {table_id: {column_id: embedding}
         self.modeling_data = None
@@ -51,6 +56,8 @@ class FeatureSelector:
         pipeline x: feature b, target - selected
         pipeline x: feature c, target - not selected
         """
+        def merge_embeddings(feature: list, target: list):
+            return feature + target
 
         def get_feature_embedding(feature: str):
             table = feature.rsplit('/', 1)[0]
@@ -78,6 +85,9 @@ class FeatureSelector:
             self.modeling_data.to_csv('/Users/shubhamvashisth/Downloads/Feature_selector_modeling_data.csv', index=False)
             print('modeling data save at /Users/shubhamvashisth/Downloads/Feature_selector_modeling_data.csv')
 
+        self.modeling_data['Embeddings'] = self.modeling_data.apply(lambda x: merge_embeddings(x.Feature_embedding,
+                                                                                      x.Target_embedding), axis=1)
+
     def visualize(self):
         plt.rcParams['figure.dpi'] = 300
         sns.set_style('dark')
@@ -103,43 +113,29 @@ class FeatureSelector:
 
     def train(self, export: bool = False):
         self.modeling_data['Selection'] = self.modeling_data['Selection'].apply(lambda x: 1 if x == 'Selected' else 0)
-
-        # TODO: merge embeddings of feature and target
         X = list(self.modeling_data['Embeddings'])
-        y = self.modeling_data['Transformation']
+        y = self.modeling_data['Selection']
 
-        def evaluate():
-            y_true = []
-            y_pred = []
+        print(f'X: {np.shape(X)}\ny: {np.shape(y)}')
 
-            def score(y_true_label, y_pred_label):
-                y_true.extend(y_true_label)
-                y_pred.extend(y_pred_label)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, shuffle=True, test_size=0.20, random_state=1)
 
-            cross_val_score(self.classifier, X, y, cv=outer_cv, scoring=make_scorer(score))
-            return y_true, y_pred
-
-        # Nested CV with parameter optimization
-        inner_cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
-        outer_cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
-
-        true, pred = evaluate()
-        self.classifier.fit(X, y)  # fitting is done after results are evaluated i.e. no info leakage
+        self.classifier.fit(X_train, y_train)
+        y_pred = self.classifier.predict(X_test)
+        print(classification_report(y_true=y_test, y_pred=y_pred))
 
         if export:
+            self.classifier.fit(X, y)
             joblib.dump(self.classifier, 'out/feature_selector.pkl', compress=9)
             print('feature selector saved at out/feature_selector.pkl')
-
-        # Average scores over all folds
-        print(classification_report(y_true=true, y_pred=pred))
 
 
 def build():
     selector = FeatureSelector(show_connection_status=False)
     selector.load_embeddings_of_columns_per_table()
-    selector.generate_modeling_data(n_samples=None, export=True)
+    selector.generate_modeling_data(n_samples=None, export=False)
     selector.visualize()
-    # selector.train(export=True)
+    selector.train(export=False)
 
 
 if __name__ == '__main__':
