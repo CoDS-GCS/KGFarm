@@ -6,7 +6,7 @@ import pandas as pd
 import seaborn as sns
 from tqdm import tqdm
 from matplotlib import pyplot as plt
-from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from operations.template import get_features_and_targets
@@ -17,15 +17,11 @@ class FeatureSelector:
     """A Feature selection model which takes a feature and target embedding as input and
      gives the selection confidence as output"""
 
-    def __init__(self, port: int = 5820, database: str = 'kgfarm_selector',
+    def __init__(self, port: int = 5820, database: str = 'kaggle',
                  metadata='../../storage/CoLR_embeddings/', show_connection_status: bool = True):
         self.config = connect_to_stardog(port, database, show_connection_status)
         self.metadata = metadata
-        self.classifier = MLPClassifier(hidden_layer_sizes=(50, 100, 50),
-                                        max_iter=100,
-                                        solver='adam',
-                                        activation='relu',
-                                        learning_rate='adaptive')
+        self.classifier = RandomForestClassifier()
 
         self.embeddings_table_to_column = {}  # {table_id: {column_id: embedding}
         self.modeling_data = None
@@ -42,6 +38,7 @@ class FeatureSelector:
                         column_name = profile_info['column_name']
                         table_id = generate_table_id(profile_path=path)
                         column_id = generate_column_id(profile_path=path, column_name=column_name)
+
                         if table_id not in self.embeddings_table_to_column:
                             self.embeddings_table_to_column[table_id] = {column_id: embedding}
                         else:
@@ -133,9 +130,9 @@ class FeatureSelector:
 def build():
     selector = FeatureSelector(show_connection_status=False)
     selector.load_embeddings_of_columns_per_table()
-    selector.generate_modeling_data(n_samples=None, export=False)
+    selector.generate_modeling_data(n_samples=None, export=True)
     selector.visualize()
-    selector.train(export=False)
+    selector.train(export=True)
 
 
 if __name__ == '__main__':
