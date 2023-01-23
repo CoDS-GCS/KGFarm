@@ -1,3 +1,5 @@
+import operator
+
 import torch
 import joblib
 import bitstring
@@ -12,6 +14,7 @@ from operations.recommendation.utils.column_embeddings import load_numeric_embed
 
 class Recommender:
     def __init__(self):
+        # KGFarm transformation recommendation
         self.numeric_transformation_recommender = joblib.load(
             'operations/recommendation/utils/models/transformation_recommender_numerical.pkl')
         self.categorical_transformation_recommender = joblib.load(
@@ -27,6 +30,8 @@ class Recommender:
         self.auto_insight_report = dict()
         self.categorical_thresh = 0.60
         self.numerical_thresh = 0.50
+        # KGFarm feature selector
+        self.feature_selector = joblib.load('operations/recommendation/utils/models/feature_selector_f1_88.pkl')
 
     def __compute_content_embeddings(self,
                                      entity_df: pd.DataFrame):  # DDE for numeric columns, Minhash for string columns
@@ -165,3 +170,46 @@ class Recommender:
         similar_table_uris = Counter(
             similar_table_uris.values())  # count similar tables and sort by most occurring tables
         return tuple(dict(sorted(similar_table_uris.items(), key=lambda item: item[1], reverse=True)).keys())
+
+    def get_feature_selection_score(self, entity_df: pd.DataFrame, dependent_variable: str):
+
+        def get_bin_repr(val):
+            return [int(j) for j in bitstring.BitArray(float=float(val), length=32).bin]
+
+        numerical_features = [feature for feature in entity_df.columns if
+                              feature != dependent_variable and pd.api.types.is_numeric_dtype(entity_df[feature])]
+        categorical_features = set(list(entity_df.columns)) - set(numerical_features)
+        categorical_features.remove(dependent_variable)
+        n_suggestion = 1
+        for feature in categorical_features:
+            print(
+                f"{n_suggestion}. feature '{feature}' is non-numeric and should be transformed or dropped before selection")
+            n_suggestion = n_suggestion + 1
+
+        if pd.api.types.is_numeric_dtype(entity_df[dependent_variable]):
+            bin_repr = entity_df[dependent_variable].apply(get_bin_repr, convert_dtype=False).to_list()
+            bin_tensor = torch.FloatTensor(bin_repr).to('cpu')
+            with torch.no_grad():
+                target_embedding = self.numeric_embedding_model(bin_tensor).mean(axis=0).tolist()
+
+        else:
+            raise ValueError(f"target '{dependent_variable}' is not numeric and needs to be transformed")
+
+        # get embeddings for numerical features
+        numeric_feature_embeddings, _ = self.__compute_content_embeddings(entity_df[numerical_features])
+        numeric_feature_embeddings = {feature: embedding + target_embedding for feature, embedding in
+                                      numeric_feature_embeddings.items()}
+
+        selection_info = {feature: (self.feature_selector.predict_proba(np.array(embedding).reshape(1, -1)).tolist()[0][1])
+                for feature, embedding in numeric_feature_embeddings.items()}
+        selection_info = dict(sorted(selection_info.items(), key=operator.itemgetter(1), reverse=True))
+
+        selection_info = pd.DataFrame({'Feature': selection_info.keys(), 'Selection_score': selection_info.values()})
+
+        def cal_selection_score(score, max_score_value):
+            return round(score / max_score_value, 3)
+
+        max_score = max(list(selection_info['Selection_score']))
+        selection_info['Selection_score'] = selection_info['Selection_score'].apply(lambda x: cal_selection_score(score=x, max_score_value=max_score))
+
+        return selection_info

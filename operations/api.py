@@ -512,6 +512,9 @@ class KGFarm:
                         plot_correlation: bool = True,
                         plot_anova_test: bool = True, show_f_value: bool = False):
 
+        def handle_unseen_data():
+            raise NotImplementedError('under construction')
+
         def handle_data_by_statistics(dependent_var, f_score):
             def get_input():
                 return int(input(f'Enter k (where k is the top-k ranked features out of {len(df.columns)} feature(s) '))
@@ -585,10 +588,12 @@ class KGFarm:
         if len(table_id) < 1:  # i.e. table not profiled
             table_ids = self.__table_transformations.get(tuple(entity_df.columns))
             if table_ids is None:
-                return handle_data_by_statistics(dependent_var=y, f_score=feature_scores)
-
-        if select_by in {'anova', 'correlation'}:
-            return handle_data_by_statistics(dependent_var=y, f_score=feature_scores)
+                # return handle_data_by_statistics(dependent_var=y, f_score=feature_scores)
+                if select_by in {'anova', 'correlation'}:
+                    return handle_data_by_statistics(dependent_var=y, f_score=feature_scores)
+                else:
+                    print('processing unseen data')
+                    handle_unseen_data()
 
         elif select_by is None:  # select by pipelines
             X = entity_df[self.__get_features(entity_df=entity_df, filtered_columns=list(df.columns))]
@@ -890,6 +895,9 @@ class KGFarm:
             else:
                 if technique not in {'drop', 'fill', 'interpolate'}:
                     raise ValueError("technique must be one out of 'drop', 'fill' or 'interpolate'")
+
+    def recommend_features_to_be_selected(self, entity_df: pd.DataFrame, dependent_variable: str):
+        return self.recommender.get_feature_selection_score(entity_df=entity_df, dependent_variable=dependent_variable)
 
 
 # TODO: refactor (make a generic function to return enrich table_ids from self.__table_transformations)
