@@ -1,3 +1,4 @@
+import joblib
 import numpy
 import numpy as np
 import pandas as pd
@@ -161,6 +162,10 @@ def get_results_with_kfold(X, y):
         print(classification_report(y_true=y, y_pred=pred,labels=[0,1]))
 
 
+def Save_results(X, y):
+    rf = RandomForestClassifier(class_weight="balanced")
+    rf.fit(X, y)
+    joblib.dump(rf, 'pk-fk.pkl', compress=9)
 
 def main():
     #train test split
@@ -186,6 +191,8 @@ def main():
 
     get_results_without_kfold(X,y)
     get_results_with_kfold(X, y)
+
+    Save_results(X, y)
 
     # Confusion Matrix
     # cm = confusion_matrix(y_test, y_pred_rf)
