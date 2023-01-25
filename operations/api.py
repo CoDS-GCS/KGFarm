@@ -142,7 +142,8 @@ class KGFarm:
         feature_view_df = feature_view_df.reset_index(drop=True)
 
         # add here
-        feature_view_df['Features'] = feature_view_df['Feature_view'].apply(lambda x: get_features_in_feature_views(self.config, x, show_query))
+        feature_view_df['Features'] = feature_view_df['Feature_view'].apply(
+            lambda x: get_features_in_feature_views(self.config, x, show_query))
 
         return feature_view_df
 
@@ -419,11 +420,8 @@ class KGFarm:
             print('Applying OneHotEncoder transformation')
             transformation_model = OneHotEncoder(handle_unknown='ignore')
             one_hot_encoded_features = pd.DataFrame(transformation_model.fit_transform(df[features]).toarray())
-            print(one_hot_encoded_features.head())
             df = df.join(one_hot_encoded_features)
-            print('after join', df.head())
             df = df.drop(features, axis=1)
-            print('after dropping: ', df.head())
         elif transformation == 'RobustScaler':
             print('Applying RobustScalar transformation')
             transformation_model = RobustScaler()
@@ -595,7 +593,7 @@ class KGFarm:
                     print('processing unseen data')
                     handle_unseen_data()
 
-        elif select_by is None:  # select by pipelines
+        if select_by is None:  # select by pipelines
             X = entity_df[self.__get_features(entity_df=entity_df, filtered_columns=list(df.columns))]
             print('{} feature(s) {} were selected based on previously abstracted pipelines'.format(len(X.columns),
                                                                                                    list(X.columns)))
@@ -896,8 +894,12 @@ class KGFarm:
                 if technique not in {'drop', 'fill', 'interpolate'}:
                     raise ValueError("technique must be one out of 'drop', 'fill' or 'interpolate'")
 
-    def recommend_features_to_be_selected(self, entity_df: pd.DataFrame, dependent_variable: str):
-        return self.recommender.get_feature_selection_score(entity_df=entity_df, dependent_variable=dependent_variable)
+    def recommend_features_to_be_selected(self, entity_df: pd.DataFrame, dependent_variable: str, k: int):
+        recommended_features = list(self.recommender.get_feature_selection_score(entity_df=entity_df,
+                                                                                 dependent_variable=dependent_variable).head(
+            k)['Feature'])
+        print(f'Recommending top-{k} feature(s) {recommended_features}')
+        return entity_df[recommended_features], entity_df[dependent_variable]  # return X, y
 
 
 # TODO: refactor (make a generic function to return enrich table_ids from self.__table_transformations)
