@@ -595,7 +595,7 @@ class KGFarm:
                     print('processing unseen data')
                     handle_unseen_data()
 
-        elif select_by is None:  # select by pipelines
+        if select_by is None:  # select by pipelines
             X = entity_df[self.__get_features(entity_df=entity_df, filtered_columns=list(df.columns))]
             print('{} feature(s) {} were selected based on previously abstracted pipelines'.format(len(X.columns),
                                                                                                    list(X.columns)))
