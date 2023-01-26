@@ -1,5 +1,6 @@
 import operator
 
+import chars2vec
 import torch
 import joblib
 import bitstring
@@ -7,6 +8,7 @@ import numpy as np
 import pandas as pd
 from datasketch import MinHash
 from collections import Counter
+
 from operations.storage.embeddings import Embeddings
 # from feature_discovery.src.recommender.word_embeddings import WordEmbedding
 from operations.recommendation.utils.column_embeddings import load_numeric_embedding_model
@@ -14,7 +16,12 @@ from operations.recommendation.utils.column_embeddings import load_numeric_embed
 
 class Recommender:
     def __init__(self):
+
         # KGFarm transformation recommendation
+
+        self.cleaning_recommender = joblib.load(
+            'operations/recommendation/utils/models/cleaning.pkl')
+
         self.numeric_transformation_recommender = joblib.load(
             'operations/recommendation/utils/models/transformation_recommender_numerical.pkl')
         self.categorical_transformation_recommender = joblib.load(
@@ -40,8 +47,8 @@ class Recommender:
 
         def get_bin_repr(val):
             return [int(j) for j in bitstring.BitArray(float=float(val), length=32).bin]
-
         for column in entity_df.columns:
+            print('IN FOR',column,entity_df[column])
             if pd.api.types.is_numeric_dtype(entity_df[column]):
                 bin_repr = entity_df[column].apply(get_bin_repr, convert_dtype=False).to_list()
                 bin_tensor = torch.FloatTensor(bin_repr).to('cpu')
@@ -49,12 +56,23 @@ class Recommender:
                     embedding_tensor = self.numeric_embedding_model(bin_tensor).mean(axis=0)
                 numeric_column_embeddings[column] = embedding_tensor.tolist()
             else:
+
                 column_value = list(entity_df[column])
                 self.categorical_embedding_model = MinHash(num_perm=512)
                 for word in column_value:
                     if isinstance(word, str):
                         self.categorical_embedding_model.update(word.lower().encode('utf8'))
                 categorical_column_embeddings[column] = self.categorical_embedding_model.hashvalues.tolist()
+
+                print('IN ELSE')
+                char_level_embed_model = chars2vec.load_model('eng_50')
+                input_vector = char_level_embed_model.vectorize_words(entity_df[column].dropna().tolist())
+                input_tensor = torch.FloatTensor(input_vector).to('cpu')
+                with torch.inference_mode():
+                    embedding_tensor = self.categorical_embedding_model(input_tensor).mean(axis=0)
+
+                categorical_column_embeddings[column] = embedding_tensor.tolist()
+
         return numeric_column_embeddings, categorical_column_embeddings
 
     # def __compute_word_embeddings(self, entity_df: pd.DataFrame):  # glove embeddings
@@ -158,11 +176,32 @@ class Recommender:
         return reformat(transformation_info)
 
     def get_cleaning_recommendation(self, entity_df: pd.DataFrame):
+        #Get embeddings for columns
         numeric_embeddings, string_embeddings = self.__compute_content_embeddings(entity_df=entity_df)
-        similar_columns_uris = self.embeddings.get_similar_columns(numeric_column_embeddings=numeric_embeddings,
-                                                                   string_column_embeddings=string_embeddings)
+        numeric_embeddings.update(string_embeddings)
+        #Get the average of the embeddings of the columns with empty values
+        count = 0
+        embedding =np.zeros(300,)
+        for val in numeric_embeddings.values():
+            embedding = np.add(embedding, np.array(val))
+            count = count + 1
+        embedding = embedding/count
+        #Make prediction
+        probability = self.cleaning_recommender.predict(np.array(embedding).reshape(1, -1))[0]
+        # Create an index array
+        index = np.array(['SimpleImputer-median', 'SimpleImputer', 'Simple_imputer-constant', 'Simple_imputer-mean', 'Simple_imputer-most_frequent', 'fill', 'fill-0','fill-None', 'fill-empty string','fill-mean','fill-median','fill-mode', 'drop','interpolate','IterativeImputer', 'KNNImputer'])
+        # Set the index of the array
+        probability = pd.DataFrame(probability)
+        probability.index = index
+        probability.columns = ['probability']
+        print('prob',probability.sort_values('probability', inplace=True, ascending=False))
+        return probability
+
+        # similar_columns_uris = self.embeddings.get_similar_columns(numeric_column_embeddings=numeric_embeddings,
+        #                                                            string_column_embeddings=string_embeddings)
 
         # get corresponding table uris
+
         def get_table_uri(column_uri):
             return column_uri.replace(column_uri.split('/')[-1], '')[:-1]
 
@@ -213,3 +252,12 @@ class Recommender:
         selection_info['Selection_score'] = selection_info['Selection_score'].apply(lambda x: cal_selection_score(score=x, max_score_value=max_score))
 
         return selection_info
+
+        # def get_table_uri(column_uri):
+        #     return column_uri.replace(column_uri.split('/')[-1], '')[:-1]
+        #
+        # similar_table_uris = {key: get_table_uri(value) for key, value in similar_columns_uris.items()}
+        # similar_table_uris = Counter(
+        #     similar_table_uris.values())  # count similar tables and sort by most occurring tables
+        # return tuple(dict(sorted(similar_table_uris.items(), key=lambda item: item[1], reverse=True)).keys())
+
