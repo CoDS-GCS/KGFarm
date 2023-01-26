@@ -169,7 +169,7 @@ def Save_results(X, y):
 
 def main():
     #train test split
-    database_list = ['SAT','SAP','TPC-H','tpcc', 'MovieLens', 'financial', 'financial_std', 'financial_ijs','cs','Basketball_men']
+    database_list = ['MovieLens','SAT','SAP','TPC-H','Basketball_men', 'financial', 'financial_std', 'financial_ijs','cs']#,'tpcc'
     features = generate(database_list)
 
     total_pkfk_samples = features.loc[features['Has_pk_fk_relation'] == 1]

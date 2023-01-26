@@ -128,14 +128,14 @@ def get_content_similar_pairs(config, show_query: bool = False):
     {
     ?B          schema:name                 ?Name_B                                         ;
                 kglids:isPartOf             ?Table_B                                        .
-    <<?B        data:hasDeepEmbeddingContentSimilarity ?A >>    data:withCertainty  ?Score  .
+    <<?B        data:hasContentSimilarity ?A >>    data:withCertainty  ?Score  .
 
     ?A          kglids:isPartOf             ?Table_A                                        ;
                 schema:name                 ?Name_A                                         .
 
     ?Table_B    schema:name                 ?Primary_table_name                             .
     ?Table_A    schema:name                 ?Foreign_table_name                             .
-    FILTER(?Score>=0.97)
+    FILTER(?Score<=(1-0.65))
     }"""
     if show_query:
         display_query(query)
@@ -158,11 +158,10 @@ def get_distinct_dependent_values(config, show_query: bool = False):
 
 def get_content_similarity(config, show_query: bool = False):
     query = """
-    SELECT ?A ?B (?Score AS ?F2)
+    SELECT ?A ?B ((1-?Score) AS ?F2)
     WHERE
     {   
-        <<?B data:hasDeepEmbeddingContentSimilarity           ?A>>    data:withCertainty  ?Score  .                         
-        #<<?B data:hasContentSimilarity  ?A>>    data:withCertainty  ?Score  .
+        <<?B data:hasContentSimilarity           ?A>>    data:withCertainty  ?Score  .                         
     }"""
     if show_query:
         display_query(query)
@@ -175,7 +174,7 @@ def get_column_name_similarity(config, show_query: bool = False):
     SELECT ?A ?B ?F6
     WHERE
     {                                    
-        <<?B data:hasSemanticSimilarity  ?A>>    data:withCertainty  ?Score  .
+        <<?B data:hasLabelSimilarity  ?A>>    data:withCertainty  ?Score  .
         BIND(IF((?Score=1),1,0) as ?F6) .
     }"""
     if show_query:
