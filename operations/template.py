@@ -455,7 +455,7 @@ def get_data_cleaning_recommendation(config, table_id, show_query=False,
     return execute_query(config, query, timeout=timeout)
 
 
-# --------------------------------------KGFarm APIs (updation queries) via Governor-------------------------------------
+# ----------------------------------------------Farm Governor-----------------------------------------------
 
 
 def exists(config, feature_view):
@@ -505,9 +505,6 @@ def insert_current_physical_representation_of_an_entity(config, feature_view, co
         ?Table_id       featureView:name            '%s'                                    .
     }""" % (entity, column, feature_view)
     execute_query(config, query, return_type='update')
-
-
-# --------------------------------------------Farm Builder--------------------------------------------------------------
 
 
 def get_table_ids(config):
@@ -612,6 +609,24 @@ def get_pkfk_relations(config):
     }"""
     return execute_query(config, query)
 
+
+def get_column_with_high_uniqueness_and_no_missing_values(config, table_url: str, alpha: float):
+    query = """
+    SELECT ?Column_url ?Column_name ?Column_uniqueness
+    WHERE
+    {                                                            
+        ?Column_url kglids:isPartOf            <%s>                                                                         .
+        ?Column_url schema:name                ?Column_name                                                                 ;            
+                    data:hasDistinctValueCount ?Distinct_values                                                             ;
+                    data:hasTotalValueCount    ?Total_values                                                                ; 
+                    data:hasMissingValueCount  ?Missing_values                                                              .
+
+        BIND (?Distinct_values/?Total_values AS ?Column_uniqueness)
+        FILTER(?Column_uniqueness > %s)
+        FILTER(?Missing_values = 0)
+        FILTER(?Column_name != 'event_timestamp')
+    }""" % (table_url, alpha)
+    return execute_query(config, query).set_index('Column_url')
 
 # --------------------------------------------FKC Extractor-------------------------------------------------------------
 
