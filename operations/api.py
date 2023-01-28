@@ -820,7 +820,7 @@ class KGFarm:
             #     else:
             #         return cleaning_recommendations
 
-    def clean(self, entity_df: pd.DataFrame, techniques: pd.DataFrame = None):
+    def clean(self, entity_df: pd.DataFrame, cleaning_info: pd.Series = None, technique: str = None):
         """
         cleans entity_df from info coming from kgfarm.recommend_cleaning_operations
         """
@@ -832,189 +832,71 @@ class KGFarm:
             else:
                 print(f'\n{uncleaned_features} are still uncleaned')
 
-        # if cleaning_info is not None:
-        #     if cleaning_info['Operation'] == 'Fill missing values':
-        #         entity_df.fillna(cleaning_info['Parameters'], inplace=True)
-        #         print(f'filled missing values for {cleaning_info["Feature"]} feature(s)')
-        #     elif cleaning_info['Operation'] == 'Interpolate':
-        #         params = cleaning_info['Parameters']
-        #         method = params.get('method')
-        #         print(f'interpolated missing values for {cleaning_info["Feature"]} feature(s)')
-        #         entity_df.interpolate(method=method, inplace=True)
-        #     else:
-        #         features = list(cleaning_info['Feature'])
-        #         entity_df.dropna(subset=features, how='any', inplace=True)
-        #         print(f'dropped missing values for {cleaning_info["Feature"]} feature(s)')
-        #
-        #     check_for_uncleaned_features(df=entity_df)
-        #     return entity_df
-        #
-        # el
-        def apply_operation_numeric(technique, entity_df):
-            if technique is not None:  # clean by human-in-the-loop
-                columns = list(self.get_columns_to_be_cleaned(df=entity_df)['Feature'])
-                if technique == 'drop':
-                    entity_df.dropna(how='any', inplace=True)
-                    entity_df.reset_index(drop=True, inplace=True)
-                    print(f'missing values from {columns} were dropped')
-                    check_for_uncleaned_features(df=entity_df)
-                    return entity_df
-                elif technique.__contains__('fill'):
-                    def get_mode(feature: pd.Series):  # fill categorical data with mode
-                        return feature.mode()[0]
+        if cleaning_info is not None:
+            if cleaning_info['Operation'] == 'Fill missing values':
+                entity_df.fillna(cleaning_info['Parameters'], inplace=True)
+                print(f'filled missing values for {cleaning_info["Feature"]} feature(s)')
+            elif cleaning_info['Operation'] == 'Interpolate':
+                params = cleaning_info['Parameters']
+                method = params.get('method')
+                print(f'interpolated missing values for {cleaning_info["Feature"]} feature(s)')
+                entity_df.interpolate(method=method, inplace=True)
+            else:
+                features = list(cleaning_info['Feature'])
+                entity_df.dropna(subset=features, how='any', inplace=True)
+                print(f'dropped missing values for {cleaning_info["Feature"]} feature(s)')
 
-                    if technique == 'fill-median':
+            check_for_uncleaned_features(df=entity_df)
+            return entity_df
+
+        elif technique is not None:  # clean by human-in-the-loop
+            columns = list(self.get_columns_to_be_cleaned(df=entity_df)['Feature'])
+            if technique == 'drop':
+                entity_df.dropna(how='any', inplace=True)
+                entity_df.reset_index(drop=True, inplace=True)
+                print(f'missing values from {columns} were dropped')
+                check_for_uncleaned_features(df=entity_df)
+                return entity_df
+            elif technique == 'fill' or technique == 'quick clean':
+                def get_mode(feature: pd.Series):  # fill categorical data with mode
+                    return feature.mode()[0]
+
+                if technique == 'quick clean':
+                    for column in tqdm(columns):
+                        mode = get_mode(entity_df[column])
+                        entity_df[column].fillna(mode, inplace=True)
+                    return entity_df
+
+                fill_value = input(
+                    "Enter the value to fill the missing data or 'mean', 'median', 'mode' to fill by statistics")
+                if fill_value not in {'mean', 'median', 'mode'}:  # fill constant value
+                    entity_df.fillna(fill_value, inplace=True)
+                else:
+                    if fill_value == 'median':
                         entity_df.fillna(entity_df.median(), inplace=True)
-                    elif technique == 'fill-mean':
+                    elif fill_value == 'mean':
                         entity_df.fillna(entity_df.mean(), inplace=True)
-                    elif technique == 'fill-mode':
-                        entity_df.fillna(entity_df.mode(), inplace=True)
-                    elif technique == 'fill-0':
-                        entity_df.fillna(0, inplace=True)
                     else:
                         for column in tqdm(columns):
                             mode = get_mode(entity_df[column])
                             entity_df[column].fillna(mode, inplace=True)
 
+                entity_df.reset_index(drop=True, inplace=True)
+                print(f'missing values from {columns} were filled with {fill_value}')
+                check_for_uncleaned_features(df=entity_df)
+                return entity_df
+            elif technique == 'interpolate':
+                try:
+                    entity_df.interpolate(inplace=True)
                     entity_df.reset_index(drop=True, inplace=True)
-                    check_for_uncleaned_features(df=entity_df)
-                    return entity_df
-                elif technique == 'interpolate':
-                    try:
-                        entity_df.interpolate(inplace=True)
-                        entity_df.reset_index(drop=True, inplace=True)
-                        print(f'missing values from {columns} were interpolated')
-                    except TypeError:
-                        print('only numerical features can be interpolated')
-                    check_for_uncleaned_features(df=entity_df)
-                    return entity_df
-                elif technique == 'Simple_imputer-most_frequent':
-                    imputer = SimpleImputer(strategy='most_frequent')
-                    imputer.fit(entity_df)
-                    X_imputed = imputer.transform(entity_df)
-                    return X_imputed
-                elif technique.__contains__('SimpleImputer'):
-                    try:
-                        if technique == 'SimpleImputer-median':
-                            imputer = SimpleImputer(strategy='median')
-                            imputer.fit(entity_df)
-                            X_imputed = imputer.transform(entity_df)
-                        elif technique == 'Simple_imputer-most_frequent':
-                            imputer = SimpleImputer(strategy='most_frequent')
-                            imputer.fit(entity_df)
-                            X_imputed = imputer.transform(entity_df)
-                        elif technique == 'Simple_imputer-constant':
-                            imputer = SimpleImputer(strategy='constant')
-                            imputer.fit(entity_df)
-                            X_imputed = imputer.transform(entity_df)
-                        else:
-                            imputer = SimpleImputer(strategy='mean')
-                            imputer.fit(entity_df)
-                            X_imputed = imputer.transform(entity_df)
-                    except TypeError:
-                        print('only numerical features can be interpolated')
-                    check_for_uncleaned_features(df=entity_df)
-                    return X_imputed
-                elif technique == 'IterativeImputer':
-                    imputer = IterativeImputer(BayesianRidge())
-                    imputer.fit(entity_df)
-                    X_imputed = imputer.transform(entity_df)
-                    check_for_uncleaned_features(df=X_imputed)
-                    return X_imputed
-                elif technique == 'KNNImputer':
-                    try:
-                        entity_df.interpolate(inplace=True)
-                        entity_df.reset_index(drop=True, inplace=True)
-                        print(f'missing values from {columns} were interpolated')
-                    except TypeError:
-                        print('only numerical features can be interpolated')
-                    check_for_uncleaned_features(df=entity_df)
-                    return entity_df
-                else:
-                    if technique not in {'drop', 'fill', 'interpolate', 'imputer'}:
-                        raise ValueError("technique must be one out of 'drop', 'fill', 'interpolate, 'imputer''")
-
-        def apply_operation_string(technique, entity_df):
-            if technique is not None:  # clean by human-in-the-loop
-                columns = list(self.get_columns_to_be_cleaned(df=entity_df)['Feature'])
-                # if technique == 'drop':
-                #     entity_df.dropna(how='any', inplace=True)
-                #     entity_df.reset_index(drop=True, inplace=True)
-                #     print(f'missing values from {columns} were dropped')
-                #     check_for_uncleaned_features(df=entity_df)
-                #     return entity_df
-                # el
-                if technique.__contains__('fill'):
-                    def get_mode(feature: pd.Series):  # fill categorical data with mode
-                        return feature.mode()[0]
-
-
-                    if technique == 'fill-mode':
-                        entity_df.fillna(entity_df.mode(), inplace=True)
-                    elif technique == 'fill-None':
-                        entity_df.fillna('None', inplace=True)
-                    elif technique == 'fill-empty string':
-                        entity_df.fillna('', inplace=True)
-                    else:
-                        for column in tqdm(columns):
-                            mode = get_mode(entity_df[column])
-                            entity_df[column].fillna(mode, inplace=True)
-
-                    entity_df.reset_index(drop=True, inplace=True)
-                    check_for_uncleaned_features(df=entity_df)
-                    return entity_df
-
-                elif technique == 'IterativeImputer':
-                    imputer = IterativeImputer(BayesianRidge())
-                    imputer.fit(entity_df)
-                    X_imputed = imputer.transform(entity_df)
-                    check_for_uncleaned_features(df=X_imputed)
-                    return X_imputed
-                elif technique == 'KNNImputer':
-                    try:
-                        entity_df.interpolate(inplace=True)
-                        entity_df.reset_index(drop=True, inplace=True)
-                        print(f'missing values from {columns} were interpolated')
-                    except TypeError:
-                        print('only numerical features can be interpolated')
-                    check_for_uncleaned_features(df=entity_df)
-                    return entity_df
-                else:
-                    if technique not in {'drop', 'fill', 'interpolate', 'imputer'}:
-                        raise ValueError("technique must be one out of 'drop', 'fill', 'interpolate, 'imputer''")
-
-        string_operations = ['drop','fill-mode','fill-None','fill-empty string','IterativeImputer','KNNImputer']
-        numeric_operations = ['drop', 'fill-mode', 'fill-mean', 'fill-median', 'fill-0', 'SimpleImputer-median',
-                              'SimpleImputer', 'Simple_imputer-constant', 'Simple_imputer-mean',
-                              'Simple_imputer-most_frequent', 'IterativeImputer', 'KNNImputer']
-        # Filter the DataFrame to select only non-object columns
-        print('en',entity_df)
-        string_columns_name = entity_df.select_dtypes(include='object').columns
-        numeric_columns_name = entity_df.select_dtypes(exclude='object').columns
-        # Get the column values of the numeric columns
-        numeric_columns = entity_df[numeric_columns_name].values
-        string_columns = entity_df[string_columns_name].values
-
-        numeric_columns = pd.DataFrame(numeric_columns, columns = numeric_columns_name)
-        string_columns = pd.DataFrame(string_columns, columns=string_columns_name)
-        # Dropping drop from the options
-        techniques = techniques.drop(index=["drop"], axis=0)
-        print('tech',techniques)
-        print(techniques.index[0], numeric_columns)
-        # Iterate over the non-object columns
-        if not numeric_columns.empty:
-            for i in range(0,len(techniques)):
-                if techniques.index[i] in numeric_operations:
-                    print('Applying ', techniques.index[i])
-                    numeric_columns = apply_operation_numeric(techniques.index[i],numeric_columns)
-                    break
-        if not string_columns.empty:
-            for i in range(0,len(techniques)):
-                if techniques.index[i] in string_operations:#.isin(string_operations).any():
-                    print('Applying ',techniques.index[i])
-                    string_columns = apply_operation_string(techniques.index[i],string_columns)
-                    break
-        return pd.DataFrame(numeric_columns, columns = numeric_columns_name) #string_columns.join(numeric_columns)
+                    print(f'missing values from {columns} were interpolated')
+                except TypeError:
+                    print('only numerical features can be interpolated')
+                check_for_uncleaned_features(df=entity_df)
+                return entity_df
+            else:
+                if technique not in {'drop', 'fill', 'interpolate'}:
+                    raise ValueError("technique must be one out of 'drop', 'fill' or 'interpolate'")
 
     def recommend_features_to_be_selected(self, entity_df: pd.DataFrame, dependent_variable: str, k: int):
         recommended_features = list(self.recommender.get_feature_selection_score(entity_df=entity_df,
