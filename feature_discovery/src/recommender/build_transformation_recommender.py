@@ -25,7 +25,7 @@ class Recommender:
     """A classifier that recommends type of feature transformation based on column (feature) embeddings"""
 
     def __init__(self, feature_type: str, port: int = 5820, database: str = 'kgfarm_recommender',
-                 metadata: str = '../../storage/CoLR_embeddings/',
+                 metadata: str = '../../../operations/storage/CoLR_embeddings/',
                  show_connection_status: bool = False):
         self.feature_type = feature_type
         self.database = database
