@@ -6,7 +6,8 @@ import pandas as pd
 import seaborn as sns
 from tqdm import tqdm
 from matplotlib import pyplot as plt
-from sklearn.ensemble import RandomForestClassifier
+# from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from operations.template import get_features_and_targets
@@ -21,7 +22,7 @@ class FeatureSelector:
                  metadata='../../storage/CoLR_embeddings/', show_connection_status: bool = True):
         self.config = connect_to_stardog(port, database, show_connection_status)
         self.metadata = metadata
-        self.classifier = RandomForestClassifier()
+        self.classifier = MLPClassifier(hidden_layer_sizes=(50, 100, 100))
 
         self.embeddings_table_to_column = {}  # {table_id: {column_id: embedding}
         self.modeling_data = None
@@ -131,7 +132,7 @@ def build():
     selector = FeatureSelector(show_connection_status=False)
     selector.load_embeddings_of_columns_per_table()
     selector.generate_modeling_data(n_samples=None, export=True)
-    selector.visualize()
+    # selector.visualize()
     selector.train(export=True)
 
 

@@ -507,13 +507,13 @@ def insert_current_physical_representation_of_an_entity(config, feature_view, co
     execute_query(config, query, return_type='update')
 
 
-def get_table_ids(config):
+def get_table_ids(config, n_tables=''):
     query = """
     SELECT DISTINCT ?Table_id
     WHERE
     {
       ?Table_id rdf:type  kglids:Table  .
-    } """
+    } LIMIT %s""" % n_tables
     return execute_query(config, query)
 
 
@@ -628,6 +628,25 @@ def get_column_with_high_uniqueness_and_no_missing_values(config, table_url: str
     }""" % (table_url, alpha)
     return execute_query(config, query).set_index('Column_url')
 
+
+def get_column_pairs_with_content_similarity(config, relationship: str, table_url: str):
+    query = """
+    SELECT DISTINCT ?Column_x_url ?Column_y_url ?Score 
+    WHERE
+    {
+       {
+        <<?Column_x_url data:%s ?Column_y_url>>    data:withCertainty ?Score.
+        ?Column_x_url    kglids:isPartOf  <%s> .
+       }
+       UNION
+       {
+        <<?Column_x_url data:%s ?Column_y_url>>    data:withCertainty ?Score.
+        ?Column_y_url    kglids:isPartOf  <%s> .   
+       }   
+       FILTER (?Score > 0.95)
+    }""" % (relationship, table_url, relationship, table_url)
+    return execute_query(config, query)[['Column_x_url', 'Column_y_url']]
+
 # --------------------------------------------FKC Extractor-------------------------------------------------------------
 
 
@@ -657,7 +676,7 @@ def get_distinct_dependent_values(config, show_query: bool = False):
     SELECT ?A ?B (?Distinct_values/?Total_values AS ?F1)
     WHERE
     {   
-        ?B  data:hasInclusionDependency ?A                  .
+        ?B  data:hasContentSimilarity ?A                  .
         
         ?A  data:hasTotalValueCount     ?Total_values       ;
             data:hasDistinctValueCount  ?Distinct_values    .  

@@ -1,7 +1,7 @@
 import pandas as pd
-from tqdm import tqdm
 
 from helpers.helper import connect_to_stardog
+from operations.template import *
 
 
 def generate_features(conn, ind: pd.DataFrame):
@@ -9,11 +9,12 @@ def generate_features(conn, ind: pd.DataFrame):
         # 1. join features, key = A & B
         # 2. if NAN i.e. edge didn't exist --> 0
         # 3. repeat for all features
-        result = ind_pairs
-        for feature in tqdm(features):
-            result = pd.concat([result, feature], axis=1)
-            result = result.loc[:, ~result.columns.duplicated()].fillna(0)
+        # print(ind_pairs)
 
+        result = ind_pairs
+        for feature in features:
+            result = pd.concat([result, feature], axis=1)
+            result = result.loc[:, ~result.columns.duplicated()].dropna()
         return result
 
     def normalize(vector: list):
@@ -24,13 +25,28 @@ def generate_features(conn, ind: pd.DataFrame):
         return get_distinct_dependent_values(conn)
 
     def generate_F02():
-        return get_content_similarity(conn)
+        A = list(zip(ind['A'].tolist(), ind['B'].tolist()))
+        F = get_content_similarity(conn)
+        F_list = pd.Series(F[F[['A', 'B']].agg(tuple, 1).isin(tuple(A))].values.tolist())
+        F2 = []
+        for a in A:
+            found = False
+            for b in F_list:
+                if a[0] == b[0] and a[1] == b[1]:
+                    F2.append(b[2])
+                    found = True
+                    break
+            if not found:
+                F2.append(0)
+        f2 = ind
+        f2['F2'] = F2
+        return f2
 
     def generate_F03():
         # TODO: F3 generation needs optimization
         # counts how often A appears as B
         count = []
-        A = ind['A'].to_list()
+        A = ind['A'].tolist()
         B = ind['B'].tolist()
 
         for a in A:
@@ -40,7 +56,8 @@ def generate_features(conn, ind: pd.DataFrame):
                     presence = presence + 1
             count.append(presence)
 
-        count = normalize(count)
+        if len(count) != 0:
+            count = normalize(count)
         f3 = ind
         f3['F3'] = count
         return f3
@@ -48,7 +65,8 @@ def generate_features(conn, ind: pd.DataFrame):
     def generate_F04():
         A = ind['A'].tolist()
         freq = list(map(lambda x: A.count(x), A))
-        freq = normalize(freq)
+        if len(freq) != 0:
+            freq = normalize(freq)
         f4 = ind
         f4['F4'] = freq
         return f4
@@ -66,8 +84,8 @@ def generate_features(conn, ind: pd.DataFrame):
                 if a == b:
                     presence = presence + 1
             count.append(presence)
-
-        count = normalize(count)
+        if len(count) != 0:
+            count = normalize(count)
         f5 = ind
         f5['F5'] = count
         return f5
@@ -76,15 +94,58 @@ def generate_features(conn, ind: pd.DataFrame):
         return get_column_name_similarity(conn)
 
     def generate_F08():
-        return get_range(conn)
+        A = list(zip(ind['A'].tolist(), ind['B'].tolist()))
+        F = get_range(conn)
+        F_list = pd.Series(F[F[['A', 'B']].agg(tuple, 1).isin(tuple(A))].values.tolist())
+        F8 = []
+        for a in A:
+            found = False
+            for b in F_list:
+                if a[0] == b[0] and a[1] == b[1]:
+                    F8.append(b[2])
+                    found = True
+                    break
+            if not found:
+                F8.append(0)
+        f8 = ind
+        f8['F8'] = F8
+        return f8
 
     def generate_F09():
-        return get_typical_name_suffix(conn)
+        A = list(zip(ind['A'].tolist(), ind['B'].tolist()))
+        F = get_typical_name_suffix(conn)
+        F_list = pd.Series(F[F[['A', 'B']].agg(tuple, 1).isin(tuple(A))].values.tolist())
+        F9 = []
+        for a in A:
+            found = False
+            for b in F_list:
+                if a[0] == b[0] and a[1] == b[1]:
+                    F9.append(b[2])
+                    found = True
+                    break
+            if not found:
+                F9.append(0)
+        f9 = ind
+        f9['F9'] = F9
+        return f9
 
     def generate_F10():
-        return get_table_size_ratio(conn)
-
-    print('generating features')
+        A = list(zip(ind['A'].tolist(), ind['B'].tolist()))
+        F = get_table_size_ratio(conn)
+        F_list = pd.Series(F[F[['A', 'B']].agg(tuple, 1).isin(tuple(A))].values.tolist())
+        F10 = []
+        for a in A:
+            found = False
+            for b in F_list:
+                if a[0] == b[0] and a[1] == b[1]:
+                    F10.append(b[2])
+                    found = True
+                    break
+            if not found:
+                F10.append(0)
+        f10 = ind
+        f10['F10'] = F10
+        return f10
     return aggregate_features(ind, [generate_F01(),
                                     generate_F02(),
                                     generate_F03(),
@@ -93,8 +154,7 @@ def generate_features(conn, ind: pd.DataFrame):
                                     generate_F06(),
                                     generate_F08(),
                                     generate_F09(),
-                                    generate_F10()])[['Foreign_table', 'Foreign_key', 'Primary_table',
-                                                      'Primary_key', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F8',
+                                    generate_F10()])[['A', 'B', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F8',
                                                       'F9', 'F10']]
 
 
