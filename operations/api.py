@@ -898,12 +898,17 @@ class KGFarm:
                 if technique not in {'drop', 'fill', 'interpolate'}:
                     raise ValueError("technique must be one out of 'drop', 'fill' or 'interpolate'")
 
+    """
     def recommend_features_to_be_selected(self, entity_df: pd.DataFrame, dependent_variable: str, k: int):
         recommended_features = list(self.recommender.get_feature_selection_score(entity_df=entity_df,
                                                                                  dependent_variable=dependent_variable).head(
             k)['Feature'])
-        print(f'Recommending top-{k} feature(s) {recommended_features}')
+        # print(f'Recommending top-{k} feature(s) {recommended_features}')
         return entity_df[recommended_features], entity_df[dependent_variable]  # return X, y
+    """
+
+    def recommend_features_to_be_selected(self, entity_df: pd.DataFrame, dependent_variable: str):
+        return self.recommender.get_feature_selection_score(entity_df=entity_df.sample(n=len(entity_df), random_state=1), dependent_variable=dependent_variable)
 
 
 # TODO: refactor (make a generic function to return enrich table_ids from self.__table_transformations)
