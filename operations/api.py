@@ -6,8 +6,10 @@ import numpy as np
 import urllib.parse
 import pandas as pd
 import seaborn as sns
-from sklearn.experimental import enable_iterative_imputer
-from sklearn.impute import IterativeImputer, SimpleImputer
+# from autoimpute.imputations import SingleImputer
+# from sklearn.experimental import enable_iterative_imputer
+# from sklearn.impute import IterativeImputer
+from sklearn.impute import SimpleImputer, KNNImputer
 from sklearn.linear_model import BayesianRidge
 from tqdm import tqdm
 from pathlib import Path
@@ -618,7 +620,7 @@ class KGFarm:
         columns.reset_index(drop=True, inplace=True)
         return columns
 
-    def recommend_cleaning_operations(self, entity_df: pd.DataFrame, visualize_missing_data: bool = True,
+    def recommend_cleaning_operations(self, entity_df: pd.DataFrame, visualize_missing_data: bool = False,
                                       top_k: int = 10,
                                       show_query: bool = False):
         """
@@ -767,7 +769,9 @@ class KGFarm:
             print('nothing to clean')
             return entity_df
 
-        table_id = self.__check_if_profiled(df=entity_df)
+        #########CHANGED FOR TESTING PURPOSES
+        #table_id = self.__check_if_profiled(df=entity_df)
+        table_id = False
 
         if table_id is not False:  # seen data
             if isinstance(table_id, tuple):
@@ -792,7 +796,7 @@ class KGFarm:
             return data_cleaning_info
 
         elif table_id is False:  # unseen data
-            print('finding similar columns and tables to entity dataframe',entity_df[columns_to_be_cleaned['Feature']])
+            #print('finding similar columns and tables to entity dataframe',entity_df[columns_to_be_cleaned['Feature']])
             similar_tables = self.recommender.get_cleaning_recommendation(
                              entity_df[columns_to_be_cleaned['Feature']])  # align
             print('Suggestions are:', similar_tables)
@@ -831,25 +835,8 @@ class KGFarm:
                 print('\nall features look clean')
             else:
                 print(f'\n{uncleaned_features} are still uncleaned')
+                return 1
 
-        # if cleaning_info is not None:
-        #     if cleaning_info['Operation'] == 'Fill missing values':
-        #         entity_df.fillna(cleaning_info['Parameters'], inplace=True)
-        #         print(f'filled missing values for {cleaning_info["Feature"]} feature(s)')
-        #     elif cleaning_info['Operation'] == 'Interpolate':
-        #         params = cleaning_info['Parameters']
-        #         method = params.get('method')
-        #         print(f'interpolated missing values for {cleaning_info["Feature"]} feature(s)')
-        #         entity_df.interpolate(method=method, inplace=True)
-        #     else:
-        #         features = list(cleaning_info['Feature'])
-        #         entity_df.dropna(subset=features, how='any', inplace=True)
-        #         print(f'dropped missing values for {cleaning_info["Feature"]} feature(s)')
-        #
-        #     check_for_uncleaned_features(df=entity_df)
-        #     return entity_df
-        #
-        # el
         def apply_operation_numeric(technique, entity_df):
             if technique is not None:  # clean by human-in-the-loop
                 columns = list(self.get_columns_to_be_cleaned(df=entity_df)['Feature'])
@@ -860,33 +847,48 @@ class KGFarm:
                     check_for_uncleaned_features(df=entity_df)
                     return entity_df
                 elif technique.__contains__('fill'):
-                    def get_mode(feature: pd.Series):  # fill categorical data with mode
-                        return feature.mode()[0]
+                    def fillna_median(column):
+                        median = column.median()
+                        return column.fillna(median, inplace=True)
+                    def fillna_mean(column):
+                        mean = column.mean()
+                        return column.fillna(mean, inplace=True)
+                    def fillna_mode(column):
+                        mode = column.mode()
+                        return column.fillna(mode, inplace=True)
 
                     if technique == 'fill-median':
-                        entity_df.fillna(entity_df.median(), inplace=True)
+                        entity_df.apply(fillna_median)
                     elif technique == 'fill-mean':
-                        entity_df.fillna(entity_df.mean(), inplace=True)
+                        entity_df.apply(fillna_mean)
                     elif technique == 'fill-mode':
-                        entity_df.fillna(entity_df.mode(), inplace=True)
-                    elif technique == 'fill-0':
-                        entity_df.fillna(0, inplace=True)
-                    else:
-                        for column in tqdm(columns):
-                            mode = get_mode(entity_df[column])
-                            entity_df[column].fillna(mode, inplace=True)
+                        entity_df.apply(fillna_mode)
+                    elif technique == 'fill-outlier':
+                        object_cols = entity_df.select_dtypes(include=['object']).columns
+                        entity_df[object_cols] = entity_df[object_cols].fillna(value='x')
+                        entity_df = entity_df.fillna(value=0)
+                        # entity_df.fillna(0, inplace=True)
 
                     entity_df.reset_index(drop=True, inplace=True)
                     check_for_uncleaned_features(df=entity_df)
                     return entity_df
                 elif technique == 'interpolate':
                     try:
-                        entity_df.interpolate(inplace=True)
-                        entity_df.reset_index(drop=True, inplace=True)
-                        print(f'missing values from {columns} were interpolated')
+                        entity_df.interpolate(axis=1, inplace=True)
+                        # entity_df.reset_index(drop=True, inplace=True)
+                        #####################print(f'missing values from {columns} were interpolated')
                     except TypeError:
                         print('only numerical features can be interpolated')
-                    check_for_uncleaned_features(df=entity_df)
+                    check = check_for_uncleaned_features(df=entity_df)
+                    count = 0
+                    while check == 1 and count<10:
+                        print('reinterpolating...')
+                        count = count + 1
+                        print('count',count)
+                        entity_df.interpolate(inplace=True)
+                        check = check_for_uncleaned_features(df=entity_df)
+
+
                     return entity_df
                 elif technique == 'Simple_imputer-most_frequent':
                     imputer = SimpleImputer(strategy='most_frequent')
@@ -915,17 +917,26 @@ class KGFarm:
                         print('only numerical features can be interpolated')
                     check_for_uncleaned_features(df=entity_df)
                     return X_imputed
-                elif technique == 'IterativeImputer':
-                    imputer = IterativeImputer(BayesianRidge())
-                    imputer.fit(entity_df)
-                    X_imputed = imputer.transform(entity_df)
-                    check_for_uncleaned_features(df=X_imputed)
-                    return X_imputed
+                # elif technique == 'IterativeImputer':
+                #     imputer = IterativeImputer(BayesianRidge())
+                #     imputer.fit(entity_df)
+                #     X_imputed = imputer.transform(entity_df)
+                #     check_for_uncleaned_features(df=X_imputed)
+                #     return X_imputed
                 elif technique == 'KNNImputer':
                     try:
-                        entity_df.interpolate(inplace=True)
-                        entity_df.reset_index(drop=True, inplace=True)
-                        print(f'missing values from {columns} were interpolated')
+                        #Divide the columns and values
+                        col = entity_df.columns
+                        val = entity_df.values
+                        imputer = KNNImputer()
+                        imputer.fit(val)
+                        X_imputed = imputer.transform(val)
+
+                        entity_df = pd.DataFrame(X_imputed, columns=col)
+                        print(entity_df)
+                        check_for_uncleaned_features(df=entity_df)
+                        return entity_df
+                        ###########################print(f'missing values from {columns} were interpolated')
                     except TypeError:
                         print('only numerical features can be interpolated')
                     check_for_uncleaned_features(df=entity_df)
@@ -964,17 +975,17 @@ class KGFarm:
                     check_for_uncleaned_features(df=entity_df)
                     return entity_df
 
-                elif technique == 'IterativeImputer':
-                    imputer = IterativeImputer(BayesianRidge())
-                    imputer.fit(entity_df)
-                    X_imputed = imputer.transform(entity_df)
-                    check_for_uncleaned_features(df=X_imputed)
-                    return X_imputed
+                # elif technique == 'IterativeImputer':
+                #     imputer = IterativeImputer(BayesianRidge())
+                #     imputer.fit(entity_df)
+                #     X_imputed = imputer.transform(entity_df)
+                #     check_for_uncleaned_features(df=X_imputed)
+                #     return X_imputed
                 elif technique == 'KNNImputer':
                     try:
                         entity_df.interpolate(inplace=True)
                         entity_df.reset_index(drop=True, inplace=True)
-                        print(f'missing values from {columns} were interpolated')
+                        ########################################print(f'missing values from {columns} were interpolated')
                     except TypeError:
                         print('only numerical features can be interpolated')
                     check_for_uncleaned_features(df=entity_df)
@@ -988,7 +999,7 @@ class KGFarm:
                               'SimpleImputer', 'Simple_imputer-constant', 'Simple_imputer-mean',
                               'Simple_imputer-most_frequent', 'IterativeImputer', 'KNNImputer']
         # Filter the DataFrame to select only non-object columns
-        print('en',entity_df)
+        # print('en',entity_df)
         string_columns_name = entity_df.select_dtypes(include='object').columns
         numeric_columns_name = entity_df.select_dtypes(exclude='object').columns
         # Get the column values of the numeric columns
@@ -1003,7 +1014,7 @@ class KGFarm:
         # print(techniques.index[0], numeric_columns)
         # Iterate over the non-object columns
 
-        entity_df = apply_operation_numeric(techniques.index[0], entity_df)
+        entity_df = apply_operation_numeric(techniques.index[0], entity_df)#.index[0]
             # for i in range(0,len(techniques)):
             #     if techniques.index[i] in numeric_operations:
             #         print('Applying ', techniques.index[i])

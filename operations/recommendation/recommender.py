@@ -16,7 +16,7 @@ from operations.recommendation.utils.column_embeddings import load_embedding_mod
 class Recommender:
     def __init__(self):
         self.cleaning_recommender = joblib.load(
-            'operations/recommendation/utils/models/cleaning_Table_fill.pkl')
+            'operations/recommendation/utils/models/cleaning_Table_for_test.pkl')
         # KGFarm transformation recommendation
         self.numeric_transformation_recommender = joblib.load(
             'operations/recommendation/utils/models/transformation_recommender_numerical.pkl')
@@ -43,20 +43,18 @@ class Recommender:
         def get_bin_repr(val):
             return [int(j) for j in bitstring.BitArray(float=float(val), length=32).bin]
 
-        print('COLUMNS',entity_df.columns)
         for column in entity_df.columns:
-            print('222COLUMNS', column)
             if pd.api.types.is_numeric_dtype(entity_df[column]):
-                print('NUM:',column)
                 bin_repr = entity_df[column].apply(get_bin_repr, convert_dtype=False).to_list()
                 bin_tensor = torch.FloatTensor(bin_repr).to('cpu')
                 with torch.inference_mode():
                     embedding_tensor = self.numeric_embedding_model(bin_tensor).mean(axis=0)
                 numeric_column_embeddings[column] = embedding_tensor.tolist()
             else:
-                print('STR:', column)
                 char_level_embed_model = chars2vec.load_model('eng_50')
-                input_vector = char_level_embed_model.vectorize_words(entity_df[column].dropna().tolist())
+                word_list = entity_df[column].dropna().tolist()
+                #print(word_list)
+                input_vector = char_level_embed_model.vectorize_words(word_list)
                 input_tensor = torch.FloatTensor(input_vector).to('cpu')
                 with torch.inference_mode():
                     embedding_tensor = self.categorical_embedding_model(input_tensor).mean(axis=0)
@@ -173,26 +171,24 @@ class Recommender:
         probability = self.cleaning_recommender.predict(np.array(embedding).reshape(1, -1))[0]
         print('pred:',probability)
         # Create an index array
-        index = np.array(['SimpleImputer-median', 'SimpleImputer', 'Simple_imputer-constant', 'Simple_imputer-mean',
-                          'Simple_imputer-most_frequent', 'fill', 'fill-0', 'fill-None', 'fill-backfill','fill-bfill','fill-empty string',
-                          'fill-ffill','fill-mean', 'fill-median', 'fill-mode', 'fill-pad', 'drop', 'interpolate', 'IterativeImputer',
+        index = np.array(['SimpleImputer-median', 'Simple_imputer-constant', 'Simple_imputer-mean',
+                          'Simple_imputer-most_frequent', 'fill-backfill','fill-bfill',
+                          'fill-ffill','fill-mean', 'fill-median', 'fill-mode', 'fill-outlier', 'fill-pad', 'drop', 'interpolate', 'IterativeImputer',
                           'KNNImputer'])
         # Set the index of the array
         probability = pd.DataFrame(probability)
         probability.index = index
         probability.columns = ['probability']
         probability = probability.drop(index='drop', axis=0)
-        if not string_embeddings:
-            print('num prob',probability)
-        else:
+        if string_embeddings:
             #List of operations incompatible with strings
             operations = ['fill-mean', 'fill-median', 'Simple_imputer-constant',
-                          'Simple_imputer-most_frequent', 'IterativeImputer', 'KNNImputer']
+                          'Simple_imputer-most_frequent', 'IterativeImputer', 'KNNImputer', 'interpolate']
             probability = probability.drop(index=operations, axis=0)
 
 
         probability.sort_values('probability', inplace=True, ascending=False)
-        print('prob', probability)
+        # print('prob', probability)
         return probability
 
         # get corresponding table uris

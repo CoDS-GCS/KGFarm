@@ -112,6 +112,10 @@ class Recommender:
         # print('df', df[0:5])
         def generate_col():
             cleaning_table = get_cleaning_on_columns(self.config)
+            ### Eliminate datasets: boston, wine, diabetes, and breast cancer
+            mask = cleaning_table['Table'].str.lower().str.contains('boston|wine|diabetes|cancer')
+            # select the rows that do not contain 'Engineer'
+            cleaning_table = cleaning_table[~mask]
             print('ct',cleaning_table)
 
             def change_value(row):
@@ -130,14 +134,16 @@ class Recommender:
                         row['Cleaning_Op'] = 'fill-bfill'
                     elif row['text'].__contains__('pad'):
                         row['Cleaning_Op'] = 'fill-pad'
-                    elif row['text'].__contains__('fillna(0'):
-                        row['Cleaning_Op'] = 'fill-0'
-                    elif row['text'].lower().__contains__('fillna("none') or row['text'].lower().__contains__("fillna('none"):
-                        row['Cleaning_Op'] = 'fill-None'
-                    elif row['text'].__contains__("fillna(''"):
-                        row['Cleaning_Op'] = 'fill-empty string'
+                    elif row['text'].__contains__('fillna(0') or row['text'].__contains__('fillna(value=0') or\
+                            row['text'].__contains__('fillna(value="0') or row['text'].__contains__("fillna(value='0") or\
+                            row['text'].lower().__contains__('fillna("none') or row['text'].lower().__contains__("fillna('none") or\
+                            row['text'].lower().__contains__('fillna("null') or row['text'].lower().__contains__("fillna('null") or \
+                            row['text'].lower().__contains__('fillna("missing') or row['text'].lower().__contains__("fillna('missing") or \
+                            row['text'].lower().__contains__('fillna("unknown') or row['text'].lower().__contains__("fillna('unknown") or \
+                            row['text'].__contains__("fillna(''"):
+                        row['Cleaning_Op'] = 'fill-outlier'
                     else:
-                        row['Cleaning_Op'] = 'fill'
+                        row['Cleaning_Op'] = 'To be dropped'
                 elif row['Cleaning_Op'] == 'http://kglids.org/resource/library/sklearn/impute/SimpleImputer':
                     if row['text'].__contains__('median'):
                         row['Cleaning_Op'] = 'SimpleImputer-median'
@@ -148,14 +154,15 @@ class Recommender:
                     elif row['text'].__contains__('constant'):
                         row['Cleaning_Op'] = 'Simple_imputer-constant'
                     else:
-                        row['Cleaning_Op'] = 'Simple_imputer'
+                        row['Cleaning_Op'] = 'To be dropped'
                 return row
 
             # apply the function to each row of the DataFrame
             cleaning_table = cleaning_table.apply(change_value, axis=1)
+            cleaning_table = cleaning_table[cleaning_table['Cleaning_Op'] != 'To be dropped']
                     #if cleaning_table[i][1] == '':
                 # print(cleaning_table.to_string())
-            print(cleaning_table)
+            # print(cleaning_table)
             return cleaning_table#['Table']
 
         self.modeling_data = generate_col()
@@ -166,7 +173,7 @@ class Recommender:
         # self.modeling_data['Embeddings'] = pd.array(self.modeling_data['Embeddings'].tolist())
         # self.modeling_data.set_index('Embeddings', inplace=True)
 
-        print('11111111',self.modeling_data.to_string())
+        # print('11111111',self.modeling_data.to_string())
         # self.modeling_data = self.modeling_data.drop('Table', axis=1)
         # Drop the table column
         # self.modeling_data = self.modeling_data.drop('Table', axis=1)
@@ -282,17 +289,6 @@ class Recommender:
         #     # convert transformations
         #     self.modeling_data['Transformation'] = self.encoder.fit_transform(self.modeling_data['Transformation'])
         #
-        def balance_classes():
-            transformation_statistics = self.modeling_data['Cleaning_Op'].value_counts()
-            transformation_statistics = dict(transformation_statistics)
-            # lowest_occurring_transformation = min(transformation_statistics, key=transformation_statistics.get)
-            np.random.seed(1)
-            for transformation_class in transformation_statistics.keys():
-                if transformation_class == 'http://kglids.org/resource/library/pandas/DataFrame/dropna' or transformation_class == 'http://kglids.org/resource/library/pandas/DataFrame/fillna':
-                    drop = np.random.choice(
-                        self.modeling_data[self.modeling_data['Cleaning_Op'] == transformation_class].index,
-                        size=transformation_statistics.get(transformation_class)-transformation_statistics.get('http://kglids.org/resource/library/sklearn/impute/SimpleImputer'), replace=False)
-                    self.modeling_data.drop(drop, inplace=True)
 
         """
         def concatenate_embeddings(rows):
@@ -356,15 +352,15 @@ class Recommender:
         #
         #     cross_val_score(self.classifier, X, y, cv=outer_cv, scoring=make_scorer(score))
         #     return y_true, y_pred
-        print(self.modeling_data)
+        # print(self.modeling_data)
         X = np.array(self.modeling_data.index)
         y = np.array(self.modeling_data.values)#loc[:, ['http://kglids.org/resource/library/pandas/DataFrame/interpolate','http://kglids.org/resource/library/pandas/DataFrame/fillna','http://kglids.org/resource/library/pandas/DataFrame/dropna','http://kglids.org/resource/library/sklearn/impute/SimpleImputer','http://kglids.org/resource/library/sklearn/impute/KNNImputer','http://kglids.org/resource/library/sklearn/impute/IterativeImputer']]
         # For y to be integers instead of floats
-        print('ynf', y)
+        # print('ynf', y)
         y = y * 100
         y = np.around(y)
         y = y.astype(int)
-        print('y', y)
+        # print('y', y)
         #print('X',X)
 
         # initializing TfidfVectorizer
@@ -480,7 +476,7 @@ class Recommender:
         if export:
             if not os.path.exists('out'):
                 os.mkdir('out')
-            joblib.dump(self.classifier, 'out/cleaning_{}.pkl'.format('Table_fill'), compress=9)
+            joblib.dump(self.classifier, 'out/cleaning_{}.pkl'.format('Table_for_test'), compress=9)
             # joblib.dump(self.encoder, 'out/encoder_{}.pkl'.format(self.feature_type), compress=9)
             # print('model saved transformation_recommender_{}.pkl'.format(self.feature_type))
             # joblib.dump(self.classifier, 'out/transformation_recommender_{}.pkl'.format(self.feature_type),
