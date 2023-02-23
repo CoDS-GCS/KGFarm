@@ -135,7 +135,7 @@ def get_content_similar_pairs(config, show_query: bool = False):
 
     ?Table_B    schema:name                 ?Primary_table_name                             .
     ?Table_A    schema:name                 ?Foreign_table_name                             .
-    FILTER(?Score<=(1-0.65))
+    FILTER(?Score>=(1))
     }"""
     if show_query:
         display_query(query)

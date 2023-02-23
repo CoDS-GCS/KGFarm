@@ -255,7 +255,7 @@ def generate_features(conn, ind: pd.DataFrame,dataset_name):
 
 
 def add_labels(features_df: pd.DataFrame, database: str):
-    path_to_groundtruth = '../../../helpers/groundtruth/{}_pkfk.csv'.format(database)
+    path_to_groundtruth = '../../../helpers/groundtruth/{}_pkfk.csv'.format(database[:-3])
     groundtruth = pd.read_csv(path_to_groundtruth)
     total_pairs = len(groundtruth)
     processed_groundtruth = []
@@ -291,17 +291,17 @@ def generate(database_list: list, export_features: bool = True):
     all_features_df=pd.DataFrame()
     for database in database_list:
         # TODO: add a filter for Table_A != Table_B  while retrieving inclusion dependencies for all features
-        conn = connect_to_stardog(port=5820, db=database, show_status=True)
+        conn = connect_to_stardog(port=5822, db=database, show_status=True)
         # Get all inclusion dependencies (IND) or content similarity
         # To get the INDs from the graph
         #ind_by_graph = get_INDs(conn)
         # To get the INDs via human in the loop
-        ind_by_HITL = pd.read_csv('../../../helpers/IND_Discovery/'+database+'.csv')
+        # ind_by_HITL = pd.read_csv('../../../helpers/IND_Discovery/'+database+'.csv')
         # To get pairs by Content Similarity
         content_similar = get_content_similar_pairs(conn)
         # Generate features for these IND or content similar pairs
-        generated_pairs = ind_by_HITL
-        features_df = generate_features(conn, content_similar,database)
+        generated_pairs = content_similar
+        features_df = generate_features(conn, generated_pairs,database)
         # Add labels / target using true mappings
         features_df = add_labels(features_df, database)
         features_df.drop(columns=['Foreign_table', 'Foreign_key', 'Primary_table', 'Primary_key'], axis=1, inplace=True)
