@@ -1,0 +1,9 @@
+PK - Section,PK - Table,PK - ColName,To,FK - Section,FK - Table,FK - ColName
+,districts,id,,,accounts,district_id
+,disps,id,,,cards,disp_id
+,districts,id,,,clients,district_id
+,clients,id,,,disps,client_id
+,accounts,id,,,disps,account_id
+,accounts,id,,,loans,account_id
+,accounts,id,,,orders,account_id
+,accounts,id,,,trans,account_id

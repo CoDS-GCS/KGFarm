@@ -1,0 +1,75 @@
+# TABLES
+movies2directors.csv	3
+movies2actors.csv	4
+movies.csv	5
+users.csv	1
+u2base.csv	2
+actors.csv	7
+directors.csv	6
+# COLUMN
+1.userid	1
+6.avg_revenue	21
+5.country	17
+2.userid	5
+5.year	15
+6.d_quality	20
+5.isEnglish	16
+1.occupation	4
+3.movieid	8
+4.actorid	12
+7.a_quality	24
+1.age	2
+6.directorid	19
+4.movieid	11
+7.a_gender	23
+5.movieid	14
+5.runningtime	18
+1.u_gender	3
+4.cast_num	13
+7.actorid	22
+2.rating	7
+2.movieid	6
+3.directorid	9
+3.genre	10
+# RESULTS
+1[=5
+3[=23
+7[=1
+7[=4
+7[=5
+7[=20
+7[=24
+5[=1
+15[=1
+15[=4
+15[=5
+15[=7
+15[=20
+15[=21
+15[=24
+13[=18
+13[=20
+13[=21
+13[=24
+9[=19
+12[=22
+11[=14
+2[=1
+2[=5
+4[=1
+4[=5
+4[=7
+4[=20
+4[=24
+8[=14
+6[=14
+19[=9
+18[=13
+18[=20
+18[=21
+18[=24
+20[=24
+24[=20
+23[=3
+21[=20
+21[=24

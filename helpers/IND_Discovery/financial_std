@@ -1,0 +1,62 @@
+# TABLES
+order.csv	4
+Loan_Order.csv	6
+trans.csv	3
+loan.csv	2
+Loan_Trans.csv	5
+Loan_Acc.csv	7
+acc.csv	1
+# COLUMN
+3.balance	12
+4.bank_to	14
+7.account_id	22
+2.loan_id	3
+2.amount	4
+2.payments	6
+5.loan_id	18
+6.loan_id	20
+2.status	7
+5.transaction_id	17
+7.loan_id	21
+4.amount3	15
+4.order_id	13
+3.transaction_id	8
+3.type	9
+3.operation	10
+1.frequency	2
+2.duration	5
+3.amount2	11
+4.k_symbol	16
+1.account_id	1
+6.order_id	19
+# RESULTS
+1[=22
+3[=18
+3[=20
+3[=21
+15[=4
+15[=6
+12[=4
+12[=6
+12[=11
+12[=15
+11[=4
+11[=6
+11[=12
+11[=15
+4[=6
+4[=15
+6[=4
+6[=15
+17[=8
+18[=3
+18[=20
+18[=21
+20[=3
+20[=18
+20[=21
+19[=13
+21[=3
+21[=18
+21[=20
+22[=1

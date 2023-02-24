@@ -1,0 +1,13 @@
+PK - Section,PK - Table,PK - ColName,To,FK - Section,FK - Table,FK - ColName
+,organization,code,,,awards,organisation_code
+,foa_info,code,,,foa_info_awards,code
+,awards,award_id,,,foa_info_awards,award_id
+,awards,award_id,,,institution_awards,award_id
+,institution,name,,,institution_awards,name
+,institution,zipcode,,,institution_awards,zipcode
+,awards,award_id,,,investigator_awards,award_id
+,investigator,email_id,,,investigator_awards,email_id
+,program_element,code,,,program_element_awards,code
+,awards,award_id,,,program_element_awards,award_id
+,program_reference,code,,,program_reference_awards,code
+,awards,award_id,,,program_reference_awards,award_id

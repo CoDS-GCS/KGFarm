@@ -1,0 +1,16 @@
+PK - Section,PK - Table,PK - ColName,To,FK - Section,FK - Table,FK - ColName
+,coaches,coachID,,,awards_coaches,coachID
+,coaches,year,,,awards_coaches,year
+,players,playerID,,,awards_players,playerID
+,teams,tmID,,,coaches,tmID
+,teams,year,,,coaches,year
+,teams,tmID,,,draft,tmID
+,teams,year,,,draft,draftYear
+,players,playerID,,,player_allstar,playerID
+,players,playerID,,,players_teams,playerID
+,teams,tmID,,,players_teams,tmID
+,teams,year,,,players_teams,year
+,teams,tmID,,,series_post,tmIDWinner
+,teams,year,,,series_post,year
+,teams,tmID,,,series_post,tmIDLoser
+,teams,year,,,series_post,year

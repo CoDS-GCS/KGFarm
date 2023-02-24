@@ -1,0 +1,11 @@
+PK - Section,PK - Table,PK - ColName,To,FK - Section,FK - Table,FK - ColName
+,category,category_no,,,charge,category_no
+,member,member_no,,,charge,member_no
+,member,member_no,,,charge,member_no
+,provider,provider_no,,,charge,provider_no
+,region,region_no,,,corporation,region_no
+,region,region_no,,,member,region_no
+,corporation,corp_no,,,member,corp_no
+,member,member_no,,,payment,member_no
+,region,region_no,,,provider,region_no
+,member,member_no,,,statement,member_no

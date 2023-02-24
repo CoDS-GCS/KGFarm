@@ -1,0 +1,4 @@
+PK - Section,PK - Table,PK - ColName,To,FK - Section,FK - Table,FK - ColName
+,Demog,GEOID,,,Customers,GEOID
+,Customers,ID,,,Mailings1_2,REFID
+,Customers,ID,,,Sales,REFID

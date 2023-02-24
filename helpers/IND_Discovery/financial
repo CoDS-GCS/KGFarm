@@ -1,0 +1,122 @@
+# TABLES
+order.csv	2
+trans.csv	1
+loan.csv	3
+client.csv	6
+card.csv	7
+district.csv	4
+account.csv	8
+disp.csv	5
+# COLUMN
+3.status	23
+1.amount	6
+2.amount	15
+3.amount	20
+1.k_symbol	8
+4.A7	30
+7.type	50
+4.A8	31
+1.bank	9
+4.A9	32
+1.type	4
+1.account	10
+3.account_id	18
+4.district_id	24
+4.A2	25
+6.district_id	47
+4.A3	26
+4.A10	33
+4.A4	27
+4.A11	34
+4.A5	28
+4.A6	29
+4.A14	37
+4.A15	38
+4.A12	35
+4.A13	36
+5.client_id	41
+8.district_id	53
+1.trans_id	1
+6.gender	45
+2.bank_to	13
+4.A16	39
+1.date	3
+3.loan_id	17
+6.client_id	44
+8.frequency	54
+7.issued	51
+3.date	19
+5.account_id	42
+2.account_id	12
+1.balance	7
+5.disp_id	40
+6.birth_date	46
+7.card_id	48
+2.order_id	11
+3.duration	21
+3.payments	22
+2.account_to	14
+8.date	55
+2.k_symbol	16
+7.disp_id	49
+8.account_id	52
+1.operation	5
+1.account_id	2
+5.type	43
+# RESULTS
+51[=3
+18[=2
+18[=12
+18[=42
+18[=52
+19[=3
+24[=6
+24[=47
+24[=53
+28[=6
+49[=40
+52[=2
+52[=42
+32[=2
+32[=6
+32[=24
+32[=30
+32[=40
+32[=41
+32[=42
+32[=44
+32[=47
+32[=52
+32[=53
+53[=6
+53[=24
+53[=47
+37[=6
+47[=6
+47[=24
+47[=53
+41[=44
+42[=2
+42[=52
+44[=41
+30[=6
+13[=9
+55[=3
+31[=6
+31[=30
+29[=6
+21[=1
+21[=6
+21[=24
+21[=40
+21[=41
+21[=44
+21[=47
+21[=48
+21[=53
+12[=2
+12[=42
+12[=52
+11[=7
+2[=42
+2[=52
