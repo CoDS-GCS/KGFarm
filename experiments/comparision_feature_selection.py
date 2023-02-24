@@ -1,16 +1,17 @@
 import os
+import sys
 import time
 import numpy as np
 import pandas as pd
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.feature_selection import SelectKBest, f_classif, RFE
 from sklearn.model_selection import cross_val_score, KFold
 from operations.api import KGFarm
 
-datasets = [{'Epileptic Seizure Recognition.csv': 'y'}]
-K = [5, 10, 20]
-kf = KFold(n_splits=10)
+task = 'classification'  # 'classification' or 'regression'
+datasets = {'Epileptic Seizure Recognition.csv': 'y'}  # dataset: target variable
+K = [5, 10, 20]  # as described in the KGFarm feature selection experiment
 
 
 def apply_filter_method():
@@ -25,7 +26,10 @@ def apply_filter_method():
 
 def apply_embedded_method():
     start_time = time.time()
-    tree = RandomForestClassifier()
+    if task == 'regression':
+        tree = DecisionTreeRegressor()
+    else:
+        tree = DecisionTreeClassifier()
     tree.fit(X, y)
     feature_importance = pd.DataFrame({'Feature': independent_variables, 'F_test_score': tree.feature_importances_}). \
         sort_values(by='F_test_score', ascending=False).reset_index(drop=True)
@@ -43,8 +47,12 @@ def apply_kgfarm_method():
 
 
 def apply_wrapper_method():
+    if task == 'regression':
+        tree = DecisionTreeRegressor()
+    else:
+        tree = DecisionTreeClassifier()
     start_time = time.time()
-    selector = RFE(estimator=DecisionTreeClassifier(), n_features_to_select=None, step=1)
+    selector = RFE(estimator=tree, n_features_to_select=None, step=1)
     selector.fit(X, y)
     rfe_scores = pd.DataFrame({'Feature': independent_variables, 'Ranking': selector.ranking_}). \
         sort_values(by='Ranking').reset_index(drop=True)
@@ -52,34 +60,48 @@ def apply_wrapper_method():
     return rfe_scores
 
 
-def calculate_f1(feature_selection_info: pd.DataFrame):
+def calculate_score(feature_selection_info: pd.DataFrame, algorithm, scoring, cv):
     for k in K:
+        model_training_start_time = time.time()
         feature = list(feature_selection_info.head(k)['Feature'])
-        f1 = np.mean(cross_val_score(RandomForestClassifier(n_estimators=100), df[feature], y, cv=kf, scoring='f1_macro'))
-        print(f'K = {k} | F1 = {f1:.3f} | Features: {feature}')
+        f1 = np.mean(cross_val_score(algorithm, df[feature], y, cv=cv, scoring=scoring))
+        print(f'K = {k} | {scoring.replace("_macro", "").upper()} = {f1:.3f} | Features: {feature} | Time for model training: {time.time()-model_training_start_time}')
 
 
-for dataset in datasets:
-    path = f'data/{list(dataset.keys())[0]}'
-    df = pd.read_csv(path)
+if __name__ == '__main__':
+    for dataset, dependent_variable in datasets.items():
+        print(dataset.strip('.csv'))
+        path = f'data/{dataset}'
+        df = pd.read_csv(path)
 
-    if path == 'data/Epileptic Seizure Recognition.csv':
-        df.drop('Unnamed', axis=1, inplace=True)
+        if path == 'data/Epileptic Seizure Recognition.csv':
+            df.drop('Unnamed', axis=1, inplace=True)
 
-    dependent_variable = list(dataset.values())[0]
-    independent_variables = [feature for feature in df.columns if feature != dependent_variable]
+        independent_variables = [feature for feature in df.columns if feature != dependent_variable]
 
-    X = df[independent_variables]
-    y = df[dependent_variable]
+        X = df[independent_variables]
+        y = df[dependent_variable]
 
-    baseline = np.mean(cross_val_score(RandomForestClassifier(n_estimators=100), X, y, cv=kf, scoring='f1_macro'))
-    print(f'Baseline ({len(independent_variables)} features): {baseline:.3f}')
+        if task == 'regression':
+            model = RandomForestRegressor()
+            metric = 'r2'
+        elif task == 'classification':
+            model = RandomForestClassifier(n_estimators=100)
+            metric = 'f1_macro'
+        else:
+            ValueError(f'task must be either regression or classification')
+            sys.exit()
 
-    filter_scores = apply_filter_method()
-    calculate_f1(filter_scores)
-    embedded_scores = apply_embedded_method()
-    calculate_f1(embedded_scores)
-    kgfarm_scores = apply_kgfarm_method()
-    calculate_f1(kgfarm_scores)
-    wrapper_scores = apply_wrapper_method()
-    calculate_f1(wrapper_scores)
+        kf = KFold(n_splits=10)
+        start = time.time()
+        baseline = np.mean(cross_val_score(model, X, y, cv=kf, scoring=metric))
+        print(f'Baseline ({len(independent_variables)} features, {len(y)} datapoints): {baseline:.3f}\ntime taken: {time.time()-start:.3f} seconds')
+
+        filter_scores = apply_filter_method()
+        calculate_score(filter_scores, algorithm=model, scoring=metric, cv=kf)
+        embedded_scores = apply_embedded_method()
+        calculate_score(embedded_scores, algorithm=model, scoring=metric, cv=kf)
+        kgfarm_scores = apply_kgfarm_method()
+        calculate_score(kgfarm_scores, algorithm=model, scoring=metric, cv=kf)
+        wrapper_scores = apply_wrapper_method()
+        calculate_score(wrapper_scores, algorithm=model, scoring=metric, cv=kf)
