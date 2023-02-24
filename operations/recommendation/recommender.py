@@ -1,5 +1,6 @@
 import operator
 
+import pyspark.sql.dataframe
 import torch
 import joblib
 import bitstring
@@ -7,6 +8,8 @@ import numpy as np
 import pandas as pd
 from datasketch import MinHash
 from collections import Counter
+from pyspark.sql.functions import *
+from pyspark.sql.types import *
 from operations.storage.embeddings import Embeddings
 # from feature_discovery.src.recommender.word_embeddings import WordEmbedding
 from operations.recommendation.utils.column_embeddings import load_numeric_embedding_model
@@ -207,9 +210,26 @@ class Recommender:
         selection_info = pd.DataFrame({'Feature': selection_info.keys(), 'Selection_score': selection_info.values()})
 
         def cal_selection_score(score, max_score_value):
-            return round(score / max_score_value, 3)
+            return score / max_score_value
 
-        max_score = max(list(selection_info['Selection_score']))
+        max_score = selection_info['Selection_score'].max()
         selection_info['Selection_score'] = selection_info['Selection_score'].apply(lambda x: cal_selection_score(score=x, max_score_value=max_score))
 
         return selection_info
+
+    def get_feature_selection_score_distributed(self, entity_df: pyspark.sql.dataframe.DataFrame):
+        def compute_deep_embeddings(col):
+            bin_repr = [[int(j) for j in bitstring.BitArray(float=float(i), length=32).bin] for i in col]
+            bin_tensor = torch.FloatTensor(bin_repr).to('cpu')
+            with torch.no_grad():
+                embedding_tensor = self.numeric_embedding_model(bin_tensor).mean(axis=0)
+            return embedding_tensor.tolist()
+
+        deep_embeddingsUDF = udf(lambda z: compute_deep_embeddings(z), ArrayType(FloatType()))
+        cols = entity_df.columns
+        cols2 = ['`' + c + '`' for c in cols]
+        df2 = entity_df.select([collect_list(c) for c in cols2]).toDF(*cols2)
+        df2 = df2.toDF(*cols)
+        for col in cols:
+            df2 = df2.withColumn(col, deep_embeddingsUDF('`' + col + '`'))
+        return df2

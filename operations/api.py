@@ -6,13 +6,12 @@ import numpy as np
 import urllib.parse
 import pandas as pd
 import seaborn as sns
-from sklearn.experimental import enable_iterative_imputer
-from sklearn.impute import IterativeImputer, SimpleImputer
-from sklearn.linear_model import BayesianRidge
 from tqdm import tqdm
 from pathlib import Path
 from datetime import timedelta
 from sklearn.preprocessing import *
+# from pyspark.sql import SparkSession
+# from pyspark import SparkConf, SparkContext
 from matplotlib import pyplot as plt
 from stardog.exceptions import StardogException
 from sklearn.feature_selection import SelectKBest, f_classif
@@ -41,6 +40,15 @@ class KGFarm:
             self.recommender_config = connect_to_stardog(port, db='kgfarm_recommender', show_status=False)
         self.governor = Governor(self.config)
         self.__table_transformations = {}  # cols in enriched_df: tuple -> (entity_df_id, feature_view_id)
+        """
+        conf = SparkConf().setAppName('KGFarm')
+        conf = (conf.setMaster('local[*]')
+                .set('spark.executor.memory', '10g')
+                .set('spark.driver.memory', '5g')
+                .set('spark.driver.maxResultSize', '5g'))
+        sc = SparkContext(conf=conf)
+        self.spark = SparkSession(sc)
+        """
 
     # re-arranging columns
     @staticmethod
@@ -794,7 +802,7 @@ class KGFarm:
         elif table_id is False:  # unseen data
             print('finding similar columns and tables to entity dataframe')
             similar_tables = self.recommender.get_cleaning_recommendation(
-                             entity_df[columns_to_be_cleaned['Feature']])  # align
+                entity_df[columns_to_be_cleaned['Feature']])  # align
             print('Suggestions are:', similar_tables)
             return similar_tables
             # if len(similar_tables) < top_k:
@@ -907,8 +915,23 @@ class KGFarm:
         return entity_df[recommended_features], entity_df[dependent_variable]  # return X, y
     """
 
-    def recommend_features_to_be_selected(self, entity_df: pd.DataFrame, dependent_variable: str):
-        return self.recommender.get_feature_selection_score(entity_df=entity_df.sample(n=len(entity_df), random_state=1), dependent_variable=dependent_variable)
+    def recommend_features_to_be_selected(self, entity_df: pd.DataFrame, dependent_variable: str, n: int = None):
+        if n is None or len(entity_df) < n:
+            n = len(entity_df)
+
+        return self.recommender.get_feature_selection_score(entity_df=entity_df.sample(n=n, random_state=1), dependent_variable=dependent_variable)
+
+    """
+    def select_features_distributed(self, features: pd.DataFrame, target: pd.Series, n: int = None):
+        if n is not None:  # subsample n data points
+            features['target'] = target
+            features = features.sample(n=n, random_state=1)
+            # target = features['target']
+            # features.drop('target', axis=1, inplace=True)
+            # return features
+        entity_df = self.spark.createDataFrame(features)
+        return self.recommender.get_feature_selection_score_distributed(entity_df=entity_df)
+    """
 
 
 # TODO: refactor (make a generic function to return enrich table_ids from self.__table_transformations)
