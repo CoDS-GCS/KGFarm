@@ -770,23 +770,27 @@ def get_transformations_on_columns(config):
 
 
 # --------------------------------------------Transformation recommender------------------------------------------------
-def get_features_and_targets(config, n_samples: None, show_query: bool = False):
+def get_features_and_targets(config, n_samples: None, tag: str = None, show_query: bool = False):
     limit = ''
     if n_samples is not None:
         limit = f'LIMIT {n_samples}'
-
+    if tag is None:
+        tag = ''
+    elif tag is not None:
+        tag = f'                            pipeline:hasTag                 "{tag}".'
     query = """
     SELECT DISTINCT ?Pipeline_id ?Selected_feature ?Discarded_feature ?Target
     WHERE
     {
         ?Pipeline_id        rdf:type                        kglids:Pipeline     ;
+%s
         GRAPH ?Pipeline_id
         {
             ?Statement      pipeline:hasSelectedFeature     ?Selected_feature   ;
                             pipeline:hasTarget              ?Target             ;
                             pipeline:hasNotSelectedFeature  ?Discarded_feature  .
         }  
-    } ORDER BY ?Pipeline_id ?Target %s"""% limit
+    } ORDER BY ?Pipeline_id ?Target %s"""% (tag, limit)
     if show_query:
         display_query(query)
     return execute_query(config, query)
