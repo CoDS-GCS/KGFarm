@@ -11,34 +11,37 @@ from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from operations.template import get_features_and_targets
 from helpers.helper import connect_to_stardog, generate_column_id, generate_table_id
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_colwidth', None)
 
 
 class FeatureSelector:
     """A Feature selection model which takes a feature and target embedding as input and
      gives the selection confidence as output"""
 
-    def __init__(self, port: int = 5820, database: str = 'kaggle',
-                 metadata='../../storage/CoLR_embeddings/', show_connection_status: bool = True):
+    def __init__(self, port: int = 5820, database: str = 'feature_selection',
+                 metadata='../../storage/CoLR_embeddings_feature_selection/', show_connection_status: bool = True):
+        self.task = 'regression'
         self.config = connect_to_stardog(port, database, show_connection_status)
-        self.metadata = metadata
+        self.metadata = metadata + self.task
         self.classifier = RandomForestClassifier()
 
         self.embeddings_table_to_column = {}  # {table_id: {column_id: embedding}
         self.modeling_data = None
 
     def load_embeddings_of_columns_per_table(self):
+        print(self.task.replace('_', ' '))
         for datatype in os.listdir(self.metadata):
             if datatype == 'int' or datatype == 'float':
                 print(f'loading {datatype}-column profiles')
                 for profile in tqdm(os.listdir(self.metadata + '/' + datatype)):
                     with open(self.metadata + '/' + datatype + '/' + profile, 'r') as open_file:
                         profile_info = json.load(open_file)
-                        path = profile_info['path']
+                        path = os.path.dirname(profile_info['path'])
                         embedding = profile_info['embedding']
                         column_name = profile_info['column_name']
                         table_id = generate_table_id(profile_path=path)
                         column_id = generate_column_id(profile_path=path, column_name=column_name)
-
                         if table_id not in self.embeddings_table_to_column:
                             self.embeddings_table_to_column[table_id] = {column_id: embedding}
                         else:
@@ -51,7 +54,7 @@ class FeatureSelector:
         Modeling data:
         pipeline x: feature a, target - selected
         pipeline x: feature b, target - selected
-        pipeline x: feature c, target - not selected
+        pipeline x: feature c, target - discarded
         """
         def merge_embeddings(feature: list, target: list):
             return feature + target
@@ -123,8 +126,8 @@ class FeatureSelector:
 
         if export:
             self.classifier.fit(X, y)
-            joblib.dump(self.classifier, 'out/feature_selector.pkl', compress=9)
-            print('feature selector saved at out/feature_selector.pkl')
+            joblib.dump(self.classifier, f'out/feature_selector_{self.task}.pkl', compress=9)
+            print(f'feature selector saved at out/feature_selector_{self.task}.pkl')
 
 
 def build():

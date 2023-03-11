@@ -212,7 +212,7 @@ def generate_column_id(profile_path: str, column_name: str):
 
     profile_path = profile_path.split('/')
     table_name = profile_path[-1]
-    dataset_name = profile_path[-2]
+    dataset_name = profile_path[-3]
 
     return f"http://kglids.org/resource/{url_encode('kaggle')}/" \
            f"{url_encode(dataset_name)}/dataResource/{url_encode(table_name)}/" \
@@ -222,6 +222,6 @@ def generate_column_id(profile_path: str, column_name: str):
 def generate_table_id(profile_path: str):
     profile_path = profile_path.split('/')
     table_name = profile_path[-1]
-    dataset_name = profile_path[-2]
+    dataset_name = profile_path[-3]
     table_id = f'http://kglids.org/resource/kaggle/{quote_plus(dataset_name)}/dataResource/{quote_plus(table_name)}'
     return table_id
