@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 from datasketch import MinHash
 from collections import Counter
-from pyspark.sql.functions import *
 from sklearn.preprocessing import LabelEncoder
 from operations.storage.embeddings import Embeddings
 from operations.recommendation.utils.column_embeddings import load_numeric_embedding_model
