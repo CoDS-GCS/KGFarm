@@ -1,6 +1,4 @@
 import operator
-
-import pyspark.sql.dataframe
 import torch
 import joblib
 import bitstring
@@ -9,9 +7,8 @@ import pandas as pd
 from datasketch import MinHash
 from collections import Counter
 from pyspark.sql.functions import *
-from pyspark.sql.types import *
+from sklearn.preprocessing import LabelEncoder
 from operations.storage.embeddings import Embeddings
-# from feature_discovery.src.recommender.word_embeddings import WordEmbedding
 from operations.recommendation.utils.column_embeddings import load_numeric_embedding_model
 
 
@@ -34,7 +31,7 @@ class Recommender:
         self.categorical_thresh = 0.60
         self.numerical_thresh = 0.50
         # KGFarm feature selector
-        self.feature_selector = joblib.load('operations/recommendation/utils/models/feature_selector_f1_88.pkl')
+        self.feature_selector = None
 
     def __compute_content_embeddings(self,
                                      entity_df: pd.DataFrame):  # DDE for numeric columns, Minhash for string columns
@@ -174,10 +171,22 @@ class Recommender:
             similar_table_uris.values())  # count similar tables and sort by most occurring tables
         return tuple(dict(sorted(similar_table_uris.items(), key=lambda item: item[1], reverse=True)).keys())
 
-    def get_feature_selection_score(self, entity_df: pd.DataFrame, dependent_variable: str):
+    def get_feature_selection_score(self, task: str, entity_df: pd.DataFrame, dependent_variable: str):
 
         def get_bin_repr(val):
             return [int(j) for j in bitstring.BitArray(float=float(val), length=32).bin]
+
+        if task == 'regression':
+            print(f'loading operations/recommendation/utils/models/feature_selector_{task}.pkl')
+            self.feature_selector = joblib.load(f'operations/recommendation/utils/models/feature_selector_{task}.pkl')
+        elif task == 'multi-class':
+            print(f'loading operations/recommendation/utils/models/feature_selector_{task.replace("-", "")}_classification.pkl')
+            entity_df[dependent_variable] = LabelEncoder().fit_transform(entity_df[dependent_variable])
+            self.feature_selector = joblib.load(f'operations/recommendation/utils/models/feature_selector_{task.replace("-", "")}_classification.pkl')
+        elif task == 'binary':
+            print(f'loading operations/recommendation/utils/models/feature_selector_{task}_classification.pkl')
+            entity_df[dependent_variable] = LabelEncoder().fit_transform(entity_df[dependent_variable])
+            self.feature_selector = joblib.load(f'operations/recommendation/utils/models/feature_selector_{task}_classification.pkl')
 
         numerical_features = [feature for feature in entity_df.columns if
                               feature != dependent_variable and pd.api.types.is_numeric_dtype(entity_df[feature])]
@@ -217,6 +226,7 @@ class Recommender:
 
         return selection_info
 
+    """
     def get_feature_selection_score_distributed(self, entity_df: pyspark.sql.dataframe.DataFrame):
         def compute_deep_embeddings(col):
             bin_repr = [[int(j) for j in bitstring.BitArray(float=float(i), length=32).bin] for i in col]
@@ -233,3 +243,4 @@ class Recommender:
         for col in cols:
             df2 = df2.withColumn(col, deep_embeddingsUDF('`' + col + '`'))
         return df2
+        """

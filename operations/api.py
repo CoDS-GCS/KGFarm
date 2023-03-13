@@ -915,11 +915,11 @@ class KGFarm:
         return entity_df[recommended_features], entity_df[dependent_variable]  # return X, y
     """
 
-    def recommend_features_to_be_selected(self, entity_df: pd.DataFrame, dependent_variable: str, n: int = None):
+    def recommend_features_to_be_selected(self, task: str, entity_df: pd.DataFrame, dependent_variable: str, n: int = None):
         if n is None or len(entity_df) < n:
             n = len(entity_df)
 
-        return self.recommender.get_feature_selection_score(entity_df=entity_df.sample(n=n, random_state=1), dependent_variable=dependent_variable)
+        return self.recommender.get_feature_selection_score(task=task, entity_df=entity_df.sample(n=n, random_state=1), dependent_variable=dependent_variable)
 
     """
     def select_features_distributed(self, features: pd.DataFrame, target: pd.Series, n: int = None):
