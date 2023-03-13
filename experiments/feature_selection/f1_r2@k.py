@@ -69,7 +69,7 @@ def apply_kgfarm_method():
     os.chdir('../../')
     kgfarm = KGFarm(show_connection_status=False)
     start_time = time.time()
-    kgfarm_fs_score = kgfarm.recommend_features_to_be_selected(task=task, entity_df=df, dependent_variable=target, n=300)
+    kgfarm_fs_score = kgfarm.recommend_features_to_be_selected(task=task, entity_df=df, dependent_variable=target)
     kgfarm_time = time.time()-start_time
     print(f'KGFarm: {kgfarm_time:.3f} seconds')
     kgfarm_times.append(f'{kgfarm_time:.3f}')
