@@ -25,7 +25,7 @@ import sys
 
 
 class KGFarm:
-    def __init__(self, mode: str = 'Human in the loop', port: object = 5820, database: str = 'kgfarm_test',
+    def __init__(self, mode: str = 'Human in the loop', port: object = 5820, database: str = 'KGFarm_demo',
                  show_connection_status: bool = True):
         sys.path.insert(0, str(Path(os.getcwd()).parent.absolute()))
         self.mode = mode
@@ -178,41 +178,17 @@ class KGFarm:
                                             'Physical_table', 'Number_of_rows', 'File_source']]
 
     def search_enrichment_options(self, entity_df: pd.DataFrame = None, show_query: bool = False):
-        # TODO: support for multiple entities.
+
+        entity_df_columns = set(entity_df.columns)
         enrichable_tables = search_enrichment_options(self.config, show_query)
-        # delete pairs where features are same i.e. nothing to join
-        for index, pairs in tqdm(enrichable_tables.to_dict('index').items()):
-            entity_dataset = pairs['Dataset']
-            entity_table = pairs['Table']
-            feature_view_dataset = pairs['Dataset_feature_view']
-            feature_view_table = pairs['Physical_joinable_table']
-            features_in_entity_df = get_columns(self.config, entity_table, entity_dataset)
-            features_in_feature_view = get_columns(self.config, feature_view_table, feature_view_dataset)
-
-            if set(features_in_feature_view).issubset(
-                    set(features_in_entity_df)):  # nothing to enrich as those features already exist
-                enrichable_tables = enrichable_tables.drop(index)
-
-        enrichable_tables = enrichable_tables.sort_values(by=['Table', 'Joinability_strength', 'Enrich_with'],
-                                                          ascending=False).reset_index(drop=True)
-
         enrichable_tables['Joinability_strength'] = enrichable_tables['Joinability_strength']. \
             apply(lambda x: str(int(x * 100)) + '%')
 
-        if entity_df is not None:
-            # filter enrichable_tables dataframe based on columns in entity_df
-            if not len(search_entity_table(self.config, list(entity_df.columns))):
-                print('nothing to enrich')
-                return
-            entity_table = search_entity_table(self.config, list(entity_df.columns))['Table'][0]
-            enrichable_tables = enrichable_tables.loc[enrichable_tables['Table'] == entity_table]
-            enrichable_tables.drop(['Table', 'Table_path', 'Dataset'], axis=1, inplace=True)
-            # enrichable_tables.rename({'Dataset_feature_view': 'Dataset'}, axis=1, inplace=True)
-            enrichable_tables = enrichable_tables[['Enrich_with', 'Physical_joinable_table', 'Join_key',
-                                                   'Joinability_strength', 'File_source', 'Dataset_feature_view']]. \
-                reset_index(drop=True)
+        for index, recommendation in tqdm(enrichable_tables.to_dict('index').items()):
+            if len(entity_df_columns - set(get_columns_in_feature_view(config=self.config, feature_view=recommendation['Feature_view']))) == 0:
+                enrichable_tables = enrichable_tables.drop(index)
 
-        return enrichable_tables
+        return enrichable_tables.reset_index(drop=True)
 
     def get_features(self, enrichment_info: pd.Series, entity_df: pd.DataFrame = None, entity_df_columns: tuple = (),
                      show_status: bool = True):

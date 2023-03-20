@@ -3,6 +3,19 @@ from helpers.helper import execute_query, display_query
 
 # --------------------------------------------KGFarm APIs (SELECT queries)----------------------------------------------
 
+def get_columns_in_feature_view(config, feature_view):
+    query = """
+    SELECT DISTINCT ?Column
+    WHERE
+    {
+    ?Feature_view_id    schema:name             '%s'    .
+    ?Table_id           kgfarm:hasFeatureView   ?Feature_view_id    .
+    ?Column_id          kglids:isPartOf         ?Table_id           ;
+                        schema:name             ?Column             .
+    }""" % feature_view
+    return execute_query(config, query)['Column'].tolist()
+
+
 def get_features_in_feature_views(config, feature_view, show_query):
     query = """
     SELECT DISTINCT ?Columns 
@@ -156,47 +169,23 @@ def get_feature_views_with_multiple_entities(config, show_query):
 
 def search_enrichment_options(config, show_query):
     query = """
-    SELECT DISTINCT ?Table ?Enrich_with (?Confidence_score as ?Joinability_strength) (?join_key_name as ?Join_key) ?Physical_joinable_table ?Table_path ?File_source ?Dataset ?Dataset_feature_view
+    SELECT DISTINCT ?Feature_view ?Table (?Foreign_column as ?Join_key) (?Score as ?Joinability_strength) (?Table_path as ?File_source) 
     WHERE
     {
-        # {
-        <<?Primary_column_id        data:hasPrimaryKeyForeignKeySimilarity          ?Foreign_column_id>> data:withCertainty ?Confidence_score	.
-        # }
-        # UNION
-        # {
-        #  <<?Primary_column_id       data:hasDeepPrimaryKeyForeignKeySimilarity      ?Foreign_column_id>> data:withCertainty ?Confidence_score	. 
-        #  FILTER(?Confidence_score >=1.0)
-        #}
-        
-        ?Primary_column_id	        kglids:isPartOf			                    ?Primary_table_id	                        ;
-                                    entity:name                                 ?Entity                                     ; 
-                                    schema:name                                 ?join_key_name                              .    
-        {
-        ?Primary_table_id           kgfarm:hasDefaultEntity                     ?Primary_column_id                          .
-        }
-        UNION
-        {
-        ?Primary_table_id           kgfarm:hasMultipleEntities                  ?Primary_column_id                          .   
-        }
-        
-        ?Primary_table_id           featureView:name                            ?Enrich_with                                ;
-                                    schema:name                                 ?Physical_joinable_table                    ;
-                                    data:hasFilePath                            ?File_source                                ;
-                                    kglids:isPartOf                             ?Dataset_feature_view_id                    .
-        
-        ?Dataset_feature_view_id    schema:name                                 ?Dataset_feature_view                       .
-        
-        
-        ?Foreign_column_id          kglids:isPartOf                             ?Foreign_table_id                           ;
-                                    schema:name                                 ?join_key_name                              .
-        
-        ?Foreign_table_id           schema:name                                 ?Table                                      ;
-                                    data:hasFilePath                            ?Table_path                                 ;
-                                    kglids:isPartOf                             ?Dataset_id                                 .
-                                
-        ?Dataset_id                 schema:name                                 ?Dataset                                    .                                        
-                                
-    } ORDER BY DESC(?Confidence_score) ?Table ?Feature_view"""
+    <<?Primary_column_id    data:hasLabelSimilarity ?Foreign_column_id>> data:withCertainty ?Score     .
+    ?Primary_column_id      schema:name             ?Primary_column     .
+    ?Foreign_column_id      schema:name             ?Foreign_column     ;
+                            kglids:isPartOf         ?Foreign_table_id   .
+    
+    ?Foreign_table_id       schema:name             ?Table              ;
+                            data:hasFilePath        ?Table_path         ;
+                            kgfarm:hasFeatureView   ?Feature_view_id    .
+    
+    ?Feature_view_id           schema:name          ?Feature_view       .
+    
+    
+    FILTER(?Primary_column != 'event_timestamp' || ?Foreign_column != 'event_timestamp')
+    }"""
     if show_query:
         display_query(query)
 
