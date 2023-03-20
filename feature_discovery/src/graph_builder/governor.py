@@ -192,7 +192,7 @@ class Governor:
 
 
 if __name__ == "__main__":
-    governor = Governor()
+    governor = Governor(lids_db='KGFarm_demo')
     start = time.time()
     governor.build_farm_graph()
     print(time_taken(start=start, end=time.time()))

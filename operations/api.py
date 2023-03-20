@@ -71,14 +71,15 @@ class KGFarm:
 
     def get_entities(self, show_query: bool = False):
         entity_df = get_entities(self.config, show_query)
-        entity_df['Entity_data_type'] = entity_df['Entity_data_type'].map(entity_data_types_mapping)
+        # entity_df['Entity_data_type'] = entity_df['Entity_data_type'].map(entity_data_types_mapping)
         return entity_df
 
     def get_feature_views(self, feature_view_type: str = 'all', message_status: bool = True, show_query: bool = False):
-        feature_view_df = get_feature_views_with_one_or_no_entity(self.config, show_query)
+        feature_view_df = get_feature_views(self.config, show_query)  # get_feature_views_with_one_or_no_entity(self.config, show_query)
         feature_view_df = feature_view_df.where(pd.notnull(feature_view_df), None)
         feature_view_df.sort_values(by='Feature_view', inplace=True)
 
+        """
         if feature_view_type == 'single':
             if message_status:
                 print('Showing feature view(s) with single entity')
@@ -86,12 +87,13 @@ class KGFarm:
             feature_view_df = feature_view_df.reset_index(drop=True)
             return feature_view_df
 
+        
         feature_view_M = get_feature_views_with_multiple_entities(self.config, show_query)
         # group entities together for feature view with multiple entities
-        """
-        We need to do this because there is no direct/simple way to bind different entities to the associated feature
-        view, same goes for the physical column, to ease this, the python script below handles these cases. 
-        """
+        
+        # We need to do this because there is no direct/simple way to bind different entities to the associated feature
+        # view, same goes for the physical column, to ease this, the python script below handles these cases. 
+        
         update_info = []
         feature_view_dict = {}
         feature_view_to_be_processed = None
@@ -140,7 +142,7 @@ class KGFarm:
             raise ValueError("feature_view_type must be 'single', 'multiple', 'single and multiple', or 'all'")
         feature_view_df = pd.concat([feature_view_df, pd.DataFrame(update_info)], ignore_index=True)
         feature_view_df = feature_view_df.reset_index(drop=True)
-
+        """
         # add here
         feature_view_df['Features'] = feature_view_df['Feature_view'].apply(lambda x: get_features_in_feature_views(self.config, x, show_query))
 
@@ -163,10 +165,7 @@ class KGFarm:
     def identify_features(self, entity: str, target: str, show_query: bool = False):
         feature_identification_info = identify_features(self.config, entity, target, show_query)
         feature_identification_info['Features'] = feature_identification_info.apply(lambda x:
-                                                                                    get_columns(self.config,
-                                                                                                table=x.Physical_table,
-                                                                                                dataset=x.Dataset),
-                                                                                    axis=1)
+                                    get_features_in_feature_views(self.config, x['Feature_view'], show_query), axis=1)
 
         for index, value in feature_identification_info.to_dict('index').items():
             features = []

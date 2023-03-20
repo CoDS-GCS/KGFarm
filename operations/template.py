@@ -8,11 +8,13 @@ def get_features_in_feature_views(config, feature_view, show_query):
     SELECT DISTINCT ?Columns 
     WHERE
     {
-        ?Table_id       rdf:type                    kglids:Table        ;
-                        featureView:name            "%s"                .
+        ?Feature_view_id    rdf:type                kgfarm:FeatureView  ;
+                            schema:name             "%s"                .
+                            
+        ?Table_id           kgfarm:hasFeatureView   ?Feature_view_id    .
         
         ?Column_id      kglids:isPartOf             ?Table_id           ;
-                        schema:name                 ?Columns             . 
+                        schema:name                 ?Columns            . 
     }
     """ % feature_view
 
@@ -53,25 +55,54 @@ def get_columns(config, table, dataset):
 
 def get_entities(config, show_query):
     query = """
-    SELECT ?Entity_name (?Physical_column_data_type as ?Entity_data_type) ?Physical_column (?Table as ?Physical_table) (?Score as ?Uniqueness_ratio)
+    SELECT DISTINCT ?Entity ?Entity_data_type ?Physical_column ?Physical_table (xsd:float(?Distinct_value_count/?Total_value_count) as ?Uniqueness_ratio)
+    WHERE
     {
-        {
-            <<?Table_id kgfarm:hasDefaultEntity ?Entity_id>>        kgfarm:confidence   ?Score  .
-        }
-        UNION
-        {
-            <<?Table_id kgfarm:hasMultipleEntities ?Entity_id>>     kgfarm:confidence   ?Score  .
-        }
-    
-        ?Entity_id  entity:name         ?Entity_name                                            ;
-                    schema:name         ?Physical_column                                        ;
-                    data:hasDataType    ?Physical_column_data_type                              .
-        ?Table_id   schema:name         ?Table                                                  .
-    }Order by DESC(?Uniqueness_ratio)"""
+        ?Entity_id  rdf:type                kgfarm:Entity               ;
+                    schema:name             ?Entity                     ;
+                    kgfarm:representedBy    ?Column_id                  .
+        
+        ?Column_id  data:hasDataType        ?Entity_data_type           ;
+                    schema:name             ?Physical_column            ;
+                    data:hasDistinctValueCount ?Distinct_value_count    ;
+                    data:hasTotalValueCount     ?Total_value_count      ;
+                    kglids:isPartOf             ?Table_id               .
+        
+        ?Table_id   schema:name                 ?Physical_table         .
+    }"""
 
     if show_query:
         display_query(query)
 
+    return execute_query(config, query)
+
+
+def get_feature_views(config, show_query):
+    query = """
+    SELECT DISTINCT ?Feature_view ?Entity ?Physical_column ?Physical_table ?File_source
+    WHERE
+    {
+    ?Feature_view_id    rdf:type                    kgfarm:FeatureView  ;
+                        schema:name                 ?Feature_view       ;
+    {
+    ?Feature_view_id    kgfarm:hasDefaultEntity     ?Entity_id          .
+    }
+    UNION
+    {
+    ?Feature_view_id    kgfarm:hasMultipleEntities  ?Entity_id          .
+    }
+    
+    ?Entity_id          schema:name                 ?Entity             ;
+                        kgfarm:representedBy        ?Column_id          .
+    
+    ?Column_id          schema:name                 ?Physical_column    ;
+                        kglids:isPartOf             ?Table_id           .
+    
+    ?Table_id           schema:name                 ?Physical_table     ;
+                        data:hasFilePath            ?File_source        .
+    }"""
+    if show_query:
+        display_query(query)
     return execute_query(config, query)
 
 
@@ -310,28 +341,30 @@ def is_entity_column(config, feature, dependent_variable):
 
 def identify_features(config, entity_name, target_name, show_query):
     query = """
-    SELECT DISTINCT ?Entity ?Feature ?Physical_representation ?Feature_view ?Physical_table ?Number_of_rows ?File_source ?Dataset
+    SELECT ?Entity ?Physical_representation ?Feature_view ?Physical_table ?Number_of_rows ?File_source
     WHERE
     {
-        ?Column_id  entity:name             ?Entity                     ;  
-                    schema:name             ?Physical_representation    ;  
-                    kglids:isPartOf         ?Table_id                   ;
-                    data:hasTotalValueCount ?Number_of_rows             .               
-            
-        ?Table_id   schema:name             ?Physical_table             ;
-                    featureView:name        ?Feature_view               ;
-                    data:hasFilePath        ?File_source                ;
-                    kglids:isPartOf         ?Dataset_id                 .
+        ?Entity_id          rdf:type                    kgfarm:Entity               ;
+                            schema:name                 ?Entity                     ;
+                            kgfarm:representedBy        ?Column_id                  .
+    
+        ?Feature_view_id    kgfarm:hasDefaultEntity     ?Entity_id                  ;
+                            schema:name                 ?Feature_view               .
         
-        ?Feature_id kglids:isPartOf         ?Table_id                   ;
-                    schema:name             ?Feature                    .
-                    
-        ?Dataset_id schema:name             ?Dataset                    .
+        ?Table_id           kgfarm:hasFeatureView       ?Feature_view_id            ;
+                            schema:name                 ?Physical_table             ;
+                            data:hasFilePath            ?File_source                .
+    
+    
+        ?Column_id          schema:name                 ?Physical_representation    ;
+                            data:hasTotalValueCount     ?Number_of_rows             .
         
-        # search entity
-        FILTER regex(str(?Entity), "%s", "i")    # 'i' ignore case sensitivity
-        FILTER regex(str(?Feature), "%s", "i")   # 'i' ignore case sensitivity
-    } ORDER BY DESC(?Number_of_rows)""" % (entity_name, target_name)
+        ?Target_id          kglids:isPartOf             ?Table_id                   ;
+                            schema:name                 ?Target                     .
+    
+        FILTER regex(str(?Entity), "%s", "i") # 'i' ignore case sensitivity 
+        FILTER regex(str(?Target), "%s", "i") # 'i' ignore case sensitivity     
+    }ORDER BY DESC(?Number_of_rows)""" % (entity_name, target_name)
     if show_query:
         display_query(query)
     return execute_query(config, query)
@@ -459,19 +492,19 @@ def get_data_cleaning_recommendation(config, table_id, show_query=False,
 
 
 def exists(config, feature_view):
-    query = """ASK { ?Table_id featureView:name  '%s'}""" % feature_view
+    query = """ASK { ?Feature_view_id schema:name '%s'}""" % feature_view
     return execute_query(config, query, return_type='ask')
 
 
 def drop_feature_view(config, feature_view):
     query = """
     DELETE 
-    {     
-        ?Table_id featureView:name ?Feature_view            .
+    { 
+        ?Feature_view_id    schema:name '%s'                .    
+        ?Table_id kgfarm:hasFeatureView ?Feature_view_id    .
     }
-    WHERE  { ?Table_id featureView:name ?Feature_view
-             FILTER (?Feature_view = '%s') 
-    }""" % feature_view
+    WHERE  { ?Feature_view_id    schema:name '%s'
+    }""" % (feature_view, feature_view)
     execute_query(config, query, return_type='update')
 
 
