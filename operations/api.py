@@ -75,7 +75,8 @@ class KGFarm:
         return entity_df
 
     def get_feature_views(self, feature_view_type: str = 'all', message_status: bool = True, show_query: bool = False):
-        feature_view_df = get_feature_views(self.config, show_query)  # get_feature_views_with_one_or_no_entity(self.config, show_query)
+        feature_view_df = get_feature_views(self.config,
+                                            show_query)  # get_feature_views_with_one_or_no_entity(self.config, show_query)
         feature_view_df = feature_view_df.where(pd.notnull(feature_view_df), None)
         feature_view_df.sort_values(by='Feature_view', inplace=True)
 
@@ -144,7 +145,8 @@ class KGFarm:
         feature_view_df = feature_view_df.reset_index(drop=True)
         """
         # add here
-        feature_view_df['Features'] = feature_view_df['Feature_view'].apply(lambda x: get_features_in_feature_views(self.config, x, show_query))
+        feature_view_df['Features'] = feature_view_df['Feature_view'].apply(
+            lambda x: get_features_in_feature_views(self.config, x, show_query))
 
         return feature_view_df
 
@@ -165,7 +167,9 @@ class KGFarm:
     def identify_features(self, entity: str, target: str, show_query: bool = False):
         feature_identification_info = identify_features(self.config, entity, target, show_query)
         feature_identification_info['Features'] = feature_identification_info.apply(lambda x:
-                                    get_features_in_feature_views(self.config, x['Feature_view'], show_query), axis=1)
+                                                                                    get_features_in_feature_views(
+                                                                                        self.config, x['Feature_view'],
+                                                                                        show_query), axis=1)
 
         for index, value in feature_identification_info.to_dict('index').items():
             features = []
@@ -184,8 +188,10 @@ class KGFarm:
         enrichable_tables['Joinability_strength'] = enrichable_tables['Joinability_strength']. \
             apply(lambda x: str(int(x * 100)) + '%')
 
-        for index, recommendation in tqdm(enrichable_tables.to_dict('index').items(), desc='Searching for enrichment options'):
-            if len(entity_df_columns - set(get_columns_in_feature_view(config=self.config, feature_view=recommendation['Enrich_with']))) == 0:
+        for index, recommendation in tqdm(enrichable_tables.to_dict('index').items(),
+                                          desc='Searching for enrichment options'):
+            if len(entity_df_columns - set(
+                    get_columns_in_feature_view(config=self.config, feature_view=recommendation['Enrich_with']))) == 0:
                 enrichable_tables = enrichable_tables.drop(index)
 
         return enrichable_tables.reset_index(drop=True)
@@ -209,7 +215,7 @@ class KGFarm:
         return features
 
     # TODO: concrete set of ontology is required to know which columns are being dropped (user may drop features for transformations / other experiments)
-    def recommend_feature_transformations(self, entity_df: pd.DataFrame = None, show_metadata: bool = False,
+    def recommend_data_transformations(self, entity_df: pd.DataFrame = None, show_metadata: bool = False,
                                           show_query: bool = False):
 
         def get_transformation_technique(t, f_values):
@@ -296,11 +302,11 @@ class KGFarm:
                                                         'Feature': feature,
                                                         'Feature_view': row['Feature_view'],
                                                         'Table': row['Table'],
-                                                        'Dataset': row['Dataset'],
+                                                        #'Dataset': row['Dataset'],
                                                         'Author': row['Author'],
                                                         'Written_on': row['Written_on'],
-                                                        'Pipeline': pipeline,
-                                                        'Pipeline_url': row['Pipeline_url']})
+                                                        'Pipeline': pipeline})
+                                                        #'Pipeline_url': row['Pipeline_url']})
 
             else:
                 if row_number == 0:
@@ -316,11 +322,11 @@ class KGFarm:
                                                     'Feature': feature,
                                                     'Feature_view': row['Feature_view'],
                                                     'Table': row['Table'],
-                                                    'Dataset': row['Dataset'],
+                                                    # 'Dataset': row['Dataset'],
                                                     'Author': row['Author'],
                                                     'Written_on': row['Written_on'],
-                                                    'Pipeline': pipeline,
-                                                    'Pipeline_url': row['Pipeline_url']})
+                                                    'Pipeline': pipeline})
+                                                    # 'Pipeline_url': row['Pipeline_url']})
                 transformation = value['Transformation']
                 pipeline = value['Pipeline']
                 feature = [value['Feature']]
@@ -328,7 +334,7 @@ class KGFarm:
         transformation_info = pd.DataFrame(transformation_info_grouped)
 
         if not show_metadata:
-            transformation_info.drop(['Package', 'Function', 'Library', 'Author', 'Written_on', 'Pipeline_url'],
+            transformation_info.drop(['Package', 'Function', 'Library', 'Author', 'Written_on'],
                                      axis=1, inplace=True)
 
         if entity_df is not None:
@@ -348,7 +354,9 @@ class KGFarm:
                 return transformation_info
 
             transformation_info = transformation_info.reset_index(drop=True)
-            transformation_info.drop(['Dataset', 'Dataset', 'Table'],
+            # transformation_info.drop(['Dataset', 'Dataset', 'Table'],
+            #                          axis=1, inplace=True)
+            transformation_info.drop(['Table'],
                                      axis=1, inplace=True)
 
         recommended_transformation = add_transformation_type(transformation_info)
@@ -756,9 +764,11 @@ class KGFarm:
             if isinstance(table_id, tuple):
                 recommendations_for_enriched_tables = []
                 for ids in table_id:
-                    recommendations_for_enriched_tables.append(get_data_cleaning_recommendation(self.config,
-                                                                                                table_id=ids,
-                                                                                                show_query=show_query))
+                    temp_df = get_data_cleaning_recommendation(self.config, table_id=ids, show_query=show_query)
+                    temp_df['Table'] = temp_df['Table'].apply(lambda x: True if ids.count(x.rsplit('/')[-1]) else False)
+                    temp_df = temp_df.loc[temp_df['Table'] == True]
+                    temp_df.drop(['Table'], axis=1, inplace=True)
+                    recommendations_for_enriched_tables.append(temp_df)
                 data_cleaning_info = pd.concat(recommendations_for_enriched_tables)
 
             else:
@@ -769,8 +779,8 @@ class KGFarm:
             data_cleaning_info['Parameters'] = data_cleaning_info.apply(lambda x: {x.Parameter: x.Value}, axis=1)
             data_cleaning_info['Operation'] = data_cleaning_info['Function'].apply(
                 lambda x: data_cleaning_operation_mapping.get(x))
-            data_cleaning_info['Feature'] = data_cleaning_info['Column_id'].apply(
-                lambda x: list(columns_to_be_cleaned['Feature']))
+
+            data_cleaning_info['Feature'] = [list(columns_to_be_cleaned['Feature'])]
             data_cleaning_info = data_cleaning_info[['Operation', 'Feature', 'Parameters', 'Pipeline']]
             return data_cleaning_info
 

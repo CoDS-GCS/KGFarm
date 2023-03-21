@@ -219,12 +219,11 @@ def get_optional_entities(config, show_query):
 # TODO: add filter for table and dataset
 def recommend_feature_transformations(config, show_query):
     query = """
-    SELECT DISTINCT ?Transformation ?Package ?Function ?Library ?Feature ?Feature_view ?Table ?Dataset ?Pipeline ?Author ?Written_on ?Pipeline_url  
+    SELECT DISTINCT ?Transformation ?Package ?Function ?Library ?Feature ?Feature_view ?Table ?Pipeline ?Author ?Written_on   
     WHERE
     {
     # query pipeline-default graph
     ?Pipeline_id            rdf:type                kglids:Pipeline     ;
-                            kglids:isPartOf         ?Dataset_id         ;
                             rdfs:label              ?Pipeline           ;
                             pipeline:isWrittenBy    ?Author             ;
                             pipeline:isWrittenOn    ?Written_on         ;
@@ -234,8 +233,7 @@ def recommend_feature_transformations(config, show_query):
     GRAPH ?Pipeline_id
     {
         ?Statement          pipeline:callsClass     ?Class_id           .
-        ?Statement_2        pipeline:callsFunction  ?Function_id        ;
-                            pipeline:readsColumn    ?Column_id          .
+        ?Statement_2        pipeline:callsFunction  ?Function_id        .
         # <<?Statement_2    pipeline:hasParameter   ?o>> ?p1 ?o1        .
     }
     
@@ -245,13 +243,14 @@ def recommend_feature_transformations(config, show_query):
     <http://kglids.org/resource/library/sklearn/preprocessing> kglids:isPartOf ?Library_id                      .
     
     # query data-items
-    ?Dataset_id             schema:name             ?Dataset            .
+    # ?Dataset_id             schema:name             ?Dataset            .
     ?Column_id              schema:name             ?Feature            ;
                             kglids:isPartOf         ?Table_id           .
     ?Table_id               schema:name             ?Table              .
     
     # querying the link between Farm and LiDS graph
-    ?Table_id               featureView:name         ?Feature_view      .
+    ?Table_id               kgfarm:hasFeatureView   ?Feature_view_id    .
+    ?Feature_view_id        schema:name             ?Feature_view       .
     
     # beautify output
     BIND(STRAFTER(str(?Library_id), str(lib:)) as ?Library)             
@@ -263,7 +262,7 @@ def recommend_feature_transformations(config, show_query):
     BIND(CONCAT(STR( ?F1 ), '( )') AS ?Function)                                     
     
     # sort by dataset names and transformations
-    } ORDER BY ?Dataset ?Table ?Transformation ?Author"""
+    } ORDER BY ?Table ?Transformation"""
 
     if show_query:
         display_query(query)
@@ -443,23 +442,21 @@ def get_data_cleaning_info(config, table_id, show_query):
 def get_data_cleaning_recommendation(config, table_id, show_query=False,
                                      timeout=10000):  # data cleaning for unseen data
     query = """
-    SELECT DISTINCT  ?Function ?Parameter ?Value ?Column_id ?Pipeline
+    SELECT DISTINCT ?Function ?Parameter ?Value ?Pipeline (?Table_id as ?Table)
     WHERE
     {
-    # query pipeline-default graph
-    ?Pipeline_id            rdf:type                kglids:Pipeline     ;
-                            rdfs:label              ?Pipeline           .
-    
-    # querying named-graphs for pipeline               
+    ?Pipeline_id        rdf:type                kglids:Pipeline     ;
+                        rdfs:label              ?Pipeline           .
+       
     GRAPH ?Pipeline_id
     {
-        ?Statement          pipeline:callsFunction  ?Function_id        .
-        <<?Statement        pipeline:hasParameter   ?Parameter>> pipeline:withParameterValue ?Value        .
-        ?Statement_2        pipeline:readsTable     <%s>                .   
-        OPTIONAL
-        {
-            ?Statement      pipeline:readsColumn    ?Column_id          .
-        }   
+    ?Statement          pipeline:callsFunction  ?Function_id        .
+    <<?Statement        pipeline:hasParameter   ?Parameter>> pipeline:withParameterValue ?Value        .
+    ?Statement_2        pipeline:readsTable     ?Table_id           .   
+    OPTIONAL
+    {
+        ?Statement      pipeline:readsColumn    ?Column_id          .
+    }   
     }
     
     ?Function_id kglids:isPartOf <http://kglids.org/resource/library/pandas/DataFrame>                     .
@@ -470,7 +467,7 @@ def get_data_cleaning_recommendation(config, table_id, show_query=False,
     # beautify output
     BIND(STRAFTER(str(?Function_id), str(lib:)) as ?Function1)             
     BIND(REPLACE(?Function1, '/', '.', 'i') AS ?Function)                               
-    } ORDER BY DESC(?Function) ?Pipeline """ % table_id
+    } ORDER BY DESC(?Function) ?Pipeline """
     if show_query:
         display_query(query)
 
