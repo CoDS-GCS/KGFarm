@@ -169,7 +169,7 @@ def get_feature_views_with_multiple_entities(config, show_query):
 
 def search_enrichment_options(config, show_query):
     query = """
-    SELECT DISTINCT ?Feature_view ?Table (?Foreign_column as ?Join_key) (?Score as ?Joinability_strength) (?Table_path as ?File_source) 
+    SELECT DISTINCT (?Feature_view as ?Enrich_with) (?Table as ?Physical_joinable_table) (?Foreign_column as ?Join_key) (?Score as ?Joinability_strength) (?Table_path as ?File_source) 
     WHERE
     {
     <<?Primary_column_id    data:hasLabelSimilarity ?Foreign_column_id>> data:withCertainty ?Score     .
@@ -296,8 +296,8 @@ def get_physical_table(config, feature_view):
     SELECT ?Table_id
     WHERE
     {
-        ?Table_id featureView:name ?Feature_view    .
-        FILTER(?Feature_view = '%s')
+        ?Table_id   kgfarm:hasFeatureView   ?Feature_view_id    .
+        ?Feature_view_id    schema:name     '%s'                .
     }""" % feature_view
     return execute_query(config, query)['Table_id'][0]
 

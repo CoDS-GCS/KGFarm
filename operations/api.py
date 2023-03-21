@@ -184,8 +184,8 @@ class KGFarm:
         enrichable_tables['Joinability_strength'] = enrichable_tables['Joinability_strength']. \
             apply(lambda x: str(int(x * 100)) + '%')
 
-        for index, recommendation in tqdm(enrichable_tables.to_dict('index').items()):
-            if len(entity_df_columns - set(get_columns_in_feature_view(config=self.config, feature_view=recommendation['Feature_view']))) == 0:
+        for index, recommendation in tqdm(enrichable_tables.to_dict('index').items(), desc='Searching for enrichment options'):
+            if len(entity_df_columns - set(get_columns_in_feature_view(config=self.config, feature_view=recommendation['Enrich_with']))) == 0:
                 enrichable_tables = enrichable_tables.drop(index)
 
         return enrichable_tables.reset_index(drop=True)
@@ -200,8 +200,7 @@ class KGFarm:
         else:  # process the choice passed by the user from search_enrichment_options
             entity_df_features = list(entity_df.columns)
         # features in feature view table
-        feature_view_features = get_columns(self.config, enrichment_info['Physical_joinable_table'],
-                                            enrichment_info['Dataset_feature_view'])
+        feature_view_features = get_columns_in_feature_view(self.config, feature_view=enrichment_info['Enrich_with'])
         # take difference
         features = ['{}:'.format(feature_view) + feature for feature in feature_view_features if
                     feature not in entity_df_features]
@@ -434,7 +433,8 @@ class KGFarm:
         features.extend([join_jey, 'event_timestamp'])
         feature_view = feature_view[features]
         enriched_df = pd.merge(entity_df, feature_view, on=join_jey)
-        for row, row_info in tqdm(enriched_df.to_dict('index').items()):
+
+        for row, row_info in tqdm(enriched_df.to_dict('index').items(), desc='Enriching'):
             timestamp_entity = datetime.datetime.strptime(row_info['event_timestamp_x'], '%Y-%m-%d %H:%M:%S.%f')
             timestamp_feature_view = datetime.datetime.strptime(row_info['event_timestamp_y'], '%Y-%m-%d %H:%M:%S.%f')
             """
@@ -454,7 +454,7 @@ class KGFarm:
         columns.remove('event_timestamp')
         columns.insert(0, 'event_timestamp')
         enriched_df = enriched_df[columns]
-        enriched_df = enriched_df.sort_values(by=join_jey).reset_index(drop=True)
+        enriched_df = enriched_df.sort_values(by='event_timestamp').reset_index(drop=True)
         enriched_df = self.__re_arrange_columns(last_column, enriched_df)
 
         # maintain enrichment details (columns in enriched dataset : (table_ids of the joined tables))
@@ -462,7 +462,15 @@ class KGFarm:
                                                                     get_physical_table(self.config,
                                                                                        feature_view=enrichment_info[
                                                                                            'Enrich_with']))
-        return enriched_df
+
+        # TODO: remove cleaning unification
+        for na_type in {'none', 'n/a', 'na', 'nan', 'missing', '?', '', ' '}:
+            if na_type in {'?', '', ' '}:
+                entity_df.replace(na_type, np.nan, inplace=True)
+            else:
+                entity_df.replace('(?i)' + na_type, np.nan, inplace=True, regex=True)
+
+        return enriched_df.dropna(subset=[join_jey]).reset_index(drop=True)
 
     def __get_features(self, entity_df: pd.DataFrame, filtered_columns: list, show_query: bool = False):
         table_id = search_entity_table(self.config, list(entity_df.columns))
@@ -578,12 +586,13 @@ class KGFarm:
 
     @staticmethod
     def get_columns_to_be_cleaned(df: pd.DataFrame):
+        """
         for na_type in {'none', 'n/a', 'na', 'nan', 'missing', '?', '', ' '}:
             if na_type in {'?', '', ' '}:
                 df.replace(na_type, np.nan, inplace=True)
             else:
                 df.replace('(?i)' + na_type, np.nan, inplace=True, regex=True)
-
+        """
         columns = pd.DataFrame(df.isnull().sum())
         columns.columns = ['Missing values']
         columns['Feature'] = columns.index
@@ -730,7 +739,7 @@ class KGFarm:
             df['Parameters'] = updated_params
             return df.dropna(how='any').reset_index(drop=True)
 
-        print('scanning missing values')
+        print('Scanning missing values')
         columns_to_be_cleaned = self.get_columns_to_be_cleaned(entity_df)
 
         if visualize_missing_data:
