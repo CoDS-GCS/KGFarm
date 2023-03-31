@@ -4,39 +4,16 @@
     </a>
 </p>
 
-### <b>KGFarm: A Feature Discovery System for Data Science Across the Enterprise</b> [🔗](https://www.overleaf.com/read/fwcvhtrxcqbh)
+### <b>KGFarm: A Holistic Platform for Data Preparation and Feature Discovery</b>
 ## 📐 System Design
-![design](docs/graphics/KGFarm%20architecture.jpeg)
+<center><img src="docs/graphics/KGFarm.jpeg" alt="kgfarm" height="500" width="450"></center>
 
-
-<p align="justify">
-Features are one of the essential ingredients for building a machine learning model. In the case of structured data, each feature
-physically represented as a column serves as a measurable property that describes the characteristics of one or more entities. The
-quality and quantity of these features significantly impact how
-well a model fits on the data. In recent years there has been a reasonable interest in deploying feature stores across enterprises to
-conserve and nurture the advantageous features over time. For a
-given machine learning problem manual inspection of datasets for
-extracting entities and their corresponding features is considerably
-time-consuming and cumbersome. Moreover, for modeling purposes, data scientists spent the majority of their time going through
-several steps within data preparation such as performing feature
-enrichment, cleaning, transformation, selection, and more. Current
-implementations of feature stores rely on the user to hard-code
-the desired set of entities and features which becomes a bottleneck
-as the volume of data tends to increase. Furthermore, present-day
-systems that promise to solve the problem of data preparation provide limited functionalities and lack automation. To address these
-problems in a holistic manner, we propose KGFarm, a platform for
-feature discovery across an enterprise that discovers entities and
-their respective features at scale with high confidence. KGFarm
-employs a combined strategy that incorporates column statistics
-and relationships across schema-less data sources to generate the
-Farm graph capturing information concerning quality entities and
-features. Additionally, to address the problem of data preparation
-KGFarm learns from information that has been previously applied
-by real data scientists. This allows KGFarm to discover features
-and automate data preparation by learning and sharing knowledge
-with respect to the features throughout the enterprise at scale.</p>
+<p align="justify">Data preparation and feature discovery are critical to improving model accuracy. However, data scientists often work independently and spend most of their time writing code for these steps without support for auto-learning from each other's work. KGFarm is the first holistic platform automating data preparation and feature discovery based on the semantics of seen pipelines applied to different datasets. This semantics is captured in a knowledge graph (KG).
+KGFarm provides seamless integration with existing data science platforms to effectively enable scientific communities automatically discover and learn about each other's work. Thus, KGFarm enables data scientists to quickly automate pipelines with high accuracy for seen and unseen datasets. Our comprehensive evaluation used a KG constructed from Kaggle datasets and pipelines. KGFarm scales better than existing methods in recommending data cleaning, transformation, and feature selection while achieving better or comparable accuracy. During the demo, the audience will experience KGFarm with different datasets.</p>
 
 ## ⚡ Quick Start
+Try the sample <b><span style="color:orange;"> KGFarm Colab notebook</span></b> for a quick hands-on! [🔗](https://colab.research.google.com/drive/1u4z4EKGd8G1ju61Q3sPk5fH9BrMp8IRM?usp=sharing)
+
 1. Install dependencies
 ```bash
 pip install -r requirements.txt
@@ -50,29 +27,27 @@ generates [<code>farm.ttl</code>](https://github.com/CoDS-GCS/KGFarm/blob/farm-o
 
 ```bash
 cd feature_discovery/src/graph_builder
-python build.py -db Databaseg
+python build.py -db Database_name
 ```
 4. Start using KGFarm APIs (checkout [<code>KGFarm_demo.ipynb</code>](KGFarm_demo.ipynb))
 
 ## 🚧 Roadmap
-- <b>List of deliverables for KGFarm v0.1</b> [🔗](https://docs.google.com/document/d/1wy0ZrcUx_d_HeQoy6WMa74KXf9hvv19DTN2wTY5xkOc/edit?usp=sharing)
-* [X] Extract [Entities]() 
-* [X] Predict [Feature views without Entities]()
-* [X] Predict [Feature view with single Entity]()
-* [X] Predict [Feature view with multiple Entities]()
-* [X] Support [Entity updation]() on the fly
-* [X] Predict Features for [Dataset enrichment]()
-* [X] Predict [Feature value cleaning]()
-* [X] Predict [Feature transformations]()
-* [X] Automate [Feature selection]()
-* [X] Support unprofiled datasets
 
-## 📗 Useful resources
-- [Feature discovery slides](https://docs.google.com/presentation/d/14JigzSty4pwJaTXSNbo-SYZBcSaTqanlC4ETbGJVbTU/edit?usp=sharing)
-- [Research objectives](https://docs.google.com/document/d/1M_iWqk0YUscxXPl3UKJ0m83NAXdVOhVbUXnbKry4dSQ/edit?usp=sharing)
-- [Mitacs proposal](https://docs.google.com/document/d/1fWrp-IS9ZkKcOavcGDTr3cYx05xQag-H-PuFApZn1AY/edit?usp=sharing)
-- [KGFarm paper](https://www.overleaf.com/read/fwcvhtrxcqbh)
+* [X] Automate Entity extraction
+* [X] Predict Feature view with multiple Entities
+* [X] Support Entity updation on the fly
+* [X] Predict Features for Dataset enrichment
+* [X] Recommend Data cleaning
+* [X] Recommend Data transformation
+* [X] Automate Feature selection
 
+
+## <img src="docs/graphics/icons/youtube.svg" alt="youtube" height="20" width="29"> KGFarm Demo
+<a href="https://rebrand.ly/kgfarm"><img src="docs/graphics/thumbnails/demo_thumbnail.jpeg"/></a>
+
+Click [here](https://sfu-db.github.io/dataprep/user_guide/eda/introduction.html) to check all the supported tasks.
+## 🏅Achievements 
+- Best poster, [DSDS 2022 Workshop](https://sites.google.com/view/dsds22) [🔗](https://twitter.com/MontrealDSDS/status/1591057736682205185?s=20)
 ## 🦾 Contributors
 <p float="left">
  
