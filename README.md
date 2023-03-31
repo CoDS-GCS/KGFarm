@@ -6,7 +6,7 @@
 
 ### <b>KGFarm: A Holistic Platform for Data Preparation and Feature Discovery</b>
 ## 📐 System Design
-<center><img src="docs/graphics/KGFarm.jpeg" alt="kgfarm" height="500" width="450"></center>
+<p align="center"><img src="docs/graphics/KGFarm.jpeg" alt="kgfarm" height="500" width="450"/></p>
 
 <p align="justify">Data preparation and feature discovery are critical to improving model accuracy. However, data scientists often work independently and spend most of their time writing code for these steps without support for auto-learning from each other's work. KGFarm is the first holistic platform automating data preparation and feature discovery based on the semantics of seen pipelines applied to different datasets. This semantics is captured in a knowledge graph (KG).
 KGFarm provides seamless integration with existing data science platforms to effectively enable scientific communities automatically discover and learn about each other's work. Thus, KGFarm enables data scientists to quickly automate pipelines with high accuracy for seen and unseen datasets. Our comprehensive evaluation used a KG constructed from Kaggle datasets and pipelines. KGFarm scales better than existing methods in recommending data cleaning, transformation, and feature selection while achieving better or comparable accuracy. During the demo, the audience will experience KGFarm with different datasets.</p>
