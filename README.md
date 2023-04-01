@@ -50,8 +50,6 @@ python build.py -db Database_name
 ## <img src="docs/graphics/icons/youtube.svg" alt="youtube" height="20" width="29"> KGFarm Demo
 <a href="https://rebrand.ly/kgfarm"><img src="docs/graphics/thumbnails/demo_thumbnail.jpeg"/></a>
 
-## 🏅Achievements 
-- Best poster, [DSDS 2022 Workshop](https://sites.google.com/view/dsds22) [🔗](https://twitter.com/MontrealDSDS/status/1591057736682205185?s=20)
 ## 🦾 Contributors
 <p float="left">
  
