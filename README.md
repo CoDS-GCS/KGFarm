@@ -46,6 +46,12 @@ python build.py -db Database_name
 * [X] Recommend Data transformation
 * [X] Automate Feature selection
 
+## 🧪 Experiments 
+
+We compare KGFarm to several related system. More information regarding our evaluations per task is availabe below:
+1. [Data transformation](experiments/results/evaluations%20KGFarm%20PVLDB%202023%20-%20Data%20transformation.pdf)
+2. [Data cleaning](experiments/results/evaluations%20KGFarm%20PVLDB%202023%20-%20Data%20cleaning.pdf)
+3. [Feature selection](experiments/results/evaluations%20KGFarm%20PVLDB%202023%20-%20Feature%20selection.pdf)
 
 ## <img src="docs/graphics/icons/youtube.svg" alt="youtube" height="20" width="29"> KGFarm Demo
 <a href="https://rebrand.ly/kgfarm"><img src="docs/graphics/thumbnails/demo_thumbnail.jpeg"/></a>
