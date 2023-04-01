@@ -17,7 +17,7 @@
 KGFarm provides seamless integration with existing data science platforms to effectively enable scientific communities automatically discover and learn about each other's work. Thus, KGFarm enables data scientists to quickly automate pipelines with high accuracy for seen and unseen datasets. Our comprehensive evaluation used a KG constructed from Kaggle datasets and pipelines. KGFarm scales better than existing methods in recommending data cleaning, transformation, and feature selection while achieving better or comparable accuracy. During the demo, the audience will experience KGFarm with different datasets.</p>
 
 ## ⚡ Quick Start
-Try the sample <b>[KGFarm Colab notebook]((https://colab.research.google.com/drive/1u4z4EKGd8G1ju61Q3sPk5fH9BrMp8IRM?usp=sharing))</b> for a quick hands-on!
+Try the sample <b>[KGFarm Colab notebook](https://colab.research.google.com/drive/1u4z4EKGd8G1ju61Q3sPk5fH9BrMp8IRM?usp=sharing)</b> for a quick hands-on!
 
 1. Install dependencies
 ```bash
