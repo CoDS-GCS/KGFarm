@@ -48,7 +48,7 @@ python build.py -db Database_name
 
 ## 🧪 Experiments 
 
-We compare KGFarm to several related system. More information regarding our evaluations per task is availabe below:
+We compared KGFarm to several related system. More information regarding our evaluations per task is available below:
 1. [Data transformation](experiments/results/evaluations%20KGFarm%20PVLDB%202023%20-%20Data%20transformation.pdf)
 2. [Data cleaning](experiments/results/evaluations%20KGFarm%20PVLDB%202023%20-%20Data%20cleaning.pdf)
 3. [Feature selection](experiments/results/evaluations%20KGFarm%20PVLDB%202023%20-%20Feature%20selection.pdf)
