@@ -6,13 +6,14 @@
 
 ### <b>KGFarm: A Holistic Platform for Data Preparation and Feature Discovery</b>
 ## 📐 System Design
-<p align="center"><img src="docs/graphics/KGFarm.jpeg" alt="kgfarm" height="500" width="450"/></p>
+<p align="center"><img src="docs/graphics/KGFarm.jpeg" alt="kgfarm" height="450" width="400"/></p>
+
 
 <p align="justify">Data preparation and feature discovery are critical to improving model accuracy. However, data scientists often work independently and spend most of their time writing code for these steps without support for auto-learning from each other's work. KGFarm is the first holistic platform automating data preparation and feature discovery based on the semantics of seen pipelines applied to different datasets. This semantics is captured in a knowledge graph (KG).
 KGFarm provides seamless integration with existing data science platforms to effectively enable scientific communities automatically discover and learn about each other's work. Thus, KGFarm enables data scientists to quickly automate pipelines with high accuracy for seen and unseen datasets. Our comprehensive evaluation used a KG constructed from Kaggle datasets and pipelines. KGFarm scales better than existing methods in recommending data cleaning, transformation, and feature selection while achieving better or comparable accuracy. During the demo, the audience will experience KGFarm with different datasets.</p>
 
 ## ⚡ Quick Start
-Try the sample <b><span style="color:orange;"> KGFarm Colab notebook</span></b> for a quick hands-on! [🔗](https://colab.research.google.com/drive/1u4z4EKGd8G1ju61Q3sPk5fH9BrMp8IRM?usp=sharing)
+Try the sample <b><span style="color:orange">KGFarm Colab notebook</span></b> for a quick hands-on! [🔗](https://colab.research.google.com/drive/1u4z4EKGd8G1ju61Q3sPk5fH9BrMp8IRM?usp=sharing)
 
 1. Install dependencies
 ```bash
@@ -23,7 +24,7 @@ pip install -r requirements.txt
 stardog-admin server start
 ```
 3. Run KGFarm's [<code>graph_builder</code>](feature_discovery/src/graph_builder/build.py):<br/>
-generates [<code>farm.ttl</code>](https://github.com/CoDS-GCS/KGFarm/blob/farm-ontology/feature_discovery/src/graph_builder/farm.ttl) and uploads it to the [stardog server](https://cloud.stardog.com/)
+generates [<code>farm.ttl</code>](https://github.com/CoDS-GCS/KGFarm/blob/645f12dfd63bae0bd319401c2cf10f8378dd6679/feature_discovery/src/graph_builder/farm.ttl) and uploads it to the [stardog server](https://cloud.stardog.com/)
 
 ```bash
 cd feature_discovery/src/graph_builder
@@ -45,7 +46,6 @@ python build.py -db Database_name
 ## <img src="docs/graphics/icons/youtube.svg" alt="youtube" height="20" width="29"> KGFarm Demo
 <a href="https://rebrand.ly/kgfarm"><img src="docs/graphics/thumbnails/demo_thumbnail.jpeg"/></a>
 
-Click [here](https://sfu-db.github.io/dataprep/user_guide/eda/introduction.html) to check all the supported tasks.
 ## 🏅Achievements 
 - Best poster, [DSDS 2022 Workshop](https://sites.google.com/view/dsds22) [🔗](https://twitter.com/MontrealDSDS/status/1591057736682205185?s=20)
 ## 🦾 Contributors
