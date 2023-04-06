@@ -3,17 +3,13 @@ import copy
 import datetime
 import warnings
 import numpy as np
-import urllib.parse
 import pandas as pd
 import seaborn as sns
 from tqdm.notebook import tqdm
 from pathlib import Path
 from datetime import timedelta
 from sklearn.preprocessing import *
-# from pyspark.sql import SparkSession
-# from pyspark import SparkConf, SparkContext
 from matplotlib import pyplot as plt
-from stardog.exceptions import StardogException
 from sklearn.feature_selection import SelectKBest, f_classif
 from feature_discovery.src.graph_builder.governor import Governor
 from helpers.helper import connect_to_stardog
@@ -312,7 +308,7 @@ class KGFarm:
             return df
 
         def handle_unseen_data():
-            return add_transformation_type(self.recommender.get_transformation_recommendations(entity_df, show_insights=show_insights))
+            return add_transformation_type(self.recommender.get_transformation_recommendations(entity_df, show_insight=show_insights))
 
         transformation_info = recommend_feature_transformations(self.config, show_query)
 
@@ -626,9 +622,7 @@ class KGFarm:
         columns.reset_index(drop=True, inplace=True)
         return columns
 
-    def recommend_cleaning_operations(self, entity_df: pd.DataFrame, visualize_missing_data: bool = True,
-                                      top_k: int = 10,
-                                      show_query: bool = False):
+    def recommend_cleaning_operations(self, entity_df: pd.DataFrame, visualize_missing_data: bool = True, show_query: bool = False):
         """
         1. visualize missing data
         2. check if data is profiled or unseen
@@ -667,6 +661,7 @@ class KGFarm:
             ax.tick_params(axis='x', labelrotation=90, labelsize=5.5)
             plt.show()
 
+        """
         def recommend_cleaning_operations_for_unseen_data(list_of_similar_tables: list, display: bool):
             recommendations = []
             for recommended_table in tqdm(list_of_similar_tables):
@@ -680,8 +675,9 @@ class KGFarm:
             if len(recommendations) == 0:
                 return False
             return pd.concat(recommendations).reset_index(drop=True)
-
+        """
         # TODO: fix and test formatting for interpolation
+        """
         def reformat_recommendations(df: pd.DataFrame):
             def format_columns(c: str):
                 if isinstance(c, str):
@@ -763,6 +759,7 @@ class KGFarm:
 
             df['Parameters'] = updated_params
             return df.dropna(how='any').reset_index(drop=True)
+        """
 
         print('scanning missing values')
         columns_to_be_cleaned = self.get_columns_to_be_cleaned(entity_df)
