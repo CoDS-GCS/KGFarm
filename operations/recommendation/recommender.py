@@ -5,9 +5,9 @@ import bitstring
 import numpy as np
 import pandas as pd
 from datasketch import MinHash
-from collections import Counter
+# from collections import Counter
 from sklearn.preprocessing import LabelEncoder
-from operations.storage.embeddings import Embeddings
+# from operations.storage.embeddings import Embeddings
 from operations.recommendation.utils.column_embeddings import load_numeric_embedding_model
 
 
@@ -24,8 +24,8 @@ class Recommender:
         self.categorical_embedding_model = MinHash(num_perm=512)
         # self.word_embedding = WordEmbedding(
         #     'feature_discovery/src/recommender/utils/glove_embeddings/glove.6B.100d.pickle')
-        self.embeddings = Embeddings(
-            'operations/storage/embedding_store/embeddings_120K.pickle')  # column embeddings, ~120k column profile embeddings, solves cold start
+        # self.embeddings = Embeddings(
+        #     'operations/storage/embedding_store/embeddings_120K.pickle')  # column embeddings, ~120k column profile embeddings, solves cold start
         self.auto_insight_report = dict()
         self.categorical_thresh = 0.60
         self.numerical_thresh = 0.50
@@ -63,7 +63,7 @@ class Recommender:
     #         word_embeddings[column] = self.word_embedding.calculate_word_embeddings(tokens)
     #     return word_embeddings
 
-    def get_transformation_recommendations(self, entity_df: pd.DataFrame):
+    def get_transformation_recommendations(self, entity_df: pd.DataFrame, show_insight: bool = True):
         self.auto_insight_report = {}
         transformation_info = {}
 
@@ -152,23 +152,25 @@ class Recommender:
         transformation_info = transformation_info[transformation_info['Transformation'] != 'Negative']
         transformation_info.sort_values(by='Transformation', inplace=True)
         transformation_info.reset_index(drop=True, inplace=True)
-        if self.auto_insight_report:
+        if self.auto_insight_report and show_insight:
             show_insights()
         return reformat(transformation_info)
 
-    def get_cleaning_recommendation(self, entity_df: pd.DataFrame):
-        numeric_embeddings, string_embeddings = self.__compute_content_embeddings(entity_df=entity_df)
-        similar_columns_uris = self.embeddings.get_similar_columns(numeric_column_embeddings=numeric_embeddings,
-                                                                   string_column_embeddings=string_embeddings)
+    @staticmethod
+    def get_cleaning_recommendation(entity_df: pd.DataFrame):
+        return entity_df
+        # numeric_embeddings, string_embeddings = self.__compute_content_embeddings(entity_df=entity_df)
+        # similar_columns_uris = self.embeddings.get_similar_columns(numeric_column_embeddings=numeric_embeddings,
+        #                                                            string_column_embeddings=string_embeddings)
 
         # get corresponding table uris
-        def get_table_uri(column_uri):
-            return column_uri.replace(column_uri.split('/')[-1], '')[:-1]
-
-        similar_table_uris = {key: get_table_uri(value) for key, value in similar_columns_uris.items()}
-        similar_table_uris = Counter(
-            similar_table_uris.values())  # count similar tables and sort by most occurring tables
-        return tuple(dict(sorted(similar_table_uris.items(), key=lambda item: item[1], reverse=True)).keys())
+        # def get_table_uri(column_uri):
+        #     return column_uri.replace(column_uri.split('/')[-1], '')[:-1]
+        #
+        # similar_table_uris = {key: get_table_uri(value) for key, value in similar_columns_uris.items()}
+        # similar_table_uris = Counter(
+        #     similar_table_uris.values())  # count similar tables and sort by most occurring tables
+        # return tuple(dict(sorted(similar_table_uris.items(), key=lambda item: item[1], reverse=True)).keys())
 
     def get_feature_selection_score(self, task: str, entity_df: pd.DataFrame, dependent_variable: str):
 

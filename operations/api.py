@@ -6,7 +6,7 @@ import numpy as np
 import urllib.parse
 import pandas as pd
 import seaborn as sns
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 from pathlib import Path
 from datetime import timedelta
 from sklearn.preprocessing import *
@@ -247,8 +247,8 @@ class KGFarm:
         return features
 
     # TODO: concrete set of ontology is required to know which columns are being dropped (user may drop features for transformations / other experiments)
-    def recommend_feature_transformations(self, entity_df: pd.DataFrame = None, show_metadata: bool = False,
-                                          show_query: bool = False):
+    def recommend_data_transformations(self, entity_df: pd.DataFrame = None, show_metadata: bool = False,
+                                          show_query: bool = False, show_insights: bool = True):
 
         def get_transformation_technique(t, f_values):
             if t == 'Ordinal encoding' and len(f_values) > 1:
@@ -312,7 +312,7 @@ class KGFarm:
             return df
 
         def handle_unseen_data():
-            return add_transformation_type(self.recommender.get_transformation_recommendations(entity_df))
+            return add_transformation_type(self.recommender.get_transformation_recommendations(entity_df, show_insights=show_insights))
 
         transformation_info = recommend_feature_transformations(self.config, show_query)
 
