@@ -108,7 +108,7 @@ class PipelineGenerator:
 
     def search_transformations(self, entity_df: pd.DataFrame):
         print('• applying transformations', end=' ')
-        transformation_info = self.kgfarm.recommend_feature_transformations(entity_df=entity_df)
+        transformation_info = self.kgfarm.recommend_data_transformations(entity_df=entity_df)
         if len(transformation_info):
             print('found {} transformations'.format(len(transformation_info)))
             code = """transformation_info = kgfarm.recommend_feature_transformations(entity_df)\ntransformation_info"""
