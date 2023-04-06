@@ -1,2 +1,2 @@
 Dataset,Target,Task
-sonar,60,binary
+sonar,Class,binary
