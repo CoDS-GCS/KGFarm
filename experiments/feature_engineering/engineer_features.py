@@ -2,13 +2,19 @@ import os
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from sklearn.metrics import f1_score
+# from sklearn.metrics import f1_score
+from sklearn.svm import LinearSVC, SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.feature_selection import mutual_info_classif, f_classif, SelectKBest
+from autolearn_results import autolearn_per_dataset
 from operations.api import KGFarm
-#100
-RANDOM_STATE = 100
+
+RANDOM_STATE = 30
 np.random.seed(RANDOM_STATE)
 
 
@@ -22,6 +28,14 @@ class EngineerFeatures:
         os.chdir('../../')
         self.kgfarm = KGFarm(show_connection_status=False)
         self.information_gain = dict()
+        self.models = [KNeighborsClassifier(),
+                       LogisticRegression(random_state=RANDOM_STATE),
+                       LinearSVC(random_state=RANDOM_STATE),
+                       SVC(C=1.0, kernel='poly', random_state=RANDOM_STATE),
+                       RandomForestClassifier(random_state=RANDOM_STATE),
+                       AdaBoostClassifier(random_state=RANDOM_STATE),
+                       MLPClassifier(random_state=RANDOM_STATE),
+                       DecisionTreeClassifier(random_state=RANDOM_STATE)]
 
     @staticmethod
     def __separate_independent_and_dependent_variables(df: pd.DataFrame, target: str):
@@ -67,13 +81,18 @@ class EngineerFeatures:
         recommended_transformations = self.kgfarm.recommend_data_transformations(entity_df=X, show_metadata=False,
                                                                                  show_query=False, show_insights=False)
 
-        for n, recommendation in recommended_transformations.to_dict('index').items():
-            train_set, _ = self.kgfarm.apply_transformation(transformation_info=recommended_transformations.iloc[n],
-                                                            entity_df=train_set)
-            test_set, _ = self.kgfarm.apply_transformation(transformation_info=recommended_transformations.iloc[n],
-                                                           entity_df=test_set)
+        if isinstance(recommended_transformations, type(None)):
+            print('data does not requires transformation')
+            return train_set, test_set
 
-        return train_set, test_set
+        else:
+            for n, recommendation in recommended_transformations.to_dict('index').items():
+                train_set, _ = self.kgfarm.apply_transformation(transformation_info=recommended_transformations.iloc[n],
+                                                                entity_df=train_set)
+                test_set, _ = self.kgfarm.apply_transformation(transformation_info=recommended_transformations.iloc[n],
+                                                               entity_df=test_set)
+
+            return train_set, test_set
 
     def __select_features(self, train_set: pd.DataFrame, test_set: pd.DataFrame, target: str, task: str):
         X, y = self.__separate_independent_and_dependent_variables(df=train_set, target=target)
@@ -86,10 +105,13 @@ class EngineerFeatures:
                 features_filtered_by_anova.add(feature)
 
         features_filtered_by_anova.add(target)
-        feature_selection_recommendation = self.kgfarm.recommend_features_to_be_selected(
-            entity_df=train_set[features_filtered_by_anova], dependent_variable=target, task=task)
-        feature_selection_recommendation = feature_selection_recommendation.loc[
-            feature_selection_recommendation['Selection_score'] > 0.60]
+        try:
+            feature_selection_recommendation = self.kgfarm.recommend_features_to_be_selected(
+                entity_df=train_set[features_filtered_by_anova], dependent_variable=target, task=task)
+            feature_selection_recommendation = feature_selection_recommendation.loc[
+                feature_selection_recommendation['Selection_score'] > 0.60]
+        except AttributeError:
+            return train_set[features_filtered_by_anova], test_set[features_filtered_by_anova]
 
         features_filtered_by_kgfarm = feature_selection_recommendation['Feature'].tolist()
         features_filtered_by_kgfarm.append(target)
@@ -100,16 +122,23 @@ class EngineerFeatures:
         X_test, y_test = self.__separate_independent_and_dependent_variables(df=test_set, target=target)
         random_forest_classifier = RandomForestClassifier(random_state=RANDOM_STATE)
         random_forest_classifier.fit(X=X_train, y=y_train)
-        y_pred = random_forest_classifier.predict(X=X_test)
-        return f1_score(y_true=y_test, y_pred=y_pred, average='macro')
-        # return random_forest_classifier.score(X=X_test, y=y_test)
+
+        accuracy_per_model = []
+        for model in self.models:
+            model.fit(X=X_train, y=y_train)
+            accuracy_per_model.append(model.score(X=X_test, y=y_test))
+
+        return accuracy_per_model
 
     def run(self):
+        experiment_results = []
         os.chdir(self.working_dir)
         for _, dataset_info in tqdm(self.experiment_datasets_info.to_dict('index').items(), desc='Datasets processed'):
+            result = {'KNN': 0, 'LR': 0, 'SVM-L': 0, 'SVM-P': 0, 'RF': 0, 'AB': 0, 'NN': 0, 'DT': 0}
+            self.information_gain = dict()
             df = pd.read_csv(f'{self.path_to_dataset}{dataset_info["Dataset"]}.csv')
             target = dataset_info['Target']
-            scores = list()
+            scores_per_dataset = list()
             for train_index, test_index in StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE).split(
                     df, df[target]):
                 train_set = df.iloc[train_index]
@@ -122,10 +151,25 @@ class EngineerFeatures:
 
                 train_set, test_set = self.__transform(train_set=train_set, test_set=test_set, target=target)
 
-                self.__select_features(train_set=train_set, test_set=test_set, target=target, task=dataset_info['Task'])
+                train_set, test_set = self.__select_features(train_set=train_set, test_set=test_set, target=target,
+                                                             task=dataset_info['Task'])
 
-                scores.append(self.__train_and_evaluate(train_set=train_set, test_set=test_set, target=target))
-            print(f'F1 for {dataset_info["Dataset"]}: {sum(scores) / len(scores):.3f}')
+                scores_per_dataset.append(
+                    self.__train_and_evaluate(train_set=train_set, test_set=test_set, target=target))
+
+            # parse result as a dataframe
+            for fold_result in scores_per_dataset:
+                for acc, model in zip(fold_result, result.keys()):
+                    result[model] += acc
+
+            result = {k: f'{(v * 100 / 5):.2f}' for k, v in result.items()}
+            result = pd.DataFrame(list(result.items()), columns=['CLF', 'KGFarm'])
+            result['Dataset'] = [dataset_info['Dataset']] + [np.nan] * (len(self.models) - 1)
+            result['AL'] = autolearn_per_dataset.get(dataset_info['Dataset'])
+            experiment_results.append(result[['Dataset', 'CLF', 'AL', 'KGFarm']])
+            print(pd.concat(experiment_results))
+
+        pd.concat(experiment_results).to_csv('kgfarm_vs_autolearn.csv', index=False)
 
 
 if __name__ == '__main__':
