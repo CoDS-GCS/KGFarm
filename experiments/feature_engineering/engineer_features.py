@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from sklearn.metrics import f1_score
@@ -6,6 +7,9 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import mutual_info_classif, f_classif, SelectKBest
 from operations.api import KGFarm
+#100
+RANDOM_STATE = 100
+np.random.seed(RANDOM_STATE)
 
 
 class EngineerFeatures:
@@ -64,8 +68,10 @@ class EngineerFeatures:
                                                                                  show_query=False, show_insights=False)
 
         for n, recommendation in recommended_transformations.to_dict('index').items():
-            train_set, _ = self.kgfarm.apply_transformation(transformation_info=recommended_transformations.iloc[n], entity_df=train_set)
-            test_set, _ = self.kgfarm.apply_transformation(transformation_info=recommended_transformations.iloc[n], entity_df=test_set)
+            train_set, _ = self.kgfarm.apply_transformation(transformation_info=recommended_transformations.iloc[n],
+                                                            entity_df=train_set)
+            test_set, _ = self.kgfarm.apply_transformation(transformation_info=recommended_transformations.iloc[n],
+                                                           entity_df=test_set)
 
         return train_set, test_set
 
@@ -82,7 +88,8 @@ class EngineerFeatures:
         features_filtered_by_anova.add(target)
         feature_selection_recommendation = self.kgfarm.recommend_features_to_be_selected(
             entity_df=train_set[features_filtered_by_anova], dependent_variable=target, task=task)
-        feature_selection_recommendation = feature_selection_recommendation.loc[feature_selection_recommendation['Selection_score'] > 0.60]
+        feature_selection_recommendation = feature_selection_recommendation.loc[
+            feature_selection_recommendation['Selection_score'] > 0.60]
 
         features_filtered_by_kgfarm = feature_selection_recommendation['Feature'].tolist()
         features_filtered_by_kgfarm.append(target)
@@ -91,7 +98,7 @@ class EngineerFeatures:
     def __train_and_evaluate(self, train_set: pd.DataFrame, test_set: pd.DataFrame, target: str):
         X_train, y_train = self.__separate_independent_and_dependent_variables(df=train_set, target=target)
         X_test, y_test = self.__separate_independent_and_dependent_variables(df=test_set, target=target)
-        random_forest_classifier = RandomForestClassifier()
+        random_forest_classifier = RandomForestClassifier(random_state=RANDOM_STATE)
         random_forest_classifier.fit(X=X_train, y=y_train)
         y_pred = random_forest_classifier.predict(X=X_test)
         return f1_score(y_true=y_test, y_pred=y_pred, average='macro')
@@ -103,8 +110,8 @@ class EngineerFeatures:
             df = pd.read_csv(f'{self.path_to_dataset}{dataset_info["Dataset"]}.csv')
             target = dataset_info['Target']
             scores = list()
-            for train_index, test_index in StratifiedKFold(n_splits=5, shuffle=True, random_state=1).split(df,
-                                                                                                           df[target]):
+            for train_index, test_index in StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE).split(
+                    df, df[target]):
                 train_set = df.iloc[train_index]
                 test_set = df.iloc[test_index]
                 train_set, test_set = self.__compute_information_gain(train_set=train_set, test_set=test_set,
