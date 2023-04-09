@@ -404,8 +404,8 @@ class KGFarm:
         if transformation == 'LabelEncoder':
             print('Applying LabelEncoder transformation')
             transformation_model = LabelEncoder()
-            f = features[0]  # label encoding is applied on single feature
-            df[f] = transformation_model.fit_transform(df[f])
+            # label encoding is applied on single feature
+            df[features[0]] = transformation_model.fit_transform(df[features[0]])
         elif transformation == 'StandardScaler':
             # print(
             #     'CAUTION: Make sure you apply {} transformation only on the train set (This ensures there is no over-fitting due to feature leakage)\n'.format(
@@ -417,7 +417,6 @@ class KGFarm:
         elif transformation == 'OrdinalEncoder':
             print('Applying OrdinalEncoder transformation')
             transformation_model = OrdinalEncoder()
-            transformation_model.fit_transform(df[features])
             df[features] = transformation_model.fit_transform(df[features])
         elif transformation == 'MinMaxScaler':
             print('Applying MinMaxScaler transformation')
