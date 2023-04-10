@@ -2,7 +2,6 @@ import os
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-# from sklearn.metrics import f1_score
 from sklearn.svm import LinearSVC, SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neural_network import MLPClassifier
@@ -107,7 +106,7 @@ class EngineerFeatures:
         features_filtered_by_anova.add(target)
         try:
             feature_selection_recommendation = self.kgfarm.recommend_features_to_be_selected(
-                entity_df=train_set[features_filtered_by_anova], dependent_variable=target, task=task)
+                entity_df=train_set[features_filtered_by_anova], dependent_variable=target, task=task, n=300)
             feature_selection_recommendation = feature_selection_recommendation.loc[
                 feature_selection_recommendation['Selection_score'] > 0.60]
         except AttributeError:
@@ -136,6 +135,7 @@ class EngineerFeatures:
         for _, dataset_info in tqdm(self.experiment_datasets_info.to_dict('index').items(), desc='Datasets processed'):
             result = {'KNN': 0, 'LR': 0, 'SVM-L': 0, 'SVM-P': 0, 'RF': 0, 'AB': 0, 'NN': 0, 'DT': 0}
             self.information_gain = dict()
+            print(dataset_info["Dataset"])
             df = pd.read_csv(f'{self.path_to_dataset}{dataset_info["Dataset"]}.csv')
             target = dataset_info['Target']
             scores_per_dataset = list()
@@ -170,8 +170,10 @@ class EngineerFeatures:
             print(pd.concat(experiment_results))
 
         pd.concat(experiment_results).to_csv('kgfarm_vs_autolearn.csv', index=False)
+        print('Done.')
 
 
+# TODO: replace anova by ig with theta1 (check if it improves scores)
 if __name__ == '__main__':
     experiment = EngineerFeatures(path='../data/', theta1=0.00, theta2=0.90)
     experiment.run()
