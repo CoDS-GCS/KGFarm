@@ -167,6 +167,7 @@ class EngineerFeatures:
             result['Dataset'] = [dataset_info['Dataset']] + [np.nan] * (len(self.models) - 1)
             result['AL'] = autolearn_per_dataset.get(dataset_info['Dataset'])
             experiment_results.append(result[['Dataset', 'CLF', 'AL', 'KGFarm']])
+            pd.concat(experiment_results).to_csv('kgfarm_vs_autolearn.csv', index=False)
             print(pd.concat(experiment_results))
 
         pd.concat(experiment_results).to_csv('kgfarm_vs_autolearn.csv', index=False)
