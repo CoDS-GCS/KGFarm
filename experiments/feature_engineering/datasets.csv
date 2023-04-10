@@ -1,26 +1,26 @@
-Dataset,Target,Task
-Sonar,Class,binary
-Pima Diabetes,Outcome,binary
-Colon,Class,binary
-Bank Note,class,binary
-Fertility,Diagnosis,binary
-Haberman,1.1,binary
-Ionosphere,column_ai,binary
-Abalone,Sex,multiclass
-Libras,90,multiclass
-Waveform,class,multiclass
-Wine,0,multiclass
-Dermatology,class,multiclass
-E.coli,SITE,multiclass
-FeatureFourier,'class',multiclass
-Letter Recognition,letter,multiclass
-Optical Digits,class,multiclass
-Poker,10,multiclass
-Lymphoma,class,multiclass
-Shuttle,class,multiclass
-Lung Cancer,type,multiclass
-FeaturePixel,class,multiclass
-Arcene,Class,binary
-Leukaemia,0,binary
-Ovarian Cancer,Class,binary
-Prostate Cancer,class,binary
+Dataset,Target,Task,Size
+Haberman,1.1,binary,0.003
+Fertility,Diagnosis,binary,0.004
+E.coli,SITE,multiclass,0.011
+Wine,0,multiclass,0.011
+Pima Diabetes,Outcome,binary,0.023
+Dermatology,class,multiclass,0.026
+Bank Note,class,binary,0.044
+Ionosphere,column_ai,binary,0.076
+Sonar,Class,binary,0.082
+Abalone,Sex,multiclass,0.183
+Libras,90,multiclass,0.245
+Letter Recognition,letter,multiclass,0.691
+Optical Digits,class,multiclass,0.79
+FeaturePixel,class,multiclass,0.923
+Waveform,class,multiclass,1.033
+Colon,Class,binary,1.08
+Shuttle,class,multiclass,1.467
+FeatureFourier,'class',multiclass,1.583
+Lymphoma,class,multiclass,2.021
+Prostate Cancer,class,binary,2.909
+Leukaemia,0,binary,6.095
+Arcene,Class,binary,9.058
+Lung Cancer,type,multiclass,15.529
+Poker,10,multiclass,22.448
+Ovarian Cancer,Class,binary,32.431
