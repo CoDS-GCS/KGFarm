@@ -28,7 +28,6 @@ defusedxml==0.7.1
 dill==0.3.4
 dpcpp-cpp-rt==2023.0.0
 entrypoints==0.3
-faiss==1.7.1
 fastjsonschema==2.16.2
 fonttools==4.25.0
 fsspec==2022.3.0
@@ -92,6 +91,7 @@ prompt-toolkit==3.0.20
 protobuf==3.20.1
 psutil==5.9.0
 ptyprocess==0.7.0
+py4j==0.10.9.5
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pycparser==2.21
@@ -102,6 +102,7 @@ pyparsing==3.0.9
 PyQt5-sip==12.11.0
 pyrsistent==0.18.0
 PySocks==1.7.1
+pyspark==3.3.1
 pystardog==0.11.1
 python-dateutil==2.8.2
 pytz==2022.1
