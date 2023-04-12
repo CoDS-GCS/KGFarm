@@ -1,7 +1,10 @@
 import os
+import sys
+import time
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+from pathlib import Path
 from sklearn.svm import LinearSVC, SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neural_network import MLPClassifier
@@ -11,6 +14,9 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.feature_selection import mutual_info_classif, f_classif, SelectKBest
 from autolearn_results import autolearn_per_dataset
+spath = str(Path(os.getcwd()).resolve().parents[1])
+sys.path.append(spath)
+sys.path.append(f'{spath}operations')
 from operations.api import KGFarm
 
 RANDOM_STATE = 30
@@ -139,23 +145,43 @@ class EngineerFeatures:
             df = pd.read_csv(f'{self.path_to_dataset}{dataset_info["Dataset"]}.csv')
             target = dataset_info['Target']
             scores_per_dataset = list()
+            fold = 1
+            start = time.time()
             for train_index, test_index in StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE).split(
                     df, df[target]):
+                print('fold', fold)
                 train_set = df.iloc[train_index]
                 test_set = df.iloc[test_index]
+
+                print('computing information gain')
                 train_set, test_set = self.__compute_information_gain(train_set=train_set, test_set=test_set,
                                                                       target=target)
+                print('information gain done.')
 
+                print('computing feature correlation')
                 train_set, test_set = self.__compute_feature_correlation(train_set=train_set, test_set=test_set,
                                                                          target=target)
+                print('correlation done.')
 
+                print('recommending and applying transformation')
                 train_set, test_set = self.__transform(train_set=train_set, test_set=test_set, target=target)
+                print('transformations done.')
 
+                print('computing feature importance')
                 train_set, test_set = self.__select_features(train_set=train_set, test_set=test_set, target=target,
                                                              task=dataset_info['Task'])
+                print('feature selection done.')
 
+                print('training and evaluating models')
                 scores_per_dataset.append(
                     self.__train_and_evaluate(train_set=train_set, test_set=test_set, target=target))
+                print('model training and evaluation done.')
+
+                print(f'fold {fold} completed.\n', '-'*100)
+                fold = fold + 1
+
+            time_taken = f'{(time.time()-start):.2f}'
+            print(f'{dataset_info["Dataset"]} done in {time_taken} seconds')
 
             # parse result as a dataframe
             for fold_result in scores_per_dataset:
@@ -165,8 +191,9 @@ class EngineerFeatures:
             result = {k: f'{(v * 100 / 5):.2f}' for k, v in result.items()}
             result = pd.DataFrame(list(result.items()), columns=['CLF', 'KGFarm'])
             result['Dataset'] = [dataset_info['Dataset']] + [np.nan] * (len(self.models) - 1)
+            result['KGFarm time'] = [time_taken] + [np.nan] * (len(self.models) - 1)
             result['AL'] = autolearn_per_dataset.get(dataset_info['Dataset'])
-            experiment_results.append(result[['Dataset', 'CLF', 'AL', 'KGFarm']])
+            experiment_results.append(result[['Dataset', 'CLF', 'AL', 'KGFarm', 'KGFarm time']])
             pd.concat(experiment_results).to_csv('kgfarm_vs_autolearn.csv', index=False)
             print(pd.concat(experiment_results))
 

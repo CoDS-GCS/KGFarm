@@ -277,7 +277,7 @@ class KGFarm:
             df['Transformation'] = df.apply(lambda x: get_transformation_technique(x.Transformation, x.Feature), axis=1)
 
             # TODO: fix this temporary hack
-            if None in list(transformation_info['Transformation']):
+            if None in list(df['Transformation']):
                 df['Transformation'] = df['Transformation_type']
                 for n_row, v in df.to_dict('index').items():
                     if v['Transformation'] == 'OrdinalEncoder' or v['Transformation'] == 'LabelEncoder':
