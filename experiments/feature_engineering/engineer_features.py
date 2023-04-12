@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import psutil
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -58,7 +59,6 @@ class EngineerFeatures:
 
         self.information_gain = {k: v for k, v in
                                  sorted(self.information_gain.items(), key=lambda item: item[1], reverse=True)}
-        # print(pd.DataFrame({'Feature': self.information_gain.keys(), 'Score': self.information_gain.values()}))
         features_filtered_by_information_gain = list(self.information_gain.keys())
         features_filtered_by_information_gain.append(target)
         return train_set[features_filtered_by_information_gain], test_set[features_filtered_by_information_gain]
@@ -83,8 +83,7 @@ class EngineerFeatures:
 
     def __transform(self, train_set: pd.DataFrame, test_set: pd.DataFrame, target: str):
         X, _ = self.__separate_independent_and_dependent_variables(df=train_set, target=target)
-        recommended_transformations = self.kgfarm.recommend_data_transformations(entity_df=X, show_metadata=False,
-                                                                                 show_query=False, show_insights=False)
+        recommended_transformations = self.kgfarm.recommend_data_transformations(entity_df=X, show_query=False, show_insights=False)
 
         if isinstance(recommended_transformations, type(None)):
             print('data does not requires transformation')
@@ -93,9 +92,9 @@ class EngineerFeatures:
         else:
             for n, recommendation in recommended_transformations.to_dict('index').items():
                 train_set, _ = self.kgfarm.apply_transformation(transformation_info=recommended_transformations.iloc[n],
-                                                                entity_df=train_set)
+                                                                entity_df=train_set, output_message='min')
                 test_set, _ = self.kgfarm.apply_transformation(transformation_info=recommended_transformations.iloc[n],
-                                                               entity_df=test_set)
+                                                               entity_df=test_set, output_message='min')
 
             return train_set, test_set
 
@@ -145,43 +144,49 @@ class EngineerFeatures:
             df = pd.read_csv(f'{self.path_to_dataset}{dataset_info["Dataset"]}.csv')
             target = dataset_info['Target']
             scores_per_dataset = list()
-            fold = 1
+            n_rows = len(df)
+            n_features = len(df.columns) - 1  # excluding target
+
+            memory_before = psutil.Process().memory_info().rss
             start = time.time()
+            fold = 1
             for train_index, test_index in StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE).split(
                     df, df[target]):
-                print('fold', fold)
+                print(f'{dataset_info["Dataset"]} fold-{fold}')
                 train_set = df.iloc[train_index]
                 test_set = df.iloc[test_index]
 
-                print('computing information gain')
+                print(f'computing information gain for {n_features}')
                 train_set, test_set = self.__compute_information_gain(train_set=train_set, test_set=test_set,
                                                                       target=target)
-                print('information gain done.')
+                print(f'information gain done, # features: {len(train_set.columns)-1}')
 
-                print('computing feature correlation')
+                print(f'computing feature correlation b/w {len(train_set.columns)-1} features')
                 train_set, test_set = self.__compute_feature_correlation(train_set=train_set, test_set=test_set,
                                                                          target=target)
-                print('correlation done.')
+                print(f'correlation done, # features: {len(train_set.columns)-1}')
 
-                print('recommending and applying transformation')
+                print(f'recommending and applying transformation on {len(train_set.columns)-1} features')
                 train_set, test_set = self.__transform(train_set=train_set, test_set=test_set, target=target)
-                print('transformations done.')
+                print(f'transformations done, # features: {len(train_set.columns)-1}')
 
-                print('computing feature importance')
+                print(f'computing feature importance of {len(train_set.columns)-1} features')
                 train_set, test_set = self.__select_features(train_set=train_set, test_set=test_set, target=target,
                                                              task=dataset_info['Task'])
-                print('feature selection done.')
+                print(f'feature selection done, # features: {len(train_set.columns)-1}')
 
-                print('training and evaluating models')
+                print(f'training and evaluating models on {len(train_set.columns)-1} features')
                 scores_per_dataset.append(
                     self.__train_and_evaluate(train_set=train_set, test_set=test_set, target=target))
                 print('model training and evaluation done.')
 
-                print(f'fold {fold} completed.\n', '-'*100)
+                print(f'{dataset_info["Dataset"]} fold-{fold} completed.\n', '-'*100)
                 fold = fold + 1
 
             time_taken = f'{(time.time()-start):.2f}'
-            print(f'{dataset_info["Dataset"]} done in {time_taken} seconds')
+            print(f'{dataset_info["Dataset"]} done in {time_taken} seconds', end='')
+            memory_usage = f'{abs(psutil.Process().memory_info().rss - memory_before)/(1024*1024):.2f}'
+            print(f' | memory consumed: {memory_usage} MB')
 
             # parse result as a dataframe
             for fold_result in scores_per_dataset:
@@ -189,13 +194,17 @@ class EngineerFeatures:
                     result[model] += acc
 
             result = {k: f'{(v * 100 / 5):.2f}' for k, v in result.items()}
-            result = pd.DataFrame(list(result.items()), columns=['CLF', 'KGFarm'])
-            result['Dataset'] = [dataset_info['Dataset']] + [np.nan] * (len(self.models) - 1)
-            result['KGFarm time'] = [time_taken] + [np.nan] * (len(self.models) - 1)
-            result['AL'] = autolearn_per_dataset.get(dataset_info['Dataset'])
-            experiment_results.append(result[['Dataset', 'CLF', 'AL', 'KGFarm', 'KGFarm time']])
+            result = pd.DataFrame(list(result.items()), columns=['Classifier', 'KGFarm'])
+            result['Dataset'] = [dataset_info['Dataset']] * (len(self.models))
+            result['# Features'] = [n_features] * (len(self.models))
+            result['# Rows'] = [n_rows] * (len(self.models))
+            result['KGFarm time'] = [time_taken] * (len(self.models))
+            result['KGFarm memory usage (in MB)'] = [memory_usage] * (len(self.models))
+            result['AutoLearn'] = autolearn_per_dataset.get(dataset_info['Dataset'])
+            experiment_results.append(result[['Dataset', '# Features', '# Rows', 'Classifier', 'AutoLearn', 'KGFarm',
+                                              'KGFarm time', 'KGFarm memory usage (in MB)']])
             pd.concat(experiment_results).to_csv('kgfarm_vs_autolearn.csv', index=False)
-            print(pd.concat(experiment_results))
+            print(pd.concat(experiment_results)[['Dataset', 'Classifier', 'AutoLearn', 'KGFarm']])
 
         pd.concat(experiment_results).to_csv('kgfarm_vs_autolearn.csv', index=False)
         print('Done.')
