@@ -242,9 +242,8 @@ class KGFarm:
             print(len(features), 'feature(s) were found!')
         return features
 
-    # TODO: concrete set of ontology is required to know which columns are being dropped (user may drop features for transformations / other experiments)
-    def recommend_data_transformations(self, entity_df: pd.DataFrame = None, show_metadata: bool = False,
-                                          show_query: bool = False, show_insights: bool = True):
+    def recommend_data_transformations(self, entity_df: pd.DataFrame = None, show_query: bool = False,
+                                       show_insights: bool = True):
 
         def get_transformation_technique(t, f_values):
             if t == 'Ordinal encoding' and len(f_values) > 1:
@@ -308,7 +307,8 @@ class KGFarm:
             return df
 
         def handle_unseen_data():
-            return add_transformation_type(self.recommender.get_transformation_recommendations(entity_df, show_insight=show_insights))
+            return add_transformation_type(
+                self.recommender.get_transformation_recommendations(entity_df, show_insight=show_insights))
 
         transformation_info = recommend_feature_transformations(self.config, show_query)
 
@@ -361,7 +361,8 @@ class KGFarm:
 
         transformation_info = pd.DataFrame(transformation_info_grouped)
 
-        if not show_metadata:
+        if {'Package', 'Function', 'Library', 'Author', 'Written_on', 'Pipeline_url'}.issubset(
+                set(transformation_info.columns)):
             transformation_info.drop(['Package', 'Function', 'Library', 'Author', 'Written_on', 'Pipeline_url'],
                                      axis=1, inplace=True)
 
@@ -393,7 +394,8 @@ class KGFarm:
 
         return recommended_transformation
 
-    def apply_transformation(self, transformation_info: pd.Series, entity_df: pd.DataFrame = None):
+    def apply_transformation(self, transformation_info: pd.Series, entity_df: pd.DataFrame = None,
+                             output_message: str = None):
         # TODO: add support for PowerTransformer
         if entity_df is not None:  # apply transformations directly on entity_df passed by user
             df = entity_df
@@ -435,7 +437,10 @@ class KGFarm:
         else:
             print(transformation, 'not supported yet!')
             return
-        print('{} feature(s) {} transformed successfully!'.format(len(features), features))
+        if output_message is None:
+            print('{} feature(s) {} transformed successfully!'.format(len(features), features))
+        else:
+            print('{} feature(s) were transformed successfully!'.format(len(features)))
         return df, transformation_model
 
     def enrich(self, enrichment_info: pd.Series, entity_df: pd.DataFrame = None, freshness: int = 10):
@@ -621,7 +626,8 @@ class KGFarm:
         columns.reset_index(drop=True, inplace=True)
         return columns
 
-    def recommend_cleaning_operations(self, entity_df: pd.DataFrame, visualize_missing_data: bool = True, show_query: bool = False):
+    def recommend_cleaning_operations(self, entity_df: pd.DataFrame, visualize_missing_data: bool = True,
+                                      show_query: bool = False):
         """
         1. visualize missing data
         2. check if data is profiled or unseen
@@ -911,11 +917,13 @@ class KGFarm:
         return entity_df[recommended_features], entity_df[dependent_variable]  # return X, y
     """
 
-    def recommend_features_to_be_selected(self, task: str, entity_df: pd.DataFrame, dependent_variable: str, n: int = None):
+    def recommend_features_to_be_selected(self, task: str, entity_df: pd.DataFrame, dependent_variable: str,
+                                          n: int = None):
         if n is None or len(entity_df) < n:
             n = len(entity_df)
 
-        return self.recommender.get_feature_selection_score(task=task, entity_df=entity_df.sample(n=n, random_state=1), dependent_variable=dependent_variable)
+        return self.recommender.get_feature_selection_score(task=task, entity_df=entity_df.sample(n=n, random_state=1),
+                                                            dependent_variable=dependent_variable)
 
     """
     def select_features_distributed(self, features: pd.DataFrame, target: pd.Series, n: int = None):

@@ -180,10 +180,10 @@ class Recommender:
         if task == 'regression':
             print(f'loading operations/recommendation/utils/models/feature_selector_{task}.pkl')
             self.feature_selector = joblib.load(f'../../operations/recommendation/utils/models/feature_selector_{task}.pkl')
-        elif task == 'multi-class':
+        elif task == 'multiclass':
             print(f'loading operations/recommendation/utils/models/feature_selector_{task.replace("-", "")}_classification.pkl')
             entity_df[dependent_variable] = LabelEncoder().fit_transform(entity_df[dependent_variable])
-            self.feature_selector = joblib.load(f'../../operations/recommendation/utils/models/feature_selector_{task.replace("-", "")}_classification.pkl')
+            self.feature_selector = joblib.load(f'../../operations/recommendation/utils/models/feature_selector_{task}_classification.pkl')
         elif task == 'binary':
             print(f'loading operations/recommendation/utils/models/feature_selector_{task}_classification.pkl')
             entity_df[dependent_variable] = LabelEncoder().fit_transform(entity_df[dependent_variable])
