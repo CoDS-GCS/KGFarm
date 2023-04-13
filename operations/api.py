@@ -243,7 +243,7 @@ class KGFarm:
         return features
 
     def recommend_data_transformations(self, entity_df: pd.DataFrame = None, show_query: bool = False,
-                                       show_insights: bool = True):
+                                       show_insights: bool = True, n: int = None):
 
         def get_transformation_technique(t, f_values):
             if t == 'Ordinal encoding' and len(f_values) > 1:
@@ -306,9 +306,11 @@ class KGFarm:
 
             return df
 
-        def handle_unseen_data():
+        def handle_unseen_data(n_samples):
+            if n_samples is None:
+                n_samples = len(entity_df)
             return add_transformation_type(
-                self.recommender.get_transformation_recommendations(entity_df, show_insight=show_insights))
+                self.recommender.get_transformation_recommendations(entity_df.sample(n_samples), show_insight=show_insights))
 
         transformation_info = recommend_feature_transformations(self.config, show_query)
 
@@ -370,7 +372,7 @@ class KGFarm:
             table_ids = self.__table_transformations.get(tuple(entity_df.columns))
             if not table_ids:
                 print('Processing unseen data')
-                return handle_unseen_data()
+                return handle_unseen_data(n_samples=n)
 
             tables = list(map(lambda x: get_table_name(self.config, table_id=x), table_ids))
 
