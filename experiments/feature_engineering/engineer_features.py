@@ -70,7 +70,6 @@ class EngineerFeatures:
         for feature_i, i in zip(features.columns, range(len(features))):
             for j in range(i):
                 if features.iloc[i, j] > self.theta2:
-                    # print(f' feature {features.columns[j]} & {feature_i} have high correlation than {self.theta2}')
                     if self.information_gain.get(features.columns[j]) > self.information_gain.get(feature_i):
                         features_to_discard.add(feature_i)
                     else:
@@ -124,9 +123,6 @@ class EngineerFeatures:
     def __train_and_evaluate(self, train_set: pd.DataFrame, test_set: pd.DataFrame, target: str):
         X_train, y_train = self.__separate_independent_and_dependent_variables(df=train_set, target=target)
         X_test, y_test = self.__separate_independent_and_dependent_variables(df=test_set, target=target)
-        random_forest_classifier = RandomForestClassifier(random_state=RANDOM_STATE)
-        random_forest_classifier.fit(X=X_train, y=y_train)
-
         accuracy_per_model = []
         for model in self.models:
             model.fit(X=X_train, y=y_train)
