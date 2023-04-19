@@ -307,7 +307,7 @@ class KGFarm:
             return df
 
         def handle_unseen_data(n_samples):
-            if n_samples is None:
+            if n_samples is None or n_samples > len(entity_df):
                 n_samples = len(entity_df)
             return add_transformation_type(
                 self.recommender.get_transformation_recommendations(entity_df.sample(n_samples), show_insight=show_insights))
