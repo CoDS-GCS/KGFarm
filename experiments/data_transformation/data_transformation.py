@@ -16,7 +16,7 @@ from operations.api import KGFarm
 cwd = os.getcwd()
 os.chdir('../../')
 
-kgfarm = KGFarm(show_connection_status=False)
+kgfarm = KGFarm(show_connection_status=False)  # KGFarm instance
 
 RANDOM_STATE = 30
 np.random.seed(RANDOM_STATE)
@@ -38,13 +38,13 @@ if __name__ == '__main__':
         fold = 1
         f1_per_fold = []
         for train_index, test_index in StratifiedKFold(n_splits=10, shuffle=True, random_state=RANDOM_STATE).split(
-                df, df[df.columns[-1]]):
+                df, df[df.columns[-1]]):  # 10-fold cross-validation
             print(f'{dataset_info["Dataset"]} fold-{fold}')
             train_set = df.iloc[train_index]
             test_set = df.iloc[test_index]
 
-            # using KGFarm for recommending data transformations
-            recommended_transformations = kgfarm.recommend_data_transformations(entity_df=df[df.columns[:-1]], show_query=False, show_insights=False)
+            # using KGFarm for recommending data transformations (reduce 'n' to get faster recommendations)
+            recommended_transformations = kgfarm.recommend_data_transformations(entity_df=df[df.columns[:-1]], n=1000, show_query=False, show_insights=False)
 
             # applying transformation (if recommended)
             if isinstance(recommended_transformations, type(None)):
@@ -65,7 +65,7 @@ if __name__ == '__main__':
             y_test = test_set[test_set.columns[-1]]
 
             # training and evaluating ML model
-            model = RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=RANDOM_STATE)
+            model = RandomForestClassifier(random_state=RANDOM_STATE)  # tune for better acc.
             model.fit(X=X_train, y=y_train)
             y_out = model.predict(X=X_test)
             f1 = f1_score(y_true=y_test, y_pred=y_out)
