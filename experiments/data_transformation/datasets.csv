@@ -1,0 +1,14 @@
+Dataset,Size (in MB)
+Labor,0.004
+Hepatitis,0.008
+Spectf-heart,0.011
+Diabetes,0.024
+Pima-indians-subset,0.024
+Credit-a,0.046
+Ionosphere,0.082
+Sonar,0.086
+Spambase,0.704
+Madelon,5.2
+AP-omentum-lung,14.9
+AP-omentum-ovary,20.1
+Gisette,127.8
