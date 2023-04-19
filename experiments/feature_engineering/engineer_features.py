@@ -6,21 +6,19 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
-from sklearn.svm import LinearSVC, SVC
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import f1_score, r2_score
+from sklearn.preprocessing import LabelEncoder
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.feature_selection import mutual_info_classif, f_classif, SelectKBest
-from autolearn_results import autolearn_per_dataset
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingRegressor
 spath = str(Path(os.getcwd()).resolve().parents[1])
 sys.path.append(spath)
 sys.path.append(f'{spath}operations')
 from operations.api import KGFarm
 
-RANDOM_STATE = 30
+RANDOM_STATE = 7
 np.random.seed(RANDOM_STATE)
 
 
@@ -29,19 +27,12 @@ class EngineerFeatures:
         self.theta1 = theta1
         self.theta2 = theta2
         self.path_to_dataset = path
-        self.experiment_datasets_info = pd.read_csv('datasets.csv')
+        self.experiment_datasets_info = pd.read_csv('automl_datasets.csv')
         self.working_dir = os.getcwd()
         os.chdir('../../')
         self.kgfarm = KGFarm(show_connection_status=False)
         self.information_gain = dict()
-        self.models = [KNeighborsClassifier(),
-                       LogisticRegression(random_state=RANDOM_STATE),
-                       LinearSVC(random_state=RANDOM_STATE),
-                       SVC(C=1.0, kernel='poly', random_state=RANDOM_STATE),
-                       RandomForestClassifier(random_state=RANDOM_STATE),
-                       AdaBoostClassifier(random_state=RANDOM_STATE),
-                       MLPClassifier(random_state=RANDOM_STATE),
-                       DecisionTreeClassifier(random_state=RANDOM_STATE)]
+        self.models = None
 
     @staticmethod
     def __separate_independent_and_dependent_variables(df: pd.DataFrame, target: str):
@@ -120,25 +111,47 @@ class EngineerFeatures:
         features_filtered_by_kgfarm.append(target)
         return train_set[features_filtered_by_kgfarm], test_set[features_filtered_by_kgfarm]
 
-    def __train_and_evaluate(self, train_set: pd.DataFrame, test_set: pd.DataFrame, target: str):
+    def __train_and_evaluate(self, train_set: pd.DataFrame, test_set: pd.DataFrame, target: str, task: str):
         X_train, y_train = self.__separate_independent_and_dependent_variables(df=train_set, target=target)
         X_test, y_test = self.__separate_independent_and_dependent_variables(df=test_set, target=target)
-        accuracy_per_model = []
-        for model in self.models:
-            model.fit(X=X_train, y=y_train)
-            accuracy_per_model.append(model.score(X=X_test, y=y_test))
+        scores = []
 
-        return accuracy_per_model
+        if task == 'regression':
+            for model in self.models:
+                model.fit(X=X_train, y=y_train)
+                y_out = model.predict(X=X_test)
+                scores.append(r2_score(y_true=y_test, y_pred=y_out))
+
+        else:
+            for model in self.models:
+                model.fit(X=X_train, y=y_train)
+                y_out = model.predict(X=X_test)
+                scores.append(f1_score(y_true=y_test, y_pred=y_out))
+
+        return scores
 
     def run(self):
         experiment_results = []
         os.chdir(self.working_dir)
         for _, dataset_info in tqdm(self.experiment_datasets_info.to_dict('index').items(), desc='Datasets processed'):
-            result = {'KNN': 0, 'LR': 0, 'SVM-L': 0, 'SVM-P': 0, 'RF': 0, 'AB': 0, 'NN': 0, 'DT': 0}
+            result = {'KNN': 0, 'RF': 0, 'NN': 0}
             self.information_gain = dict()
-            print(dataset_info["Dataset"])
-            df = pd.read_csv(f'{self.path_to_dataset}{dataset_info["Dataset"]}.csv')
+            print(f'{dataset_info["Dataset"]} ({dataset_info["Task"]})')
+            df = pd.read_csv(f'{self.path_to_dataset}{dataset_info["Dataset"]}/{dataset_info["Dataset"]}.csv')
             target = dataset_info['Target']
+
+            if dataset_info["Task"] != 'regression':
+                df[target] = LabelEncoder().fit_transform(df[target])
+                self.models = [KNeighborsClassifier(n_neighbors=7, weights='distance'),
+                       RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=RANDOM_STATE),
+                       MLPClassifier(hidden_layer_sizes=(100, 50, 25), max_iter=200, learning_rate='adaptive', solver='adam', activation='relu', random_state=RANDOM_STATE)]
+
+            else:
+                self.models = [GradientBoostingRegressor(n_estimators=100, random_state=RANDOM_STATE),
+                               RandomForestRegressor(n_estimators=100, random_state=RANDOM_STATE),
+                               MLPRegressor(hidden_layer_sizes=(100, 50, 25), max_iter=200, learning_rate='adaptive',
+                                             solver='adam', activation='relu', random_state=RANDOM_STATE)]
+
             scores_per_dataset = list()
             n_rows = len(df)
             n_features = len(df.columns) - 1  # excluding target
@@ -173,16 +186,14 @@ class EngineerFeatures:
 
                 print(f'training and evaluating models on {len(train_set.columns)-1} features')
                 scores_per_dataset.append(
-                    self.__train_and_evaluate(train_set=train_set, test_set=test_set, target=target))
+                    self.__train_and_evaluate(train_set=train_set, test_set=test_set, target=target, task=dataset_info['Task']))
                 print('model training and evaluation done.')
 
                 print(f'{dataset_info["Dataset"]} fold-{fold} completed.\n', '-'*100)
                 fold = fold + 1
 
             time_taken = f'{(time.time()-start):.2f}'
-            print(f'{dataset_info["Dataset"]} done in {time_taken} seconds', end='')
             memory_usage = f'{abs(psutil.Process().memory_info().rss - memory_before)/(1024*1024):.2f}'
-            print(f' | memory consumed: {memory_usage} MB')
 
             # parse result as a dataframe
             for fold_result in scores_per_dataset:
@@ -190,23 +201,22 @@ class EngineerFeatures:
                     result[model] += acc
 
             result = {k: f'{(v * 100 / 5):.2f}' for k, v in result.items()}
-            result = pd.DataFrame(list(result.items()), columns=['Classifier', 'KGFarm'])
+            result = pd.DataFrame(list(result.items()), columns=['Classifier', 'F1/R2: KGFarm'])
             result['Dataset'] = [dataset_info['Dataset']] * (len(self.models))
+            result['Task'] = [dataset_info['Task']] * len(self.models)
             result['# Features'] = [n_features] * (len(self.models))
             result['# Rows'] = [n_rows] * (len(self.models))
-            result['KGFarm time'] = [time_taken] * (len(self.models))
-            result['KGFarm memory usage (in MB)'] = [memory_usage] * (len(self.models))
-            result['AutoLearn'] = autolearn_per_dataset.get(dataset_info['Dataset'])
-            experiment_results.append(result[['Dataset', '# Features', '# Rows', 'Classifier', 'AutoLearn', 'KGFarm',
-                                              'KGFarm time', 'KGFarm memory usage (in MB)']])
-            pd.concat(experiment_results).to_csv('kgfarm_vs_autolearn.csv', index=False)
-            print(pd.concat(experiment_results)[['Dataset', 'Classifier', 'AutoLearn', 'KGFarm']])
+            result['Time: KGFarm (in seconds)'] = [time_taken] * (len(self.models))
+            result['Memory: KGFarm (in MB)'] = [memory_usage] * (len(self.models))
+            experiment_results.append(result[['Dataset', 'Task', '# Features', '# Rows', 'Classifier', 'F1/R2: KGFarm',
+                                              'Time: KGFarm (in seconds)', 'Memory: KGFarm (in MB)']])
+            pd.concat(experiment_results).to_csv('kgfarm_on_automl_datasets.csv', index=False)
+            print(pd.concat(experiment_results)[['Dataset', 'Task', 'Classifier', 'F1/R2: KGFarm', 'Time: KGFarm (in seconds)']])
 
         pd.concat(experiment_results).to_csv('kgfarm_vs_autolearn.csv', index=False)
         print('Done.')
 
 
-# TODO: replace anova by ig with theta1 (check if it improves scores)
 if __name__ == '__main__':
-    experiment = EngineerFeatures(path='../data/', theta1=0.00, theta2=0.90)
+    experiment = EngineerFeatures(path='../../../../../data/automl_datasets/', theta1=0.05, theta2=0.90)
     experiment.run()
