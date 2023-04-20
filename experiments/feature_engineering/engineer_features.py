@@ -9,7 +9,7 @@ from pathlib import Path
 from sklearn.metrics import f1_score, r2_score
 from sklearn.preprocessing import LabelEncoder
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, KFold
 from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.feature_selection import mutual_info_classif, f_classif, SelectKBest
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingRegressor
@@ -145,12 +145,14 @@ class EngineerFeatures:
                 self.models = [KNeighborsClassifier(n_neighbors=7, weights='distance'),
                        RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=RANDOM_STATE),
                        MLPClassifier(hidden_layer_sizes=(100, 50, 25), max_iter=200, learning_rate='adaptive', solver='adam', activation='relu', random_state=RANDOM_STATE)]
+                folds = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
 
             else:
                 self.models = [GradientBoostingRegressor(n_estimators=100, random_state=RANDOM_STATE),
                                RandomForestRegressor(n_estimators=100, random_state=RANDOM_STATE),
                                MLPRegressor(hidden_layer_sizes=(100, 50, 25), max_iter=200, learning_rate='adaptive',
                                              solver='adam', activation='relu', random_state=RANDOM_STATE)]
+                folds = KFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
 
             scores_per_dataset = list()
             n_rows = len(df)
@@ -159,7 +161,8 @@ class EngineerFeatures:
             memory_before = psutil.Process().memory_info().rss
             start = time.time()
             fold = 1
-            for train_index, test_index in StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE).split(
+            # TODO: use k-fold for regression, stratified otherwise
+            for train_index, test_index in folds.split(
                     df, df[target]):
                 print(f'{dataset_info["Dataset"]} fold-{fold}')
                 train_set = df.iloc[train_index]
@@ -216,6 +219,8 @@ class EngineerFeatures:
         pd.concat(experiment_results).to_csv('kgfarm_vs_autolearn.csv', index=False)
         print('Done.')
 
+# TODO: add accuracy
+# TODO: change NN in regression to Elasticnet
 
 if __name__ == '__main__':
     experiment = EngineerFeatures(path='../../../../../data/automl_datasets/', theta1=0.05, theta2=0.90)
