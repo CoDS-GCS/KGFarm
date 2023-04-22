@@ -6,11 +6,12 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
-from sklearn.metrics import f1_score, r2_score
+from sklearn.linear_model import ElasticNet
 from sklearn.preprocessing import LabelEncoder
+from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import StratifiedKFold, KFold
-from sklearn.neural_network import MLPClassifier, MLPRegressor
+from sklearn.metrics import f1_score, r2_score, mean_squared_error
 from sklearn.feature_selection import mutual_info_classif, f_classif, SelectKBest
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingRegressor
 spath = str(Path(os.getcwd()).resolve().parents[1])
@@ -35,24 +36,52 @@ class EngineerFeatures:
         self.models = None
 
     @staticmethod
+    def __get_feature_dtypes(features: pd.DataFrame):
+        feature_dtype_info = pd.DataFrame(features.dtypes)
+        feature_dtype_info['Feature'] = feature_dtype_info.index
+        feature_dtype_info = feature_dtype_info.rename(columns={0: 'Type'}).reset_index(drop=True)
+        feature_dtype_info['Type'] = feature_dtype_info['Type'].apply(lambda x: 'categorical' if x=='object' else 'numerical')
+        numerical_features = list(feature_dtype_info.loc[feature_dtype_info['Type'] == 'numerical']['Feature'])
+        categorical_features = list(feature_dtype_info.loc[feature_dtype_info['Type'] == 'categorical']['Feature'])
+        return numerical_features, categorical_features
+
+    @staticmethod
     def __separate_independent_and_dependent_variables(df: pd.DataFrame, target: str):
         independent_variables = [feature for feature in df.columns if feature != target]
         return df[independent_variables], df[target]
 
-    def __compute_information_gain(self, train_set: pd.DataFrame, test_set: pd.DataFrame, target: str):
-        information_gain_model = SelectKBest(mutual_info_classif, k='all')
-        X, y = self.__separate_independent_and_dependent_variables(df=train_set, target=target)
-        information_gain_model.fit(X=X, y=y)
+    def __compute_information_gain(self, train_set: pd.DataFrame, test_set: pd.DataFrame, target: str, df_size: float, categorical_features: list, numerical_features: list):
 
-        for feature, score in zip(X.columns, information_gain_model.scores_):
-            if score > self.theta1:
-                self.information_gain[feature] = score
+        if len(categorical_features) > 0 and len(numerical_features) == 0:  # i.e. all categorical features
+            return train_set, test_set
 
-        self.information_gain = {k: v for k, v in
-                                 sorted(self.information_gain.items(), key=lambda item: item[1], reverse=True)}
-        features_filtered_by_information_gain = list(self.information_gain.keys())
-        features_filtered_by_information_gain.append(target)
-        return train_set[features_filtered_by_information_gain], test_set[features_filtered_by_information_gain]
+        else:
+            information_gain_model = SelectKBest(mutual_info_classif, k='all')
+            X, y = self.__separate_independent_and_dependent_variables(df=train_set, target=target)
+            X = X[numerical_features]  # compute information gain for numerical features
+            information_gain_model.fit(X=X, y=y)
+
+            for feature, score in zip(X.columns, information_gain_model.scores_):
+                if score > self.theta1:
+                    self.information_gain[feature] = score
+
+            self.information_gain = {k: v for k, v in
+                                     sorted(self.information_gain.items(), key=lambda item: item[1], reverse=True)}
+
+            if df_size >= 5 and len(numerical_features) >=100:
+                features_filtered_by_information_gain = list(self.information_gain.keys())[:10]
+            elif len(self.information_gain) == 0:
+                features_filtered_by_information_gain = list(X.columns)
+            else:
+                features_filtered_by_information_gain = list(self.information_gain.keys())
+
+            if target not in features_filtered_by_information_gain:
+                features_filtered_by_information_gain.append(target)
+
+            if len(categorical_features) > 0:
+                features_filtered_by_information_gain.extend(categorical_features)
+
+            return train_set[features_filtered_by_information_gain], test_set[features_filtered_by_information_gain]
 
     def __compute_feature_correlation(self, train_set: pd.DataFrame, test_set: pd.DataFrame, target: str):
         features = train_set.drop(target, axis=1).corr()
@@ -68,7 +97,11 @@ class EngineerFeatures:
 
         features_filtered_by_correlation = [feature for feature in features.columns if
                                             feature not in features_to_discard]
-        features_filtered_by_correlation.append(target)
+
+        if len(features_filtered_by_correlation) == 0:
+            features_filtered_by_correlation = list(train_set.columns)
+        else:
+            features_filtered_by_correlation.append(target)
         return train_set[features_filtered_by_correlation], test_set[features_filtered_by_correlation]
 
     def __transform(self, train_set: pd.DataFrame, test_set: pd.DataFrame, target: str):
@@ -107,70 +140,81 @@ class EngineerFeatures:
         except AttributeError:
             return train_set[features_filtered_by_anova], test_set[features_filtered_by_anova]
 
-        features_filtered_by_kgfarm = feature_selection_recommendation['Feature'].tolist()
-        features_filtered_by_kgfarm.append(target)
+        if len(feature_selection_recommendation) == 0:
+            features_filtered_by_kgfarm = list(train_set.columns)
+        else:
+            features_filtered_by_kgfarm = feature_selection_recommendation['Feature'].tolist()
+            features_filtered_by_kgfarm.append(target)
         return train_set[features_filtered_by_kgfarm], test_set[features_filtered_by_kgfarm]
 
     def __train_and_evaluate(self, train_set: pd.DataFrame, test_set: pd.DataFrame, target: str, task: str):
         X_train, y_train = self.__separate_independent_and_dependent_variables(df=train_set, target=target)
         X_test, y_test = self.__separate_independent_and_dependent_variables(df=test_set, target=target)
-        scores = []
+        scores_f1_r2 = []
+        scores_acc_mse = []
 
         if task == 'regression':
             for model in self.models:
                 model.fit(X=X_train, y=y_train)
                 y_out = model.predict(X=X_test)
-                scores.append(r2_score(y_true=y_test, y_pred=y_out))
+                scores_f1_r2.append(r2_score(y_true=y_test, y_pred=y_out))
+                scores_acc_mse.append(mean_squared_error(y_true=y_test, y_pred=y_out))
 
         else:
+            if task =='multi-class':
+                f1_type = 'weighted'
+            else:
+                f1_type = 'binary'
             for model in self.models:
                 model.fit(X=X_train, y=y_train)
                 y_out = model.predict(X=X_test)
-                scores.append(f1_score(y_true=y_test, y_pred=y_out))
+                scores_f1_r2.append(f1_score(y_true=y_test, y_pred=y_out, average=f1_type))
+                scores_acc_mse.append((model.score(X=X_test, y=y_test)))
 
-        return scores
+        return scores_f1_r2, scores_acc_mse
 
     def run(self):
         experiment_results = []
         os.chdir(self.working_dir)
         for _, dataset_info in tqdm(self.experiment_datasets_info.to_dict('index').items(), desc='Datasets processed'):
-            result = {'KNN': 0, 'RF': 0, 'NN': 0}
+            result_f1_r2 = {'KNN': 0, 'RF': 0, 'NN': 0}
+            result_acc_mse = {'KNN': 0, 'RF': 0, 'NN': 0}
             self.information_gain = dict()
             print(f'{dataset_info["Dataset"]} ({dataset_info["Task"]})')
             df = pd.read_csv(f'{self.path_to_dataset}{dataset_info["Dataset"]}/{dataset_info["Dataset"]}.csv')
+            df_size = df.memory_usage(deep=True).sum() /(1024*1024)
             target = dataset_info['Target']
-
+            numerical_features, categorical_features = self.__get_feature_dtypes(df.drop(dataset_info['Target'], axis=1))
             if dataset_info["Task"] != 'regression':
                 df[target] = LabelEncoder().fit_transform(df[target])
                 self.models = [KNeighborsClassifier(n_neighbors=7, weights='distance'),
                        RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=RANDOM_STATE),
-                       MLPClassifier(hidden_layer_sizes=(100, 50, 25), max_iter=200, learning_rate='adaptive', solver='adam', activation='relu', random_state=RANDOM_STATE)]
+                       MLPClassifier(hidden_layer_sizes=(50, 25), solver='adam', activation='relu', random_state=RANDOM_STATE)]
                 folds = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
 
             else:
                 self.models = [GradientBoostingRegressor(n_estimators=100, random_state=RANDOM_STATE),
                                RandomForestRegressor(n_estimators=100, random_state=RANDOM_STATE),
-                               MLPRegressor(hidden_layer_sizes=(100, 50, 25), max_iter=200, learning_rate='adaptive',
-                                             solver='adam', activation='relu', random_state=RANDOM_STATE)]
+                               ElasticNet(alpha=0.3, max_iter=1000, normalize=True)]
                 folds = KFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
 
-            scores_per_dataset = list()
+            f1_r2_per_dataset = list()
+            acc_mse_per_dataset = list()
             n_rows = len(df)
             n_features = len(df.columns) - 1  # excluding target
 
             memory_before = psutil.Process().memory_info().rss
             start = time.time()
             fold = 1
-            # TODO: use k-fold for regression, stratified otherwise
             for train_index, test_index in folds.split(
                     df, df[target]):
                 print(f'{dataset_info["Dataset"]} fold-{fold}')
                 train_set = df.iloc[train_index]
                 test_set = df.iloc[test_index]
 
-                print(f'computing information gain for {n_features}')
+                print(f'computing information gain for {n_features} features')
                 train_set, test_set = self.__compute_information_gain(train_set=train_set, test_set=test_set,
-                                                                      target=target)
+                                                                      target=target, df_size=df_size, categorical_features=categorical_features, numerical_features=numerical_features)
                 print(f'information gain done, # features: {len(train_set.columns)-1}')
 
                 print(f'computing feature correlation b/w {len(train_set.columns)-1} features')
@@ -188,8 +232,9 @@ class EngineerFeatures:
                 print(f'feature selection done, # features: {len(train_set.columns)-1}')
 
                 print(f'training and evaluating models on {len(train_set.columns)-1} features')
-                scores_per_dataset.append(
-                    self.__train_and_evaluate(train_set=train_set, test_set=test_set, target=target, task=dataset_info['Task']))
+                f1_r2, acc_mse = self.__train_and_evaluate(train_set=train_set, test_set=test_set, target=target, task=dataset_info['Task'])
+                f1_r2_per_dataset.append(f1_r2)
+                acc_mse_per_dataset.append(acc_mse)
                 print('model training and evaluation done.')
 
                 print(f'{dataset_info["Dataset"]} fold-{fold} completed.\n', '-'*100)
@@ -199,29 +244,32 @@ class EngineerFeatures:
             memory_usage = f'{abs(psutil.Process().memory_info().rss - memory_before)/(1024*1024):.2f}'
 
             # parse result as a dataframe
-            for fold_result in scores_per_dataset:
-                for acc, model in zip(fold_result, result.keys()):
-                    result[model] += acc
+            for fold_result in f1_r2_per_dataset:
+                for acc, model in zip(fold_result, result_f1_r2.keys()):
+                    result_f1_r2[model] += acc
+            for fold_result in acc_mse_per_dataset:
+                for acc, model in zip(fold_result, result_acc_mse.keys()):
+                    result_acc_mse[model] += acc
 
-            result = {k: f'{(v * 100 / 5):.2f}' for k, v in result.items()}
-            result = pd.DataFrame(list(result.items()), columns=['Classifier', 'F1/R2: KGFarm'])
-            result['Dataset'] = [dataset_info['Dataset']] * (len(self.models))
-            result['Task'] = [dataset_info['Task']] * len(self.models)
-            result['# Features'] = [n_features] * (len(self.models))
-            result['# Rows'] = [n_rows] * (len(self.models))
-            result['Time: KGFarm (in seconds)'] = [time_taken] * (len(self.models))
-            result['Memory: KGFarm (in MB)'] = [memory_usage] * (len(self.models))
-            experiment_results.append(result[['Dataset', 'Task', '# Features', '# Rows', 'Classifier', 'F1/R2: KGFarm',
-                                              'Time: KGFarm (in seconds)', 'Memory: KGFarm (in MB)']])
+            result_f1_r2 = {k: f'{(v * 100 / 5):.2f}' for k, v in result_f1_r2.items()}
+            result_acc_mse = {k: f'{(v * 100 / 5):.2f}' for k, v in result_acc_mse.items()}.values()
+            result_df = pd.DataFrame(list(result_f1_r2.items()), columns=['ML Model', 'F1/R2: KGFarm'])
+            result_df['Dataset'] = [dataset_info['Dataset']] * (len(self.models))
+            result_df['Task'] = [dataset_info['Task']] * len(self.models)
+            result_df['ACC/MSE: KGFarm'] = result_acc_mse
+            result_df['# Features'] = [n_features] * (len(self.models))
+            result_df['# Rows'] = [n_rows] * (len(self.models))
+            result_df['# Numerical Features'] = [len(numerical_features)] * (len(self.models))
+            result_df['# Categorical Features'] = [len(categorical_features)] * (len(self.models))
+            result_df['Time: KGFarm (in seconds)'] = [time_taken] * (len(self.models))
+            result_df['Memory: KGFarm (in MB)'] = [memory_usage] * (len(self.models))
+            experiment_results.append(result_df[['Dataset', 'Task', '# Features', '# Rows', '# Numerical Features', '# Categorical Features', 'ML Model', 'F1/R2: KGFarm',
+                                                 'ACC/MSE: KGFarm', 'Time: KGFarm (in seconds)', 'Memory: KGFarm (in MB)']])
             pd.concat(experiment_results).to_csv('kgfarm_on_automl_datasets.csv', index=False)
-            print(pd.concat(experiment_results)[['Dataset', 'Task', 'Classifier', 'F1/R2: KGFarm', 'Time: KGFarm (in seconds)']])
-
-        pd.concat(experiment_results).to_csv('kgfarm_vs_autolearn.csv', index=False)
+            print(pd.concat(experiment_results)[['Dataset', 'ML Model', 'F1/R2: KGFarm', 'ACC/MSE: KGFarm']])
         print('Done.')
 
-# TODO: add accuracy
-# TODO: change NN in regression to Elasticnet
 
 if __name__ == '__main__':
-    experiment = EngineerFeatures(path='../../../../../data/automl_datasets/', theta1=0.05, theta2=0.90)
+    experiment = EngineerFeatures(path='../../../../../data/automl_datasets/', theta1=0.00, theta2=0.90)
     experiment.run()
