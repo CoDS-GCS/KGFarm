@@ -1,4 +1,4 @@
-Data transformation dataset,Target,Task,Size (in MB),# Rows,# Columns,# Categorical columns,# Numerical columns,Columns with missing values,Total Missing values
+Dataset,Target,Task,Size (in MB),# Rows,# Columns,# Categorical columns,# Numerical columns,Columns with missing values,Total Missing values
 ionosphere,target,binary,0.094,351,35,0,35,0,0
 breast_cancer_wisconsin,target,binary,0.135,569,31,0,31,0,0
 Australian,A15,binary,0.079,690,15,0,15,0,0
