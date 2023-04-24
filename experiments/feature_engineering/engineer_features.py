@@ -76,7 +76,7 @@ class EngineerFeatures:
             self.pruning_info = {k: v for k, v in
                                      sorted(self.pruning_info.items(), key=lambda item: item[1], reverse=True)}
 
-            if df_size >= 5 and len(numerical_features) >=100:
+            if (df_size >= 5 and len(numerical_features) >=100) or (df_size >= 20):
                 pruned_features = list(self.pruning_info.keys())[:10]
             elif len(self.pruning_info) == 0:
                 pruned_features = list(X.columns)
@@ -288,4 +288,3 @@ class EngineerFeatures:
 if __name__ == '__main__':
     experiment = EngineerFeatures(path='../../../../../data/automl_datasets/', theta1=0.00, theta2=0.90)
     experiment.run()
-
