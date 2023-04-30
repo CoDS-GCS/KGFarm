@@ -257,7 +257,6 @@ transformation_mapping = {'categorical':
 
 
 def build():
-    # TODO: plot all metrics for both feature types
     for feature_type in ['categorical', 'numerical']:
         recommender = TransformationRecommender(feature_type=feature_type)
         recommender.generate_modeling_data()
