@@ -740,6 +740,76 @@ def get_table_size_ratio(config, show_query: bool = False):
 # --------------------------------------------Transformation recommender------------------------------------------------
 
 
+def get_scaling_transformations(config):
+    query = """
+    SELECT DISTINCT ?Transformation ?Transformed_column_id # (COUNT(?Transformed_column_id) as ?Count) ?Target_column
+    WHERE
+    {
+        ?Pipeline_id        rdf:type                kglids:Pipeline                 ;
+                            # pipeline:hasTag         ?Tag                            .   
+    
+        # FILTER(?Tag = 'classification'
+        #  || ?Tag = 'regression' 
+        #  || ?Tag = 'binary classification' 
+        #  || ?Tag = 'multiclass classification')
+    
+        GRAPH ?Pipeline_id
+        {
+            ?Statement_1    pipeline:callsClass     ?Class_id                       .
+            ?Statement_2    pipeline:callsFunction  ?Function_id                    ;
+                            pipeline:readsColumn    ?Transformed_column_id          .
+            # ?Statement_3    pipeline:hasTarget      ?Target_column                  ;
+        }
+    
+        ?Class_id          kglids:isPartOf          <http://kglids.org/resource/library/sklearn/preprocessing>      .
+        ?Function_id       kglids:isPartOf          ?Class_id           . 
+        <http://kglids.org/resource/library/sklearn/preprocessing> kglids:isPartOf ?Library_id  .
+       
+         FILTER (?Class_id = <http://kglids.org/resource/library/sklearn/preprocessing/StandardScaler> 
+        || ?Class_id = <http://kglids.org/resource/library/sklearn/preprocessing/MinMaxScaler> 
+        || ?Class_id = <http://kglids.org/resource/library/sklearn/preprocessing/RobustScaler> 
+        || ?Class_id = <http://kglids.org/resource/library/sklearn/preprocessing/QuantileTransformer>
+        || ?Class_id = <http://kglids.org/resource/library/sklearn/preprocessing/PowerTransformer>)
+    
+        BIND(STRAFTER(str(?Class_id), str('http://kglids.org/resource/library/sklearn/preprocessing/')) as ?Transformation)     .
+    
+    } # GROUP BY ?Transformation ORDER BY DESC(?Count)"""
+    return execute_query(config, query)
+
+
+def get_unary_transformations(config):
+    query = """
+    SELECT DISTINCT ?Transformation ?Transformed_column_id # (COUNT(?Transformed_column_id) as ?Count) # ?Target_column
+    WHERE
+    {
+        ?Pipeline_id        rdf:type                    kglids:Pipeline             ;
+                            # pipeline:hasTag             ?Tag                        .
+        
+        # FILTER(?Tag = 'classification'
+        #  || ?Tag = 'regression' 
+        #  || ?Tag = 'binary classification' 
+        #  || ?Tag = 'multiclass classification')
+    
+        GRAPH ?Pipeline_id
+        {
+        ?Statement_1        pipeline:callsFunction          ?Function_id            ;
+                            pipeline:readsColumn            ?Transformed_column_id  .
+        # ?Statement_2        pipeline:hasTarget              ?Target_column          ;
+        }
+    
+        ?Function_id        kglids:isPartOf <http://kglids.org/resource/library/numpy> .
+    
+        FILTER (?Function_id = <http://kglids.org/resource/library/numpy/log> 
+        || ?Function_id = <http://kglids.org/resource/library/numpy/sqrt> 
+        || ?Function_id = <http://kglids.org/resource/library/numpy/tanh> 
+        || ?Function_id = <http://kglids.org/resource/library/numpy/square>)
+        
+        BIND(STRAFTER(str(?Function_id), str('http://kglids.org/resource/library/numpy/')) as ?Transformation) 
+    
+    } # GROUP BY ?Transformation"""
+    return execute_query(config, query)
+
+
 def get_transformations_on_columns(config):
     query = """PREFIX preprocessing:   <http://kglids.org/resource/library/sklearn/preprocessing/>
     SELECT DISTINCT  ?Transformation ?Column_id
@@ -769,7 +839,7 @@ def get_transformations_on_columns(config):
     return execute_query(config, query)
 
 
-# --------------------------------------------Transformation recommender------------------------------------------------
+# --------------------------------------------Feature selector----------------------------------------------------------
 def get_features_and_targets(config, n_samples: None, tag: str = None, show_query: bool = False):
     limit = ''
     if n_samples is not None:
@@ -790,7 +860,7 @@ def get_features_and_targets(config, n_samples: None, tag: str = None, show_quer
                             pipeline:hasTarget              ?Target             ;
                             pipeline:hasNotSelectedFeature  ?Discarded_feature  .
         }  
-    } ORDER BY ?Pipeline_id ?Target %s"""% (tag, limit)
+    } ORDER BY ?Pipeline_id ?Target %s""" % (tag, limit)
     if show_query:
         display_query(query)
     return execute_query(config, query)
