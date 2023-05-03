@@ -26,7 +26,7 @@ class TransformationRecommender:
         self.categorical_column_embeddings = dict()
         self.modeling_data_scaling: pd.DataFrame
         self.modeling_data_unary: pd.DataFrame
-        self.model = RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=RANDOM_STATE)
+        self.model = RandomForestClassifier(random_state=RANDOM_STATE)
         self.label_encoder = LabelEncoder()
 
     def __load_column_embeddings(self, path_to_embeddings: str = '../../storage/CoLR_embeddings_data_transformation'):
@@ -86,7 +86,6 @@ class TransformationRecommender:
         print('modeling data ', end='')
         scaling_df['Table_id'] = scaling_df['Transformed_column_id'].apply(lambda x: os.path.dirname(x))
         scaling_df.sort_values(by=['Transformation', 'Table_id'], inplace=True)
-        scaling_df.to_csv('/Users/shubhamvashisth/Desktop/scaling_modeling.csv', index=False)
         scaling_df.drop('Transformed_column_id', axis=1, inplace=True)
 
         scaling_transformation_column = []
@@ -159,10 +158,10 @@ class TransformationRecommender:
 
             self.model.fit(X=list(X), y=y)
             model_name = f'out/{export_desc}_transformation_recommender.pkl'
-            encoder_name =  f'out/{export_desc}_encoder.pkl'
-            joblib.dump(self.model, model_name,compress=9)
+            encoder_name = f'out/{export_desc}_encoder.pkl'
+            joblib.dump(self.model, model_name, compress=9)
             print('model saved at', model_name)
-            joblib.dump(self.label_encoder, encoder_name,compress=9)
+            joblib.dump(self.label_encoder, encoder_name, compress=9)
             print('encoder saved at', encoder_name)
 
             return f'{sum(f1_per_fold)/len(f1_per_fold):.3f}', f'{sum(acc_per_fold)/len(acc_per_fold):.3f}'
