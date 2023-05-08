@@ -5,16 +5,16 @@ import warnings
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from tqdm.notebook import tqdm
 from pathlib import Path
 from datetime import timedelta
+from tqdm.notebook import tqdm
+from operations.template import *
 from sklearn.preprocessing import *
 from matplotlib import pyplot as plt
-from sklearn.feature_selection import SelectKBest, f_classif
-from feature_discovery.src.graph_builder.governor import Governor
 from helpers.helper import connect_to_stardog
-from operations.template import *
+from sklearn.feature_selection import SelectKBest, f_classif
 from operations.recommendation.recommender import Recommender
+from feature_discovery.src.graph_builder.governor import Governor
 
 warnings.filterwarnings('ignore')
 pd.set_option('display.max_columns', None)
@@ -310,7 +310,8 @@ class KGFarm:
             if n_samples is None or n_samples > len(entity_df):
                 n_samples = len(entity_df)
             return add_transformation_type(
-                self.recommender.get_transformation_recommendations(entity_df.sample(n_samples), show_insight=show_insights))
+                self.recommender.get_transformation_recommendations(entity_df.sample(n_samples),
+                                                                    show_insight=show_insights))
 
         transformation_info = recommend_feature_transformations(self.config, show_query)
 
@@ -397,7 +398,7 @@ class KGFarm:
         return recommended_transformation
 
     def apply_data_transformation(self, transformation_info: pd.Series, entity_df: pd.DataFrame = None,
-                             output_message: str = None):
+                                  output_message: str = None):
         # TODO: add support for PowerTransformer
         if entity_df is not None:  # apply transformations directly on entity_df passed by user
             df = entity_df
@@ -444,6 +445,75 @@ class KGFarm:
         else:
             print('{} feature(s) were transformed successfully!'.format(len(features)))
         return df, transformation_model
+
+    def recommend_transformations(self, X: pd.DataFrame):
+        return self.recommender.recommend_transformations(X=X)
+
+    @staticmethod
+    def apply_transformations(X: pd.DataFrame, recommendation: pd.Series):
+        transformation = recommendation['Recommended_transformation']
+        feature = recommendation['Feature']
+
+        if transformation in {'StandardScaler', 'MinMaxScaler', 'RobustScaler', 'QuantileTransformer',
+                              'PowerTransformer'}:
+            print(f'Applying {transformation} on {list(X.columns)}')
+            if transformation == 'StandardScaler':
+                scaler = StandardScaler()
+            elif transformation == 'MinMaxScaler':
+                scaler = MinMaxScaler()
+            elif transformation == 'RobustScaler':
+                scaler = RobustScaler()
+            elif transformation == 'QuantileTransformer':
+                scaler = QuantileTransformer()
+            else:
+                scaler = PowerTransformer()
+            X[X.columns] = scaler.fit_transform(X=X[X.columns])
+            return X, scaler
+
+        elif transformation in {'Log', 'Sqrt', 'square'}:
+            print(f'Applying {transformation} on {list(feature)}')
+            if transformation == 'Log':
+                def log_plus_const(x, const=0):
+                    return np.log(x + np.abs(const) + 0.0001)
+
+                for f in tqdm(feature):
+                    min_neg_val = X[f].min()
+                    unary_transformation_model = FunctionTransformer(func=log_plus_const,
+                                                                     kw_args={'const': min_neg_val}, validate=True)
+                    X[f] = unary_transformation_model.fit_transform(X=np.array(X[f]).reshape(-1, 1))
+
+            elif transformation == 'Sqrt':
+                def sqrt_plus_const(x, const=0):
+                    return np.sqrt(x + np.abs(const) + 0.0001)
+
+                for f in tqdm(feature):
+                    min_neg_val = X[f].min()
+                    unary_transformation_model = FunctionTransformer(func=sqrt_plus_const,
+                                                                     kw_args={'const': min_neg_val}, validate=True)
+                    X[f] = unary_transformation_model.fit_transform(X=np.array(X[f]).reshape(-1, 1))
+            else:
+                unary_transformation_model = FunctionTransformer(func=np.square, validate=True)
+                X[feature] = unary_transformation_model.fit_transform(X=X[feature])
+            return X, transformation
+
+        elif transformation in {'OrdinalEncoder', 'OneHotEncoder'}:
+            print(f'Applying {transformation} on {list(feature)}')
+            if transformation == 'OrdinalEncoder':
+                encoder = OrdinalEncoder()
+                X[feature] = encoder.fit_transform(X=X[feature])
+            else:
+                encoder = OneHotEncoder(handle_unknown='ignore')
+                one_hot_encoded_features = pd.DataFrame(encoder.fit_transform(X[feature]).toarray())
+                X = X.join(one_hot_encoded_features)
+                X = X.drop(feature, axis=1)
+            return X, encoder
+
+        else:
+            raise ValueError(f'{transformation} not supported')
+
+        # unary_categorical_transformations = recommendations[recommendations.loc['Transformation_type'] in {'ordinal encoding', 'nominal encoding'}]
+        # unary_numerical_transformations = recommendations[recommendations.loc['Transformation_type'] == 'unary transformation']
+        # scaling_transformation = recommendations[recommendations.loc['Transformation_type'] == 'scaling']
 
     def enrich(self, enrichment_info: pd.Series, entity_df: pd.DataFrame = None, freshness: int = 10):
         if entity_df is not None:  # entity_df passed by the user
@@ -940,7 +1010,6 @@ class KGFarm:
     """
 
 
-# TODO: refactor (make a generic function to return enrich table_ids from self.__table_transformations)
 entity_data_types_mapping = {'N_int': 'integer', 'N_float': 'float', 'N_bool': 'boolean',
                              'T': 'string', 'T_date': 'timestamp', 'T_loc': 'string (location)',
                              'T_person': 'string (person)',

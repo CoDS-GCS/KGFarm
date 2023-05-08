@@ -236,7 +236,6 @@ class Recommender:
         recommended_scaler_transformation = list(self.scaler_encoder.inverse_transform(self.scaler_model. \
             predict(np.array(average_embeddings(embeddings=list(numerical_feature_embeddings.values()))).reshape(1, -1))))[0]
         recommendations.append(pd.DataFrame({'Feature': [list(X.columns)], 'Recommended_transformation': recommended_scaler_transformation}))
-
         # unary transformation (numeric features)
         numeric_embedding_df = pd.DataFrame(
             {'Feature': numerical_feature_embeddings.keys(), 'Embedding': numerical_feature_embeddings.values()})
@@ -244,12 +243,15 @@ class Recommender:
         numeric_embedding_df['Transform'] = numeric_embedding_df['Probability'].apply(
             lambda x: True if self.unary_transformation_threshold <= max(x) else False)
         numeric_embedding_df = numeric_embedding_df.loc[numeric_embedding_df['Transform'] == True]
-        numeric_embedding_df['Recommended_transformation'] = self.unary_encoder.inverse_transform(
-            self.unary_model.predict(list(numeric_embedding_df['Embedding']))).tolist()
-        unary_numeric_transformation_df = numeric_embedding_df[['Feature', 'Recommended_transformation']].groupby('Recommended_transformation')['Feature'].apply(list).to_frame()
-        unary_numeric_transformation_df['Recommended_transformation'] = list(unary_numeric_transformation_df.index)
-        unary_numeric_transformation_df = unary_numeric_transformation_df.reset_index(drop=True)
-        recommendations.append(unary_numeric_transformation_df)
+        if numeric_embedding_df.empty:
+            recommendations.append(pd.DataFrame(columns=['Feature', 'Recommended_transformation']))
+        else:
+            numeric_embedding_df['Recommended_transformation'] = self.unary_encoder.inverse_transform(
+                self.unary_model.predict(list(numeric_embedding_df['Embedding']))).tolist()
+            unary_numeric_transformation_df = numeric_embedding_df[['Feature', 'Recommended_transformation']].groupby('Recommended_transformation')['Feature'].apply(list).to_frame()
+            unary_numeric_transformation_df['Recommended_transformation'] = list(unary_numeric_transformation_df.index)
+            unary_numeric_transformation_df = unary_numeric_transformation_df.reset_index(drop=True)
+            recommendations.append(unary_numeric_transformation_df)
 
         # unary transformation (categorical features)
         if categorical_feature_embeddings:
@@ -260,12 +262,15 @@ class Recommender:
             categorical_embedding_df['Transform'] = categorical_embedding_df['Probability'].apply(
                 lambda x: True if self.unary_transformation_threshold <= max(x) else False)
             categorical_embedding_df = categorical_embedding_df.loc[categorical_embedding_df['Transform'] == True]
-            categorical_embedding_df['Recommended_transformation'] = self.categorical_encoder.inverse_transform(
-                self.categorical_transformation_recommender.predict(list(categorical_embedding_df['Embedding']))).tolist()
-            unary_categorical_transformation_df = categorical_embedding_df[['Feature', 'Recommended_transformation']].groupby('Recommended_transformation')['Feature'].apply(list).to_frame()
-            unary_categorical_transformation_df['Recommended_transformation'] = list(unary_categorical_transformation_df.index)
-            unary_categorical_transformation_df = unary_categorical_transformation_df.reset_index(drop=True)
-            recommendations.append(unary_categorical_transformation_df)
+            if categorical_embedding_df.empty:
+                recommendations.append(pd.DataFrame(columns=['Feature', 'Recommended_transformation']))
+            else:
+                categorical_embedding_df['Recommended_transformation'] = self.categorical_encoder.inverse_transform(
+                    self.categorical_transformation_recommender.predict(list(categorical_embedding_df['Embedding']))).tolist()
+                unary_categorical_transformation_df = categorical_embedding_df[['Feature', 'Recommended_transformation']].groupby('Recommended_transformation')['Feature'].apply(list).to_frame()
+                unary_categorical_transformation_df['Recommended_transformation'] = list(unary_categorical_transformation_df.index)
+                unary_categorical_transformation_df = unary_categorical_transformation_df.reset_index(drop=True)
+                recommendations.append(unary_categorical_transformation_df)
 
         recommendations = pd.concat(recommendations).reset_index(drop=True)
         recommendations['Recommended_transformation'] = recommendations['Recommended_transformation'].apply(lambda x: self.transformation_technique.get(x) if x in self.transformation_technique else x)
