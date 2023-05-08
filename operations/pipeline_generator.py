@@ -123,9 +123,9 @@ class PipelineGenerator:
             print('done.')
             code: str = ''
             for transformation in range(len(transformation_info[0])):
-                enrich_df, _ = self.kgfarm.apply_transformation(transformation_info[0].iloc[transformation],
+                enrich_df, _ = self.kgfarm.apply_data_transformation(transformation_info[0].iloc[transformation],
                                                              entity_df=enrich_df)
-                code = code + """entity_df, _ = kgfarm.apply_transformation(transformation_info.iloc[{}], entity_df)\n""".\
+                code = code + """entity_df, _ = kgfarm.apply_data_transformation(transformation_info.iloc[{}], entity_df)\n""".\
                     format(transformation)
             code = code + """entity_df"""
             self.__add(code)

@@ -396,7 +396,7 @@ class KGFarm:
 
         return recommended_transformation
 
-    def apply_transformation(self, transformation_info: pd.Series, entity_df: pd.DataFrame = None,
+    def apply_data_transformation(self, transformation_info: pd.Series, entity_df: pd.DataFrame = None,
                              output_message: str = None):
         # TODO: add support for PowerTransformer
         if entity_df is not None:  # apply transformations directly on entity_df passed by user

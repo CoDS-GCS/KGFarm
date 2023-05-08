@@ -214,7 +214,7 @@ class Recommender:
             show_insights()
         return reformat(transformation_info)
 
-    def recommend_transformations(self, entity_df: pd.DataFrame):
+    def recommend_transformations(self, X: pd.DataFrame):
         recommendations = []
 
         def average_embeddings(embeddings: list):
@@ -230,12 +230,12 @@ class Recommender:
                 return [avg_embeddings[i] / number_of_embeddings for i in range(len(avg_embeddings))]
 
         numerical_feature_embeddings, categorical_feature_embeddings = self.compute_content_embedding_parallel(
-            entity_df=entity_df)
+            entity_df=X)
 
         # scaling transformation
         recommended_scaler_transformation = list(self.scaler_encoder.inverse_transform(self.scaler_model. \
             predict(np.array(average_embeddings(embeddings=list(numerical_feature_embeddings.values()))).reshape(1, -1))))[0]
-        recommendations.append(pd.DataFrame({'Feature': [list(entity_df.columns)], 'Recommended_transformation': recommended_scaler_transformation}))
+        recommendations.append(pd.DataFrame({'Feature': [list(X.columns)], 'Recommended_transformation': recommended_scaler_transformation}))
 
         # unary transformation (numeric features)
         numeric_embedding_df = pd.DataFrame(
