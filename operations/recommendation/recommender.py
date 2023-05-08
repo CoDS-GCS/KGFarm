@@ -88,8 +88,9 @@ class Recommender:
             return dict((column, 'object') for column in columns)
 
         def get_numerical_embeddings(partition):
+            # partition = partition.values if isinstance(partition, pd.Series) else partition
             with torch.no_grad():
-                return self.numeric_embedding_model(torch.FloatTensor(partition).to('cpu')).mean(axis=0).tolist()
+                return self.numeric_embedding_model(torch.FloatTensor(list(partition)).to('cpu')).mean(axis=0).tolist()
 
         def get_categorical_embeddings(partition):
             categorical_embedding_model = MinHash(num_perm=512)
@@ -108,7 +109,6 @@ class Recommender:
         numerical_feature_embeddings = numerical_features_df. \
             apply(convert_to_bin_representation, axis=1, meta=get_meta(columns=numerical_features_df.columns)). \
             apply(get_numerical_embeddings, axis=1, meta=('x', 'object'))
-
         categorical_feature_embeddings = categorical_features_df.apply(get_categorical_embeddings, axis=1,
                                                                        meta=('x', 'object'))
 
@@ -279,19 +279,20 @@ class Recommender:
 
     @staticmethod
     def get_cleaning_recommendation(entity_df: pd.DataFrame):
-        return entity_df
-        # numeric_embeddings, string_embeddings = self.__compute_content_embeddings(entity_df=entity_df)
-        # similar_columns_uris = self.embeddings.get_similar_columns(numeric_column_embeddings=numeric_embeddings,
-        #                                                            string_column_embeddings=string_embeddings)
+        """
+        numeric_embeddings, string_embeddings = self.__compute_content_embeddings(entity_df=entity_df)
+        similar_columns_uris = self.embeddings.get_similar_columns(numeric_column_embeddings=numeric_embeddings,
+                                                                   string_column_embeddings=string_embeddings)
 
-        # get corresponding table uris
-        # def get_table_uri(column_uri):
-        #     return column_uri.replace(column_uri.split('/')[-1], '')[:-1]
-        #
-        # similar_table_uris = {key: get_table_uri(value) for key, value in similar_columns_uris.items()}
-        # similar_table_uris = Counter(
-        #     similar_table_uris.values())  # count similar tables and sort by most occurring tables
-        # return tuple(dict(sorted(similar_table_uris.items(), key=lambda item: item[1], reverse=True)).keys())
+        get corresponding table uris
+        def get_table_uri(column_uri):
+            return column_uri.replace(column_uri.split('/')[-1], '')[:-1]
+
+        similar_table_uris = {key: get_table_uri(value) for key, value in similar_columns_uris.items()}
+        similar_table_uris = Counter(
+            similar_table_uris.values())  # count similar tables and sort by most occurring tables
+        return tuple(dict(sorted(similar_table_uris.items(), key=lambda item: item[1], reverse=True)).keys())"""
+        return entity_df
 
     def get_feature_selection_score(self, task: str, entity_df: pd.DataFrame, dependent_variable: str):
 

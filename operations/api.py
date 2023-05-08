@@ -1009,6 +1009,9 @@ class KGFarm:
         return self.recommender.get_feature_selection_score_distributed(entity_df=entity_df)
     """
 
+    def engineer_features(self):
+        pass
+
 
 entity_data_types_mapping = {'N_int': 'integer', 'N_float': 'float', 'N_bool': 'boolean',
                              'T': 'string', 'T_date': 'timestamp', 'T_loc': 'string (location)',
