@@ -49,17 +49,16 @@ python build.py -db Database_name
 ## 🧪 Experiments 
 
 We compared KGFarm to several related system. More information regarding our evaluations per task is available below:
-1. [Data transformation](experiments/results/evaluations%20KGFarm%20PVLDB%202023%20-%20Data%20transformation.pdf)
-2. [Data cleaning](experiments/results/evaluations%20KGFarm%20PVLDB%202023%20-%20Data%20cleaning.pdf)
-3. [Feature selection](experiments/results/evaluations%20KGFarm%20PVLDB%202023%20-%20Feature%20selection.pdf)
+1. [Data transformation](https://github.com/CoDS-GCS/KGFarm/blob/standalone/experiments/results/evaluations%20KGFarm%20PVLDB%202023%20-%20Data%20transformation.pdf)
+2. [Data cleaning](https://github.com/CoDS-GCS/KGFarm/blob/standalone/experiments/results/evaluations%20KGFarm%20PVLDB%202023%20-%20Data%20cleaning.pdf)
+3. [Feature selection](https://github.com/CoDS-GCS/KGFarm/blob/standalone/experiments/results/evaluations%20KGFarm%20PVLDB%202023%20-%20Feature%20selection.pdf)
 
 ## <img src="docs/graphics/icons/youtube.svg" alt="youtube" height="20" width="29"> KGFarm Demo
 <a href="https://rebrand.ly/kgfarm"><img src="docs/graphics/thumbnails/demo_thumbnail.jpeg"/></a>
 
 ## 🦾 Contributors
 <p float="left">
- 
-  <img src="docs/graphics/CoDS.png" width="200"/> 
-
+  <img src="docs/graphics/CoDS.png" width="200"/>
   <img src="docs/graphics/borealisAI.png" width="170"/>
 </p>
+
