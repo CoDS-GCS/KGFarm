@@ -232,27 +232,31 @@ class Recommender:
         numerical_feature_embeddings, categorical_feature_embeddings = self.compute_content_embedding_parallel(
             entity_df=X)
 
-        # scaling transformation
-        recommended_scaler_transformation = list(self.scaler_encoder.inverse_transform(self.scaler_model. \
-            predict(np.array(average_embeddings(embeddings=list(numerical_feature_embeddings.values()))).reshape(1, -1))))[0]
-        recommendations.append(pd.DataFrame({'Feature': [list(X.columns)], 'Recommended_transformation': recommended_scaler_transformation}))
-        # unary transformation (numeric features)
-        numeric_embedding_df = pd.DataFrame(
-            {'Feature': numerical_feature_embeddings.keys(), 'Embedding': numerical_feature_embeddings.values()})
-        numeric_embedding_df['Probability'] = self.unary_model.predict_proba(list(numeric_embedding_df['Embedding'])).tolist()
-        numeric_embedding_df['Transform'] = numeric_embedding_df['Probability'].apply(
-            lambda x: True if self.unary_transformation_threshold <= max(x) else False)
-        numeric_embedding_df = numeric_embedding_df.loc[numeric_embedding_df['Transform'] == True]
-        if numeric_embedding_df.empty:
-            recommendations.append(pd.DataFrame(columns=['Feature', 'Recommended_transformation']))
-        else:
-            numeric_embedding_df['Recommended_transformation'] = self.unary_encoder.inverse_transform(
-                self.unary_model.predict(list(numeric_embedding_df['Embedding']))).tolist()
-            unary_numeric_transformation_df = numeric_embedding_df[['Feature', 'Recommended_transformation']].groupby('Recommended_transformation')['Feature'].apply(list).to_frame()
-            unary_numeric_transformation_df['Recommended_transformation'] = list(unary_numeric_transformation_df.index)
-            unary_numeric_transformation_df = unary_numeric_transformation_df.reset_index(drop=True)
-            recommendations.append(unary_numeric_transformation_df)
+        try:
+            # scaling transformation
+            recommended_scaler_transformation = list(self.scaler_encoder.inverse_transform(self.scaler_model. \
+                predict(np.array(average_embeddings(embeddings=list(numerical_feature_embeddings.values()))).reshape(1, -1))))[0]
+            recommendations.append(pd.DataFrame({'Feature': [list(X.columns)], 'Recommended_transformation': recommended_scaler_transformation}))
 
+            # unary transformation (numeric features)
+            numeric_embedding_df = pd.DataFrame(
+                {'Feature': numerical_feature_embeddings.keys(), 'Embedding': numerical_feature_embeddings.values()})
+            numeric_embedding_df['Probability'] = self.unary_model.predict_proba(list(numeric_embedding_df['Embedding'])).tolist()
+            numeric_embedding_df['Transform'] = numeric_embedding_df['Probability'].apply(
+                lambda x: True if self.unary_transformation_threshold <= max(x) else False)
+            numeric_embedding_df = numeric_embedding_df.loc[numeric_embedding_df['Transform'] == True]
+            if numeric_embedding_df.empty:
+                recommendations.append(pd.DataFrame(columns=['Feature', 'Recommended_transformation']))
+            else:
+                numeric_embedding_df['Recommended_transformation'] = self.unary_encoder.inverse_transform(
+                    self.unary_model.predict(list(numeric_embedding_df['Embedding']))).tolist()
+                unary_numeric_transformation_df = numeric_embedding_df[['Feature', 'Recommended_transformation']].groupby('Recommended_transformation')['Feature'].apply(list).to_frame()
+                unary_numeric_transformation_df['Recommended_transformation'] = list(unary_numeric_transformation_df.index)
+                unary_numeric_transformation_df = unary_numeric_transformation_df.reset_index(drop=True)
+                recommendations.append(unary_numeric_transformation_df)
+        except IndexError:
+            recommendations.append(
+                pd.DataFrame({'Feature': [list(X.columns)], 'Recommended_transformation': 'StandardScaler'}))
         # unary transformation (categorical features)
         if categorical_feature_embeddings:
             categorical_embedding_df = pd.DataFrame(
