@@ -115,7 +115,7 @@ class PipelineGenerator:
             self.__add(code)
         return transformation_info, entity_df
 
-    def apply_transformations(self, transformation_info: tuple):
+    def apply_data_transformations(self, transformation_info: tuple):
         # TODO: manage feature-leakage for scaling and normalization
         enrich_df = transformation_info[1]
         if len(transformation_info):
@@ -211,7 +211,7 @@ def run(pipeline_name, ml_task: str, entity_name: str, target_name: str):
                          evaluation_info=pipeline_generator.train_model(
                              machine_learning_problem=ml_task, data=pipeline_generator.split_data(
                                 data=pipeline_generator.select_features(dependent_variable=target_name,
-                                    entity_df=pipeline_generator.apply_transformations(
+                                    entity_df=pipeline_generator.apply_data_transformations(
                                         transformation_info=pipeline_generator.search_transformations(
                                             entity_df=pipeline_generator.clean(
                                                 cleaning_info=pipeline_generator.search_data_cleaning_operations(
