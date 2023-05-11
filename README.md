@@ -17,7 +17,8 @@
 KGFarm provides seamless integration with existing data science platforms to effectively enable scientific communities to automatically discover and learn about each other's work. Thus, KGFarm enables data scientists to quickly automate pipelines with high accuracy for seen and unseen datasets. Our comprehensive evaluation used a KG constructed from Kaggle datasets and pipelines. KGFarm scales better than existing methods in recommending data transformation, cleaning, and feature selection while achieving better or comparable accuracy.</p>
 
 ## ⚡ Quick Start
-Try the sample <b>[KGFarm Colab notebook](https://colab.research.google.com/drive/1u4z4EKGd8G1ju61Q3sPk5fH9BrMp8IRM?usp=sharing)</b> for a quick hands-on!
+Try the sample <b>[KGFarm Colab notebook](https://colab.research.google.com/drive/1u4z4EKGd8G1ju61Q3sPk5fH9BrMp8IRM?usp=sharing)</b> for a quick hands-on! 
+Alternatively run [setup.py](helpers/setup.py) to setup the demo in a local environment!
 
 1. Install dependencies
 ```bash
@@ -28,7 +29,7 @@ pip install -r requirements.txt
 stardog-admin server start
 ```
 3. Run KGFarm's [<code>graph_builder</code>](feature_discovery/src/graph_builder/build.py):<br/>
-generates [<code>farm.ttl</code>](https://github.com/CoDS-GCS/KGFarm/blob/645f12dfd63bae0bd319401c2cf10f8378dd6679/feature_discovery/src/graph_builder/farm.ttl) and uploads it to the [stardog server](https://cloud.stardog.com/)
+for generating [<code>farm.ttl</code>](https://github.com/CoDS-GCS/KGFarm/blob/645f12dfd63bae0bd319401c2cf10f8378dd6679/feature_discovery/src/graph_builder/farm.ttl) and uploading it to the [stardog](https://cloud.stardog.com/)
 
 ```bash
 cd feature_discovery/src/graph_builder
