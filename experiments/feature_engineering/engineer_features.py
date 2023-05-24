@@ -149,20 +149,16 @@ class EngineerFeatures:
                         test_set[features_to_transform] = encoder.transform(test_set[features_to_transform])
                     else:
                         encoder = OneHotEncoder(handle_unknown='ignore')
-                        encoder.fit(X=pd.concat([train_set[features_to_transform], test_set[features_to_transform]]))
-                        one_hot_encoded_features_train_set = pd.DataFrame(encoder.transform(train_set[features_to_transform]).toarray())
-                        train_set = train_set.join(one_hot_encoded_features_train_set)
+                        train_set.reset_index(drop=True, inplace=True)
+                        one_hot_encoded_features = pd.DataFrame(encoder.fit_transform(train_set[features_to_transform]).toarray())
+                        train_set = pd.concat([train_set, one_hot_encoded_features], axis=1)
                         train_set = train_set.drop(features_to_transform, axis=1)
-                        one_hot_encoded_features_test_set = pd.DataFrame(encoder.transform(test_set[features_to_transform]).toarray())
-                        test_set = test_set.join(one_hot_encoded_features_test_set)
-                        test_set = test_set.drop(one_hot_encoded_features_test_set, axis=1)
-
-                        train_set, encoder = self.kgfarm.apply_transformations(X=train_set[features_to_transform], recommendation=unary_categorical_transformations.iloc[i])
-                        test_set[features_to_transform] = encoder.transform(test_set[features_to_transform])
-                        one_hot_encoded_features = pd.DataFrame(
-                            encoder.transform(test_set[features_to_transform]).toarray())
-                        test_set = test_set.join(one_hot_encoded_features)
+                        train_set.columns = train_set.columns.astype(str)
+                        test_set.reset_index(drop=True, inplace=True)
+                        one_hot_encoded_features = pd.DataFrame(encoder.fit_transform(test_set[features_to_transform]).toarray())
+                        test_set = pd.concat([test_set, one_hot_encoded_features], axis=1)
                         test_set = test_set.drop(features_to_transform, axis=1)
+                        test_set.columns = test_set.columns.astype(str)
 
             if not scaling_transformation.empty:
                 print('scaling features')
