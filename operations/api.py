@@ -3,29 +3,23 @@ import copy
 import datetime
 import warnings
 import numpy as np
-import urllib.parse
 import pandas as pd
 import seaborn as sns
-# from autoimpute.imputations import SingleImputer
-# from sklearn.experimental import enable_iterative_imputer
-# from sklearn.impute import IterativeImputer
-from sklearn.impute import SimpleImputer, KNNImputer
-from sklearn.linear_model import BayesianRidge
-from tqdm import tqdm
 from pathlib import Path
 from datetime import timedelta
+#from tqdm.notebook import tqdm
+from operations.template import *
 from sklearn.preprocessing import *
 from matplotlib import pyplot as plt
-from stardog.exceptions import StardogException
-from sklearn.feature_selection import SelectKBest, f_classif
-from feature_discovery.src.graph_builder.governor import Governor
 from helpers.helper import connect_to_stardog
-from operations.template import *
+from sklearn.impute import  SimpleImputer, KNNImputer
+from sklearn.feature_selection import SelectKBest, f_classif
 from operations.recommendation.recommender import Recommender
+from feature_discovery.src.graph_builder.governor import Governor
 
 warnings.filterwarnings('ignore')
-pd.set_option('display.max_columns', None)
-pd.set_option('display.max_colwidth', None)
+#pd.set_option('display.max_columns', None)
+#pd.set_option('display.max_colwidth', None)
 import sys
 
 
@@ -43,6 +37,15 @@ class KGFarm:
             self.recommender_config = connect_to_stardog(port, db='kgfarm_recommender', show_status=False)
         self.governor = Governor(self.config)
         self.__table_transformations = {}  # cols in enriched_df: tuple -> (entity_df_id, feature_view_id)
+        """
+        conf = SparkConf().setAppName('KGFarm')
+        conf = (conf.setMaster('local[*]')
+                .set('spark.executor.memory', '10g')
+                .set('spark.driver.memory', '5g')
+                .set('spark.driver.maxResultSize', '5g'))
+        sc = SparkContext(conf=conf)
+        self.spark = SparkSession(sc)
+        """
 
     # re-arranging columns
     @staticmethod
@@ -240,9 +243,8 @@ class KGFarm:
             print(len(features), 'feature(s) were found!')
         return features
 
-    # TODO: concrete set of ontology is required to know which columns are being dropped (user may drop features for transformations / other experiments)
-    def recommend_feature_transformations(self, entity_df: pd.DataFrame = None, show_metadata: bool = False,
-                                          show_query: bool = False):
+    def recommend_data_transformations(self, entity_df: pd.DataFrame = None, show_query: bool = False,
+                                       show_insights: bool = True, n: int = None):
 
         def get_transformation_technique(t, f_values):
             if t == 'Ordinal encoding' and len(f_values) > 1:
@@ -275,7 +277,7 @@ class KGFarm:
             df['Transformation'] = df.apply(lambda x: get_transformation_technique(x.Transformation, x.Feature), axis=1)
 
             # TODO: fix this temporary hack
-            if None in list(transformation_info['Transformation']):
+            if None in list(df['Transformation']):
                 df['Transformation'] = df['Transformation_type']
                 for n_row, v in df.to_dict('index').items():
                     if v['Transformation'] == 'OrdinalEncoder' or v['Transformation'] == 'LabelEncoder':
@@ -305,8 +307,12 @@ class KGFarm:
 
             return df
 
-        def handle_unseen_data():
-            return add_transformation_type(self.recommender.get_transformation_recommendations(entity_df))
+        def handle_unseen_data(n_samples):
+            if n_samples is None or n_samples > len(entity_df):
+                n_samples = len(entity_df)
+            return add_transformation_type(
+                self.recommender.get_transformation_recommendations(entity_df.sample(n_samples),
+                                                                    show_insight=show_insights))
 
         transformation_info = recommend_feature_transformations(self.config, show_query)
 
@@ -359,7 +365,8 @@ class KGFarm:
 
         transformation_info = pd.DataFrame(transformation_info_grouped)
 
-        if not show_metadata:
+        if {'Package', 'Function', 'Library', 'Author', 'Written_on', 'Pipeline_url'}.issubset(
+                set(transformation_info.columns)):
             transformation_info.drop(['Package', 'Function', 'Library', 'Author', 'Written_on', 'Pipeline_url'],
                                      axis=1, inplace=True)
 
@@ -367,7 +374,7 @@ class KGFarm:
             table_ids = self.__table_transformations.get(tuple(entity_df.columns))
             if not table_ids:
                 print('Processing unseen data')
-                return handle_unseen_data()
+                return handle_unseen_data(n_samples=n)
 
             tables = list(map(lambda x: get_table_name(self.config, table_id=x), table_ids))
 
@@ -391,7 +398,8 @@ class KGFarm:
 
         return recommended_transformation
 
-    def apply_transformation(self, transformation_info: pd.Series, entity_df: pd.DataFrame = None):
+    def apply_data_transformation(self, transformation_info: pd.Series, entity_df: pd.DataFrame = None,
+                                  output_message: str = None):
         # TODO: add support for PowerTransformer
         if entity_df is not None:  # apply transformations directly on entity_df passed by user
             df = entity_df
@@ -402,8 +410,8 @@ class KGFarm:
         if transformation == 'LabelEncoder':
             print('Applying LabelEncoder transformation')
             transformation_model = LabelEncoder()
-            f = features[0]  # label encoding is applied on single feature
-            df[f] = transformation_model.fit_transform(df[f])
+            # label encoding is applied on single feature
+            df[features[0]] = transformation_model.fit_transform(df[features[0]])
         elif transformation == 'StandardScaler':
             # print(
             #     'CAUTION: Make sure you apply {} transformation only on the train set (This ensures there is no over-fitting due to feature leakage)\n'.format(
@@ -415,7 +423,6 @@ class KGFarm:
         elif transformation == 'OrdinalEncoder':
             print('Applying OrdinalEncoder transformation')
             transformation_model = OrdinalEncoder()
-            transformation_model.fit_transform(df[features])
             df[features] = transformation_model.fit_transform(df[features])
         elif transformation == 'MinMaxScaler':
             print('Applying MinMaxScaler transformation')
@@ -434,8 +441,80 @@ class KGFarm:
         else:
             print(transformation, 'not supported yet!')
             return
-        print('{} feature(s) {} transformed successfully!'.format(len(features), features))
+        if output_message is None:
+            print('{} feature(s) {} transformed successfully!'.format(len(features), features))
+        else:
+            print('{} feature(s) were transformed successfully!'.format(len(features)))
         return df, transformation_model
+
+    def recommend_transformations(self, X: pd.DataFrame):
+        return self.recommender.recommend_transformations(X=X)
+
+    @staticmethod
+    def apply_transformations(X: pd.DataFrame, recommendation: pd.Series):
+        transformation = recommendation['Recommended_transformation']
+        feature = recommendation['Feature']
+
+        if transformation in {'StandardScaler', 'MinMaxScaler', 'RobustScaler', 'QuantileTransformer',
+                              'PowerTransformer'}:
+            print(f'Applying {transformation} on {list(X.columns)}')
+            if transformation == 'StandardScaler':
+                scaler = StandardScaler()
+            elif transformation == 'MinMaxScaler':
+                scaler = MinMaxScaler()
+            elif transformation == 'RobustScaler':
+                scaler = RobustScaler()
+            elif transformation == 'QuantileTransformer':
+                scaler = QuantileTransformer()
+            else:
+                scaler = PowerTransformer()
+            X[X.columns] = scaler.fit_transform(X=X[X.columns])
+            return X, scaler
+
+        elif transformation in {'Log', 'Sqrt', 'square'}:
+            print(f'Applying {transformation} on {list(feature)}')
+            if transformation == 'Log':
+                def log_plus_const(x, const=0):
+                    return np.log(x + np.abs(const) + 0.0001)
+
+                for f in tqdm(feature):
+                    min_neg_val = X[f].min()
+                    unary_transformation_model = FunctionTransformer(func=log_plus_const,
+                                                                     kw_args={'const': min_neg_val}, validate=True)
+                    X[f] = unary_transformation_model.fit_transform(X=np.array(X[f]).reshape(-1, 1))
+
+            elif transformation == 'Sqrt':
+                def sqrt_plus_const(x, const=0):
+                    return np.sqrt(x + np.abs(const) + 0.0001)
+
+                for f in tqdm(feature):
+                    min_neg_val = X[f].min()
+                    unary_transformation_model = FunctionTransformer(func=sqrt_plus_const,
+                                                                     kw_args={'const': min_neg_val}, validate=True)
+                    X[f] = unary_transformation_model.fit_transform(X=np.array(X[f]).reshape(-1, 1))
+            else:
+                unary_transformation_model = FunctionTransformer(func=np.square, validate=True)
+                X[feature] = unary_transformation_model.fit_transform(X=X[feature])
+            return X, transformation
+
+        elif transformation in {'OrdinalEncoder', 'OneHotEncoder'}:
+            print(f'Applying {transformation} on {list(feature)}')
+            if transformation == 'OrdinalEncoder':
+                encoder = OrdinalEncoder()
+                X[feature] = encoder.fit_transform(X=X[feature])
+            else:
+                encoder = OneHotEncoder(handle_unknown='ignore')
+                one_hot_encoded_features = pd.DataFrame(encoder.fit_transform(X[feature]).toarray())
+                X = X.join(one_hot_encoded_features)
+                X = X.drop(feature, axis=1)
+            return X, encoder
+
+        else:
+            raise ValueError(f'{transformation} not supported')
+
+        # unary_categorical_transformations = recommendations[recommendations.loc['Transformation_type'] in {'ordinal encoding', 'nominal encoding'}]
+        # unary_numerical_transformations = recommendations[recommendations.loc['Transformation_type'] == 'unary transformation']
+        # scaling_transformation = recommendations[recommendations.loc['Transformation_type'] == 'scaling']
 
     def enrich(self, enrichment_info: pd.Series, entity_df: pd.DataFrame = None, freshness: int = 10):
         if entity_df is not None:  # entity_df passed by the user
@@ -610,7 +689,7 @@ class KGFarm:
             if na_type in {'?', '', ' '}:
                 df.replace(na_type, np.nan, inplace=True)
             else:
-                df.replace('(?i)' + na_type, np.nan, inplace=True, regex=True)
+                df.replace(r'(^)' + na_type + r'($)', np.nan, inplace=True, regex=True)
 
         columns = pd.DataFrame(df.isnull().sum())
         columns.columns = ['Missing values']
@@ -661,106 +740,8 @@ class KGFarm:
             ax.tick_params(axis='x', labelrotation=90, labelsize=5.5)
             plt.show()
 
-        def recommend_cleaning_operations_for_unseen_data(list_of_similar_tables: list, display: bool):
-            recommendations = []
-            for recommended_table in tqdm(list_of_similar_tables):
-                try:
-                    recommendations.append(get_data_cleaning_recommendation(self.recommender_config,
-                                                                            table_id=recommended_table,
-                                                                            show_query=display))
-                except StardogException:
-                    continue
-                display = False
-            if len(recommendations) == 0:
-                return False
-            return pd.concat(recommendations).reset_index(drop=True)
-
-        # TODO: fix and test formatting for interpolation
-        def reformat_recommendations(df: pd.DataFrame):
-            def format_columns(c: str):
-                if isinstance(c, str):
-                    return urllib.parse.unquote_plus(c).split('/')[-1]
-                else:
-                    return list(columns_to_be_cleaned['Feature'])
-
-            df['Feature'] = df['Column_id'].apply(lambda x: format_columns(x))
-            df = df.drop('Column_id', axis=1).dropna(how='any').reset_index(drop=True)
-
-            pipeline = None
-            operation = None
-            parameters_per_pipeline = {}
-            params = {}
-            features = []
-
-            for row_number, recommendation_info in df.to_dict('index').items():
-                if isinstance(recommendation_info['Feature'], list):
-                    continue
-                if pipeline == recommendation_info['Pipeline'] and operation == data_cleaning_operation_mapping.get(
-                        recommendation_info['Function']):
-                    params.update({recommendation_info['Feature']: recommendation_info['Value']})
-                    features.append(recommendation_info['Feature'])
-                    if row_number == len(df) - 1:  # save for last record
-                        parameters_per_pipeline[pipeline] = [operation, features, params]
-                else:
-                    if row_number == 0:  # first pipeline
-                        pipeline = recommendation_info['Pipeline']
-                        operation = data_cleaning_operation_mapping.get(recommendation_info['Function'])
-                        features = [recommendation_info['Feature']]
-                        params.update({recommendation_info['Feature']: recommendation_info['Value']})
-                        continue
-
-                    if row_number == len(df) - 1:  # save for last record
-                        parameters_per_pipeline[pipeline] = [operation, features, params]
-                    else:
-                        # save current pipeline_info
-                        parameters_per_pipeline[pipeline] = [operation, features, params]
-                        # update new pipeline
-                        pipeline = recommendation_info['Pipeline']
-                        operation = data_cleaning_operation_mapping.get(recommendation_info['Function'])
-                        features = [recommendation_info['Feature']]
-                        params = {recommendation_info['Feature']: recommendation_info['Value']}
-
-            operation = []
-            params = []
-            features = []
-            for row in list(parameters_per_pipeline.values()):
-                operation.append(row[0])
-                features.append(row[1])
-                params.append(row[2])
-
-            df = pd.DataFrame({'Operation': operation,
-                               'Feature': features,
-                               'Parameters': params,
-                               'Pipeline': list(parameters_per_pipeline.keys())})
-
-            # check if features are present in actual entity_df
-            updated_params = []
-            for row_number, recommendation_info in df.to_dict('index').items():
-                features = recommendation_info['Feature']
-                parameters = recommendation_info['Parameters']
-                if '<src.Calls' in parameters:
-                    df.drop(index=row_number, axis=1, inplace=True)
-                    continue
-                flag = True
-                params = {}
-                for f in features:
-                    if f.replace(' ', '') in entity_df.columns:
-                        features[features.index(f)] = f.replace(' ', '')
-                        value = parameters.get(f)
-                        params.update({f.replace(' ', ''): value})
-                    else:
-                        flag = False
-                if not flag:
-                    df.drop(index=row_number, axis=1, inplace=True)
-                    continue
-                updated_params.append(params)
-
-            df['Parameters'] = updated_params
-            return df.dropna(how='any').reset_index(drop=True)
-
         print('scanning missing values')
         columns_to_be_cleaned = self.get_columns_to_be_cleaned(entity_df)
-
         if visualize_missing_data:
             plot_heat_map(df=entity_df)
             plot_bar_graph(columns=columns_to_be_cleaned)
@@ -768,63 +749,13 @@ class KGFarm:
         if len(columns_to_be_cleaned) == 0:
             print('nothing to clean')
             return entity_df
+        
+        similar_tables = self.recommender.get_cleaning_recommendation(entity_df[columns_to_be_cleaned['Feature']])
+        print('Suggestions are:', similar_tables)
+        print(similar_tables.columns)
+        return similar_tables
 
-        #########CHANGED FOR TESTING PURPOSES
-        #table_id = self.__check_if_profiled(df=entity_df)
-        table_id = False
-
-        if table_id is not False:  # seen data
-            if isinstance(table_id, tuple):
-                recommendations_for_enriched_tables = []
-                for ids in table_id:
-                    recommendations_for_enriched_tables.append(get_data_cleaning_recommendation(self.config,
-                                                                                                table_id=ids,
-                                                                                                show_query=show_query))
-                data_cleaning_info = pd.concat(recommendations_for_enriched_tables)
-
-            else:
-                data_cleaning_info = get_data_cleaning_recommendation(self.config, table_id=table_id,
-                                                                      show_query=show_query)
-
-            # reformat seen cleaning info
-            data_cleaning_info['Parameters'] = data_cleaning_info.apply(lambda x: {x.Parameter: x.Value}, axis=1)
-            data_cleaning_info['Operation'] = data_cleaning_info['Function'].apply(
-                lambda x: data_cleaning_operation_mapping.get(x))
-            data_cleaning_info['Feature'] = data_cleaning_info['Column_id'].apply(
-                lambda x: list(columns_to_be_cleaned['Feature']))
-            data_cleaning_info = data_cleaning_info[['Operation', 'Feature', 'Parameters', 'Pipeline']]
-            return data_cleaning_info
-
-        elif table_id is False:  # unseen data
-            #print('finding similar columns and tables to entity dataframe',entity_df[columns_to_be_cleaned['Feature']])
-            similar_tables = self.recommender.get_cleaning_recommendation(
-                             entity_df[columns_to_be_cleaned['Feature']])  # align
-            print('Suggestions are:', similar_tables)
-            return similar_tables
-            # if len(similar_tables) < top_k:
-            #     top_k = len(similar_tables)
-            #
-            # similar_tables = similar_tables[:top_k]
-            #
-            # if len(similar_tables) == 0:
-            #     print('no recommendations, try using kgfarm.clean()')
-            #     return
-            #
-            # raw_recommendations = recommend_cleaning_operations_for_unseen_data(list_of_similar_tables=similar_tables,
-            #                                                                     display=show_query)  # query
-            #
-            # if raw_recommendations is False or raw_recommendations.empty:
-            #     print('no recommendations, try using kgfarm.clean()')
-            #     return
-            # else:
-            #     cleaning_recommendations = reformat_recommendations(df=raw_recommendations)
-            #     if cleaning_recommendations.empty:
-            #         print('no recommendations, try using kgfarm.clean()')
-            #         return
-            #     else:
-            #         return cleaning_recommendations
-
-    def clean(self, entity_df: pd.DataFrame, techniques: pd.DataFrame = None):
+    def clean(self, entity_df: pd.DataFrame, technique: pd.DataFrame = None):
         """
         cleans entity_df from info coming from kgfarm.recommend_cleaning_operations
         """
@@ -837,15 +768,22 @@ class KGFarm:
                 print(f'\n{uncleaned_features} are still uncleaned')
                 return 1
 
-        def apply_operation_numeric(technique, entity_df):
+        def apply_operation(technique, entity_df):
             if technique is not None:  # clean by human-in-the-loop
                 columns = list(self.get_columns_to_be_cleaned(df=entity_df)['Feature'])
-                if technique == 'drop':
+                #Subset_df is columns in the original df that need to be cleaned
+                subset_df = entity_df[columns]
+                print('technique', technique, type(technique))
+                if technique == 0:
+                    print('The data is clean')
+                    return entity_df
+                elif technique == 'drop':
                     entity_df.dropna(how='any', inplace=True)
                     entity_df.reset_index(drop=True, inplace=True)
                     print(f'missing values from {columns} were dropped')
                     check_for_uncleaned_features(df=entity_df)
-                    return entity_df
+                    df_imputed = entity_df.copy()
+
                 elif technique.__contains__('fill'):
                     def fillna_median(column):
                         median = column.median()
@@ -858,186 +796,127 @@ class KGFarm:
                         return column.fillna(mode, inplace=True)
 
                     if technique == 'fill-median':
-                        entity_df.apply(fillna_median)
+                        subset_df.apply(fillna_median)
                     elif technique == 'fill-mean':
-                        entity_df.apply(fillna_mean)
+                        subset_df.apply(fillna_mean)
                     elif technique == 'fill-mode':
-                        entity_df.apply(fillna_mode)
+                        subset_df.apply(fillna_mode)
                     elif technique == 'fill-outlier':
-                        object_cols = entity_df.select_dtypes(include=['object']).columns
-                        entity_df[object_cols] = entity_df[object_cols].fillna(value='x')
-                        entity_df = entity_df.fillna(value=0)
-                        # entity_df.fillna(0, inplace=True)
-
-                    entity_df.reset_index(drop=True, inplace=True)
-                    check_for_uncleaned_features(df=entity_df)
-                    return entity_df
+                        object_cols = subset_df.select_dtypes(include=['object']).columns
+                        subset_df[object_cols] = subset_df[object_cols].fillna(value='x')
+                        subset_df = subset_df.fillna(value=0)
+                    print('resetting')
+                    subset_df.reset_index(drop=True, inplace=True)
+                    print('check for unclean')
+                    check_for_uncleaned_features(df=subset_df)
+                    df_imputed = subset_df.copy()
                 elif technique == 'interpolate':
                     try:
-                        entity_df.interpolate(axis=1, inplace=True)
-                        # entity_df.reset_index(drop=True, inplace=True)
-                        #####################print(f'missing values from {columns} were interpolated')
+                        subset_df.interpolate(axis=1, inplace=True)
                     except TypeError:
                         print('only numerical features can be interpolated')
-                    check = check_for_uncleaned_features(df=entity_df)
+                    check = check_for_uncleaned_features(df=subset_df)
                     count = 0
+
                     while check == 1 and count<10:
+                        print(subset_df.isnull())
                         print('reinterpolating...')
                         count = count + 1
-                        print('count',count)
-                        entity_df.interpolate(inplace=True)
-                        check = check_for_uncleaned_features(df=entity_df)
+                        if count%2 ==0:
+                            print('count',count)
+                            subset_df.interpolate(inplace=True)
+                            check = check_for_uncleaned_features(df=subset_df)
+                        else:
+                            print('count',count)
+                            subset_df.interpolate(limit_direction='backward', inplace=True)
+                            check = check_for_uncleaned_features(df=subset_df)
+                    df_imputed = subset_df.copy()
 
-
-                    return entity_df
-                elif technique == 'Simple_imputer-most_frequent':
-                    imputer = SimpleImputer(strategy='most_frequent')
-                    imputer.fit(entity_df)
-                    X_imputed = imputer.transform(entity_df)
-                    return X_imputed
                 elif technique.__contains__('SimpleImputer'):
                     try:
                         if technique == 'SimpleImputer-median':
                             imputer = SimpleImputer(strategy='median')
-                            imputer.fit(entity_df)
-                            X_imputed = imputer.transform(entity_df)
-                        elif technique == 'Simple_imputer-most_frequent':
+                            imputer.fit(subset_df)
+                            df_imputed = imputer.transform(subset_df)
+                        elif technique == 'SimpleImputer-most_frequent':
                             imputer = SimpleImputer(strategy='most_frequent')
-                            imputer.fit(entity_df)
-                            X_imputed = imputer.transform(entity_df)
-                        elif technique == 'Simple_imputer-constant':
+                            imputer.fit(subset_df)
+                            df_imputed = imputer.transform(subset_df)
+                        elif technique == 'SimpleImputer-constant':
                             imputer = SimpleImputer(strategy='constant')
-                            imputer.fit(entity_df)
-                            X_imputed = imputer.transform(entity_df)
+                            imputer.fit(subset_df)
+                            df_imputed = imputer.transform(subset_df)
                         else:
                             imputer = SimpleImputer(strategy='mean')
-                            imputer.fit(entity_df)
-                            X_imputed = imputer.transform(entity_df)
+                            imputer.fit(subset_df)
+                            df_imputed = imputer.transform(subset_df)
                     except TypeError:
                         print('only numerical features can be interpolated')
-                    check_for_uncleaned_features(df=entity_df)
-                    return X_imputed
-                # elif technique == 'IterativeImputer':
-                #     imputer = IterativeImputer(BayesianRidge())
-                #     imputer.fit(entity_df)
-                #     X_imputed = imputer.transform(entity_df)
-                #     check_for_uncleaned_features(df=X_imputed)
-                #     return X_imputed
+                    check_for_uncleaned_features(df=subset_df)
+                elif technique == 'IterativeImputer':
+                    imputer = IterativeImputer(BayesianRidge())
+                    imputer.fit(subset_df)
+                    df_imputed = imputer.transform(subset_df)
+                    check_for_uncleaned_features(df=X_imputed)
+                    #return X_imputed
                 elif technique == 'KNNImputer':
                     try:
                         #Divide the columns and values
-                        col = entity_df.columns
-                        val = entity_df.values
+                        col = subset_df.columns
                         imputer = KNNImputer()
-                        imputer.fit(val)
-                        X_imputed = imputer.transform(val)
-
-                        entity_df = pd.DataFrame(X_imputed, columns=col)
-                        print(entity_df)
-                        check_for_uncleaned_features(df=entity_df)
-                        return entity_df
-                        ###########################print(f'missing values from {columns} were interpolated')
+                        subset_df = imputer.fit_transform(subset_df)
+                        df_imputed = pd.DataFrame(subset_df, columns=col)
+                        check_for_uncleaned_features(df=df_imputed)
                     except TypeError:
                         print('only numerical features can be interpolated')
-                    check_for_uncleaned_features(df=entity_df)
-                    return entity_df
                 else:
                     if technique not in {'drop', 'fill', 'interpolate', 'imputer'}:
                         raise ValueError("technique must be one out of 'drop', 'fill', 'interpolate, 'imputer''")
+                # create a new dataframe with the imputed values
+                df_imputed = pd.DataFrame(df_imputed, columns=columns)
 
-        def apply_operation_string(technique, entity_df):
-            if technique is not None:  # clean by human-in-the-loop
-                columns = list(self.get_columns_to_be_cleaned(df=entity_df)['Feature'])
-                # if technique == 'drop':
-                #     entity_df.dropna(how='any', inplace=True)
-                #     entity_df.reset_index(drop=True, inplace=True)
-                #     print(f'missing values from {columns} were dropped')
-                #     check_for_uncleaned_features(df=entity_df)
-                #     return entity_df
-                # el
-                if technique.__contains__('fill'):
-                    def get_mode(feature: pd.Series):  # fill categorical data with mode
-                        return feature.mode()[0]
+                # merge the imputed values back into the original dataframe
+                entity_df[columns] = df_imputed
+                return entity_df
 
-
-                    if technique == 'fill-mode':
-                        entity_df.fillna(entity_df.mode(), inplace=True)
-                    elif technique == 'fill-None':
-                        entity_df.fillna('None', inplace=True)
-                    elif technique == 'fill-empty string':
-                        entity_df.fillna('', inplace=True)
-                    else:
-                        for column in tqdm(columns):
-                            mode = get_mode(entity_df[column])
-                            entity_df[column].fillna(mode, inplace=True)
-
-                    entity_df.reset_index(drop=True, inplace=True)
-                    check_for_uncleaned_features(df=entity_df)
-                    return entity_df
-
-                # elif technique == 'IterativeImputer':
-                #     imputer = IterativeImputer(BayesianRidge())
-                #     imputer.fit(entity_df)
-                #     X_imputed = imputer.transform(entity_df)
-                #     check_for_uncleaned_features(df=X_imputed)
-                #     return X_imputed
-                elif technique == 'KNNImputer':
-                    try:
-                        entity_df.interpolate(inplace=True)
-                        entity_df.reset_index(drop=True, inplace=True)
-                        ########################################print(f'missing values from {columns} were interpolated')
-                    except TypeError:
-                        print('only numerical features can be interpolated')
-                    check_for_uncleaned_features(df=entity_df)
-                    return entity_df
-                else:
-                    if technique not in {'drop', 'fill', 'interpolate', 'imputer'}:
-                        raise ValueError("technique must be one out of 'drop', 'fill', 'interpolate, 'imputer''")
-
-        string_operations = ['drop','fill-mode','fill-None','fill-empty string','IterativeImputer','KNNImputer']
-        numeric_operations = ['drop', 'fill-mode', 'fill-mean', 'fill-median', 'fill-0', 'SimpleImputer-median',
-                              'SimpleImputer', 'Simple_imputer-constant', 'Simple_imputer-mean',
-                              'Simple_imputer-most_frequent', 'IterativeImputer', 'KNNImputer']
-        # Filter the DataFrame to select only non-object columns
-        # print('en',entity_df)
-        string_columns_name = entity_df.select_dtypes(include='object').columns
-        numeric_columns_name = entity_df.select_dtypes(exclude='object').columns
-        # Get the column values of the numeric columns
-        numeric_columns = entity_df[numeric_columns_name].values
-        string_columns = entity_df[string_columns_name].values
-
-        numeric_columns = pd.DataFrame(numeric_columns, columns = numeric_columns_name)
-        string_columns = pd.DataFrame(string_columns, columns=string_columns_name)
-        # Dropping drop from the options
-        # techniques = techniques.drop(index=["drop"], axis=0)
-        # print('tech',techniques)
-        # print(techniques.index[0], numeric_columns)
-        # Iterate over the non-object columns
-
-        entity_df = apply_operation_numeric(techniques.index[0], entity_df)#.index[0]
-            # for i in range(0,len(techniques)):
-            #     if techniques.index[i] in numeric_operations:
-            #         print('Applying ', techniques.index[i])
-            #         entity_df = apply_operation_numeric(techniques.index[i],entity_df)
-            #         break
-
-            # for i in range(0,len(techniques)):
-            #     if techniques.index[i] in string_operations:#.isin(string_operations).any():
-            #         print('Applying ',techniques.index[i])
-            #         string_columns = apply_operation_string(techniques.index[i],string_columns)
-            #         break
+        entity_df = apply_operation(technique, entity_df)#.index[0]
         return entity_df
-        #return pd.DataFrame(numeric_columns, columns = numeric_columns_name) #string_columns.join(numeric_columns)
 
+
+
+    """
     def recommend_features_to_be_selected(self, entity_df: pd.DataFrame, dependent_variable: str, k: int):
         recommended_features = list(self.recommender.get_feature_selection_score(entity_df=entity_df,
                                                                                  dependent_variable=dependent_variable).head(
             k)['Feature'])
-        print(f'Recommending top-{k} feature(s) {recommended_features}')
+        # print(f'Recommending top-{k} feature(s) {recommended_features}')
         return entity_df[recommended_features], entity_df[dependent_variable]  # return X, y
+    """
+
+    def recommend_features_to_be_selected(self, task: str, entity_df: pd.DataFrame, dependent_variable: str,
+                                          n: int = None):
+        if n is None or len(entity_df) < n:
+            n = len(entity_df)
+
+        return self.recommender.get_feature_selection_score(task=task, entity_df=entity_df.sample(n=n, random_state=1),
+                                                            dependent_variable=dependent_variable)
+
+    """
+    def select_features_distributed(self, features: pd.DataFrame, target: pd.Series, n: int = None):
+        if n is not None:  # subsample n data points
+            features['target'] = target
+            features = features.sample(n=n, random_state=1)
+            # target = features['target']
+            # features.drop('target', axis=1, inplace=True)
+            # return features
+        entity_df = self.spark.createDataFrame(features)
+        return self.recommender.get_feature_selection_score_distributed(entity_df=entity_df)
+    """
+
+    def engineer_features(self):
+        pass
 
 
-# TODO: refactor (make a generic function to return enrich table_ids from self.__table_transformations)
 entity_data_types_mapping = {'N_int': 'integer', 'N_float': 'float', 'N_bool': 'boolean',
                              'T': 'string', 'T_date': 'timestamp', 'T_loc': 'string (location)',
                              'T_person': 'string (person)',
