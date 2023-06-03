@@ -2,17 +2,20 @@ import os
 import torch
 import joblib
 import operator
+import chars2vec
 import bitstring
 import numpy as np
 import pandas as pd
 from datasketch import MinHash
 from dask.dataframe import from_pandas
 from sklearn.preprocessing import LabelEncoder
-from operations.recommendation.utils.column_embeddings import load_numeric_embedding_model
+from operations.recommendation.utils.column_embeddings import load_numeric_embedding_model, load_embedding_model
 
 
 class Recommender:
     def __init__(self):
+        # KGFarm cleaning recommendation
+        self.cleaning_recommender = joblib.load('operations/recommendation/utils/models/cleaning_test.pkl')
         # KGFarm transformation recommendation
         self.numeric_transformation_recommender = joblib.load(
             'operations/recommendation/utils/models/transformation_recommender_numerical.pkl')
@@ -26,6 +29,9 @@ class Recommender:
         self.unary_encoder = joblib.load('operations/recommendation/utils/models/unary_encoder.pkl')
         self.numeric_embedding_model = load_numeric_embedding_model()
         self.categorical_embedding_model = MinHash(num_perm=512)
+        self.numeric_embedding_model_cleaning = load_embedding_model(model_type='numerical')
+        self.categorical_embedding_model_cleaning = load_embedding_model(model_type='categorical')
+       
         # self.word_embedding = WordEmbedding(
         #     'feature_discovery/src/recommender/utils/glove_embeddings/glove.6B.100d.pickle')
         # self.embeddings = Embeddings(
@@ -65,6 +71,29 @@ class Recommender:
                     if isinstance(word, str):
                         self.categorical_embedding_model.update(word.lower().encode('utf8'))
                 categorical_column_embeddings[column] = self.categorical_embedding_model.hashvalues.tolist()
+        return numeric_column_embeddings, categorical_column_embeddings
+    
+    def compute_cleaning_content_embeddings(self, entity_df: pd.DataFrame):
+        numeric_column_embeddings = {}
+        categorical_column_embeddings = {}
+
+        def get_bin_repr(val):
+            return [int(j) for j in bitstring.BitArray(float=float(val), length=32).bin]
+
+        for column in entity_df.columns:
+            if pd.api.types.is_numeric_dtype(entity_df[column]):
+                bin_repr = entity_df[column].apply(get_bin_repr, convert_dtype=False).to_list()
+                bin_tensor = torch.FloatTensor(bin_repr).to('cpu')
+                #with torch.inference_mode():
+                embedding_tensor = self.numeric_embedding_model_cleaning(bin_tensor).mean(axis=0)
+                numeric_column_embeddings[column] = embedding_tensor.tolist()
+            else:
+                char_level_embed_model = chars2vec.load_model('eng_50')
+                input_vector = char_level_embed_model.vectorize_words(entity_df[column].dropna().tolist())
+                input_tensor = torch.FloatTensor(input_vector).to('cpu')
+                #with torch.inference_mode():
+                embedding_tensor = self.categorical_embedding_model_cleaning(input_tensor).mean(axis=0)
+                categorical_column_embeddings[column] = embedding_tensor.tolist()
         return numeric_column_embeddings, categorical_column_embeddings
 
     def compute_content_embedding_parallel(self, entity_df: pd.DataFrame):
@@ -281,22 +310,60 @@ class Recommender:
         recommendations['Transformation_type'] = recommendations['Recommended_transformation'].apply(lambda x: self.transformation_type.get(x) if x in self.transformation_type else 'scaling')
         return recommendations
 
-    @staticmethod
-    def get_cleaning_recommendation(entity_df: pd.DataFrame):
-        """
-        numeric_embeddings, string_embeddings = self.__compute_content_embeddings(entity_df=entity_df)
-        similar_columns_uris = self.embeddings.get_similar_columns(numeric_column_embeddings=numeric_embeddings,
-                                                                   string_column_embeddings=string_embeddings)
+    def get_cleaning_recommendation(self, entity_df: pd.DataFrame):
+        # Get embeddings for columns
+        numeric_embeddings, string_embeddings = self.compute_cleaning_content_embeddings(entity_df=entity_df)
+        #Get the average of the values for the string embeddings as well as the numerical embeddings
+        array_sizes = {}
 
-        get corresponding table uris
+        for key, value in string_embeddings.items():
+                array_sizes[key] = len(value)
+
+                print("Array sizes:", array_sizes)
+        if string_embeddings:
+            string_embeddings_avg = np.mean(list(string_embeddings.values()), axis=0)
+        else:
+            string_embeddings_avg = np.zeros(300)
+        if numeric_embeddings:
+            numeric_embeddings_avg = np.mean(list(numeric_embeddings.values()), axis=0)
+        else:
+            numeric_embeddings_avg = np.zeros(300)
+        embedding = np.concatenate((string_embeddings_avg, numeric_embeddings_avg))
+        print(numeric_embeddings_avg.size, string_embeddings_avg.size,embedding.size)
+        # Make prediction
+        probability = self.cleaning_recommender.predict(np.array(embedding).reshape(1, -1))[0]
+        print('pred:',probability)
+        # Create an index array
+        index = np.array(['SimpleImputer-median', 'SimpleImputer-constant', 'SimpleImputer-mean',
+                          'SimpleImputer-most_frequent', 'fill-backfill','fill-bfill',
+                          'fill-ffill','fill-mean', 'fill-median', 'fill-mode', 'fill-outlier', 'fill-pad', 'interpolate', 'IterativeImputer',
+                          'KNNImputer'])
+        # Set the index of the array
+        probability = pd.DataFrame(probability)
+        probability.index = index
+        probability.columns = ['probability']
+        #probability = probability.drop(index='drop', axis=0)
+        if string_embeddings:
+            #List of operations incompatible with strings
+            operations = ['interpolate', 'fill-mean', 'fill-median', 'SimpleImputer-constant',
+                          'SimpleImputer-most_frequent', 'IterativeImputer', 'KNNImputer']
+            probability = probability.drop(index=operations, axis=0)
+
+
+        probability.sort_values('probability', inplace=True, ascending=False)
+        # print('prob', probability)
+        return probability
+
+        # get corresponding table uris
         def get_table_uri(column_uri):
             return column_uri.replace(column_uri.split('/')[-1], '')[:-1]
 
         similar_table_uris = {key: get_table_uri(value) for key, value in similar_columns_uris.items()}
         similar_table_uris = Counter(
             similar_table_uris.values())  # count similar tables and sort by most occurring tables
-        return tuple(dict(sorted(similar_table_uris.items(), key=lambda item: item[1], reverse=True)).keys())"""
-        return entity_df
+        return tuple(dict(sorted(similar_table_uris.items(), key=lambda item: item[1], reverse=True)).keys())
+
+
 
     def get_feature_selection_score(self, task: str, entity_df: pd.DataFrame, dependent_variable: str):
 

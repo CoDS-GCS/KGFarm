@@ -12,6 +12,7 @@ from operations.template import *
 from sklearn.preprocessing import *
 from matplotlib import pyplot as plt
 from helpers.helper import connect_to_stardog
+from sklearn.impute import  SimpleImputer, KNNImputer
 from sklearn.feature_selection import SelectKBest, f_classif
 from operations.recommendation.recommender import Recommender
 from feature_discovery.src.graph_builder.governor import Governor
@@ -688,7 +689,7 @@ class KGFarm:
             if na_type in {'?', '', ' '}:
                 df.replace(na_type, np.nan, inplace=True)
             else:
-                df.replace('(?i)' + na_type, np.nan, inplace=True, regex=True)
+                df.replace(r'(^)' + na_type + r'($)', np.nan, inplace=True, regex=True)
 
         columns = pd.DataFrame(df.isnull().sum())
         columns.columns = ['Missing values']
@@ -698,7 +699,8 @@ class KGFarm:
         columns.reset_index(drop=True, inplace=True)
         return columns
 
-    def recommend_cleaning_operations(self, entity_df: pd.DataFrame, visualize_missing_data: bool = True,
+    def recommend_cleaning_operations(self, entity_df: pd.DataFrame, visualize_missing_data: bool = False,
+                                      top_k: int = 10,
                                       show_query: bool = False):
         """
         1. visualize missing data
@@ -738,109 +740,8 @@ class KGFarm:
             ax.tick_params(axis='x', labelrotation=90, labelsize=5.5)
             plt.show()
 
-        """
-        def recommend_cleaning_operations_for_unseen_data(list_of_similar_tables: list, display: bool):
-            recommendations = []
-            for recommended_table in tqdm(list_of_similar_tables):
-                try:
-                    recommendations.append(get_data_cleaning_recommendation(self.recommender_config,
-                                                                            table_id=recommended_table,
-                                                                            show_query=display))
-                except StardogException:
-                    continue
-                display = False
-            if len(recommendations) == 0:
-                return False
-            return pd.concat(recommendations).reset_index(drop=True)
-        """
-        # TODO: fix and test formatting for interpolation
-        """
-        def reformat_recommendations(df: pd.DataFrame):
-            def format_columns(c: str):
-                if isinstance(c, str):
-                    return urllib.parse.unquote_plus(c).split('/')[-1]
-                else:
-                    return list(columns_to_be_cleaned['Feature'])
-
-            df['Feature'] = df['Column_id'].apply(lambda x: format_columns(x))
-            df = df.drop('Column_id', axis=1).dropna(how='any').reset_index(drop=True)
-
-            pipeline = None
-            operation = None
-            parameters_per_pipeline = {}
-            params = {}
-            features = []
-
-            for row_number, recommendation_info in df.to_dict('index').items():
-                if isinstance(recommendation_info['Feature'], list):
-                    continue
-                if pipeline == recommendation_info['Pipeline'] and operation == data_cleaning_operation_mapping.get(
-                        recommendation_info['Function']):
-                    params.update({recommendation_info['Feature']: recommendation_info['Value']})
-                    features.append(recommendation_info['Feature'])
-                    if row_number == len(df) - 1:  # save for last record
-                        parameters_per_pipeline[pipeline] = [operation, features, params]
-                else:
-                    if row_number == 0:  # first pipeline
-                        pipeline = recommendation_info['Pipeline']
-                        operation = data_cleaning_operation_mapping.get(recommendation_info['Function'])
-                        features = [recommendation_info['Feature']]
-                        params.update({recommendation_info['Feature']: recommendation_info['Value']})
-                        continue
-
-                    if row_number == len(df) - 1:  # save for last record
-                        parameters_per_pipeline[pipeline] = [operation, features, params]
-                    else:
-                        # save current pipeline_info
-                        parameters_per_pipeline[pipeline] = [operation, features, params]
-                        # update new pipeline
-                        pipeline = recommendation_info['Pipeline']
-                        operation = data_cleaning_operation_mapping.get(recommendation_info['Function'])
-                        features = [recommendation_info['Feature']]
-                        params = {recommendation_info['Feature']: recommendation_info['Value']}
-
-            operation = []
-            params = []
-            features = []
-            for row in list(parameters_per_pipeline.values()):
-                operation.append(row[0])
-                features.append(row[1])
-                params.append(row[2])
-
-            df = pd.DataFrame({'Operation': operation,
-                               'Feature': features,
-                               'Parameters': params,
-                               'Pipeline': list(parameters_per_pipeline.keys())})
-
-            # check if features are present in actual entity_df
-            updated_params = []
-            for row_number, recommendation_info in df.to_dict('index').items():
-                features = recommendation_info['Feature']
-                parameters = recommendation_info['Parameters']
-                if '<src.Calls' in parameters:
-                    df.drop(index=row_number, axis=1, inplace=True)
-                    continue
-                flag = True
-                params = {}
-                for f in features:
-                    if f.replace(' ', '') in entity_df.columns:
-                        features[features.index(f)] = f.replace(' ', '')
-                        value = parameters.get(f)
-                        params.update({f.replace(' ', ''): value})
-                    else:
-                        flag = False
-                if not flag:
-                    df.drop(index=row_number, axis=1, inplace=True)
-                    continue
-                updated_params.append(params)
-
-            df['Parameters'] = updated_params
-            return df.dropna(how='any').reset_index(drop=True)
-        """
-
         print('scanning missing values')
         columns_to_be_cleaned = self.get_columns_to_be_cleaned(entity_df)
-
         if visualize_missing_data:
             plot_heat_map(df=entity_df)
             plot_bar_graph(columns=columns_to_be_cleaned)
@@ -848,61 +749,13 @@ class KGFarm:
         if len(columns_to_be_cleaned) == 0:
             print('nothing to clean')
             return entity_df
+        
+        similar_tables = self.recommender.get_cleaning_recommendation(entity_df[columns_to_be_cleaned['Feature']])
+        print('Suggestions are:', similar_tables)
+        print(similar_tables.columns)
+        return similar_tables
 
-        table_id = self.__check_if_profiled(df=entity_df)
-
-        if table_id is not False:  # seen data
-            if isinstance(table_id, tuple):
-                recommendations_for_enriched_tables = []
-                for ids in table_id:
-                    recommendations_for_enriched_tables.append(get_data_cleaning_recommendation(self.config,
-                                                                                                table_id=ids,
-                                                                                                show_query=show_query))
-                data_cleaning_info = pd.concat(recommendations_for_enriched_tables)
-
-            else:
-                data_cleaning_info = get_data_cleaning_recommendation(self.config, table_id=table_id,
-                                                                      show_query=show_query)
-
-            # reformat seen cleaning info
-            data_cleaning_info['Parameters'] = data_cleaning_info.apply(lambda x: {x.Parameter: x.Value}, axis=1)
-            data_cleaning_info['Operation'] = data_cleaning_info['Function'].apply(
-                lambda x: data_cleaning_operation_mapping.get(x))
-            data_cleaning_info['Feature'] = data_cleaning_info['Column_id'].apply(
-                lambda x: list(columns_to_be_cleaned['Feature']))
-            data_cleaning_info = data_cleaning_info[['Operation', 'Feature', 'Parameters', 'Pipeline']]
-            return data_cleaning_info
-
-        elif table_id is False:  # unseen data
-            print('finding similar columns and tables to entity dataframe')
-            similar_tables = self.recommender.get_cleaning_recommendation(
-                entity_df[columns_to_be_cleaned['Feature']])  # align
-            print('Suggestions are:', similar_tables)
-            return similar_tables
-            # if len(similar_tables) < top_k:
-            #     top_k = len(similar_tables)
-            #
-            # similar_tables = similar_tables[:top_k]
-            #
-            # if len(similar_tables) == 0:
-            #     print('no recommendations, try using kgfarm.clean()')
-            #     return
-            #
-            # raw_recommendations = recommend_cleaning_operations_for_unseen_data(list_of_similar_tables=similar_tables,
-            #                                                                     display=show_query)  # query
-            #
-            # if raw_recommendations is False or raw_recommendations.empty:
-            #     print('no recommendations, try using kgfarm.clean()')
-            #     return
-            # else:
-            #     cleaning_recommendations = reformat_recommendations(df=raw_recommendations)
-            #     if cleaning_recommendations.empty:
-            #         print('no recommendations, try using kgfarm.clean()')
-            #         return
-            #     else:
-            #         return cleaning_recommendations
-
-    def clean(self, entity_df: pd.DataFrame, cleaning_info: pd.Series = None, technique: str = None):
+    def clean(self, entity_df: pd.DataFrame, technique: pd.DataFrame = None):
         """
         cleans entity_df from info coming from kgfarm.recommend_cleaning_operations
         """
@@ -913,72 +766,123 @@ class KGFarm:
                 print('\nall features look clean')
             else:
                 print(f'\n{uncleaned_features} are still uncleaned')
+                return 1
 
-        if cleaning_info is not None:
-            if cleaning_info['Operation'] == 'Fill missing values':
-                entity_df.fillna(cleaning_info['Parameters'], inplace=True)
-                print(f'filled missing values for {cleaning_info["Feature"]} feature(s)')
-            elif cleaning_info['Operation'] == 'Interpolate':
-                params = cleaning_info['Parameters']
-                method = params.get('method')
-                print(f'interpolated missing values for {cleaning_info["Feature"]} feature(s)')
-                entity_df.interpolate(method=method, inplace=True)
-            else:
-                features = list(cleaning_info['Feature'])
-                entity_df.dropna(subset=features, how='any', inplace=True)
-                print(f'dropped missing values for {cleaning_info["Feature"]} feature(s)')
-
-            check_for_uncleaned_features(df=entity_df)
-            return entity_df
-
-        elif technique is not None:  # clean by human-in-the-loop
-            columns = list(self.get_columns_to_be_cleaned(df=entity_df)['Feature'])
-            if technique == 'drop':
-                entity_df.dropna(how='any', inplace=True)
-                entity_df.reset_index(drop=True, inplace=True)
-                print(f'missing values from {columns} were dropped')
-                check_for_uncleaned_features(df=entity_df)
-                return entity_df
-            elif technique == 'fill' or technique == 'quick clean':
-                def get_mode(feature: pd.Series):  # fill categorical data with mode
-                    return feature.mode()[0]
-
-                if technique == 'quick clean':
-                    for column in tqdm(columns):
-                        mode = get_mode(entity_df[column])
-                        entity_df[column].fillna(mode, inplace=True)
+        def apply_operation(technique, entity_df):
+            if technique is not None:  # clean by human-in-the-loop
+                columns = list(self.get_columns_to_be_cleaned(df=entity_df)['Feature'])
+                #Subset_df is columns in the original df that need to be cleaned
+                subset_df = entity_df[columns]
+                print('technique', technique, type(technique))
+                if technique == 0:
+                    print('The data is clean')
                     return entity_df
-
-                fill_value = input(
-                    "Enter the value to fill the missing data or 'mean', 'median', 'mode' to fill by statistics")
-                if fill_value not in {'mean', 'median', 'mode'}:  # fill constant value
-                    entity_df.fillna(fill_value, inplace=True)
-                else:
-                    if fill_value == 'median':
-                        entity_df.fillna(entity_df.median(), inplace=True)
-                    elif fill_value == 'mean':
-                        entity_df.fillna(entity_df.mean(), inplace=True)
-                    else:
-                        for column in tqdm(columns):
-                            mode = get_mode(entity_df[column])
-                            entity_df[column].fillna(mode, inplace=True)
-
-                entity_df.reset_index(drop=True, inplace=True)
-                print(f'missing values from {columns} were filled with {fill_value}')
-                check_for_uncleaned_features(df=entity_df)
-                return entity_df
-            elif technique == 'interpolate':
-                try:
-                    entity_df.interpolate(inplace=True)
+                elif technique == 'drop':
+                    entity_df.dropna(how='any', inplace=True)
                     entity_df.reset_index(drop=True, inplace=True)
-                    print(f'missing values from {columns} were interpolated')
-                except TypeError:
-                    print('only numerical features can be interpolated')
-                check_for_uncleaned_features(df=entity_df)
+                    print(f'missing values from {columns} were dropped')
+                    check_for_uncleaned_features(df=entity_df)
+                    df_imputed = entity_df.copy()
+
+                elif technique.__contains__('fill'):
+                    def fillna_median(column):
+                        median = column.median()
+                        return column.fillna(median, inplace=True)
+                    def fillna_mean(column):
+                        mean = column.mean()
+                        return column.fillna(mean, inplace=True)
+                    def fillna_mode(column):
+                        mode = column.mode()
+                        return column.fillna(mode, inplace=True)
+
+                    if technique == 'fill-median':
+                        subset_df.apply(fillna_median)
+                    elif technique == 'fill-mean':
+                        subset_df.apply(fillna_mean)
+                    elif technique == 'fill-mode':
+                        subset_df.apply(fillna_mode)
+                    elif technique == 'fill-outlier':
+                        object_cols = subset_df.select_dtypes(include=['object']).columns
+                        subset_df[object_cols] = subset_df[object_cols].fillna(value='x')
+                        subset_df = subset_df.fillna(value=0)
+                    print('resetting')
+                    subset_df.reset_index(drop=True, inplace=True)
+                    print('check for unclean')
+                    check_for_uncleaned_features(df=subset_df)
+                    df_imputed = subset_df.copy()
+                elif technique == 'interpolate':
+                    try:
+                        subset_df.interpolate(axis=1, inplace=True)
+                    except TypeError:
+                        print('only numerical features can be interpolated')
+                    check = check_for_uncleaned_features(df=subset_df)
+                    count = 0
+
+                    while check == 1 and count<10:
+                        print(subset_df.isnull())
+                        print('reinterpolating...')
+                        count = count + 1
+                        if count%2 ==0:
+                            print('count',count)
+                            subset_df.interpolate(inplace=True)
+                            check = check_for_uncleaned_features(df=subset_df)
+                        else:
+                            print('count',count)
+                            subset_df.interpolate(limit_direction='backward', inplace=True)
+                            check = check_for_uncleaned_features(df=subset_df)
+                    df_imputed = subset_df.copy()
+
+                elif technique.__contains__('SimpleImputer'):
+                    try:
+                        if technique == 'SimpleImputer-median':
+                            imputer = SimpleImputer(strategy='median')
+                            imputer.fit(subset_df)
+                            df_imputed = imputer.transform(subset_df)
+                        elif technique == 'SimpleImputer-most_frequent':
+                            imputer = SimpleImputer(strategy='most_frequent')
+                            imputer.fit(subset_df)
+                            df_imputed = imputer.transform(subset_df)
+                        elif technique == 'SimpleImputer-constant':
+                            imputer = SimpleImputer(strategy='constant')
+                            imputer.fit(subset_df)
+                            df_imputed = imputer.transform(subset_df)
+                        else:
+                            imputer = SimpleImputer(strategy='mean')
+                            imputer.fit(subset_df)
+                            df_imputed = imputer.transform(subset_df)
+                    except TypeError:
+                        print('only numerical features can be interpolated')
+                    check_for_uncleaned_features(df=subset_df)
+                elif technique == 'IterativeImputer':
+                    imputer = IterativeImputer(BayesianRidge())
+                    imputer.fit(subset_df)
+                    df_imputed = imputer.transform(subset_df)
+                    check_for_uncleaned_features(df=X_imputed)
+                    #return X_imputed
+                elif technique == 'KNNImputer':
+                    try:
+                        #Divide the columns and values
+                        col = subset_df.columns
+                        imputer = KNNImputer()
+                        subset_df = imputer.fit_transform(subset_df)
+                        df_imputed = pd.DataFrame(subset_df, columns=col)
+                        check_for_uncleaned_features(df=df_imputed)
+                    except TypeError:
+                        print('only numerical features can be interpolated')
+                else:
+                    if technique not in {'drop', 'fill', 'interpolate', 'imputer'}:
+                        raise ValueError("technique must be one out of 'drop', 'fill', 'interpolate, 'imputer''")
+                # create a new dataframe with the imputed values
+                df_imputed = pd.DataFrame(df_imputed, columns=columns)
+
+                # merge the imputed values back into the original dataframe
+                entity_df[columns] = df_imputed
                 return entity_df
-            else:
-                if technique not in {'drop', 'fill', 'interpolate'}:
-                    raise ValueError("technique must be one out of 'drop', 'fill' or 'interpolate'")
+
+        entity_df = apply_operation(technique, entity_df)#.index[0]
+        return entity_df
+
+
 
     """
     def recommend_features_to_be_selected(self, entity_df: pd.DataFrame, dependent_variable: str, k: int):
