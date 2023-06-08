@@ -380,6 +380,55 @@ def get_features_to_drop(config, table_id, show_query):
     return execute_query(config, query)
 
 
+def get_cleaning_on_tables(config):
+    query = """
+    SELECT ?Table ?Cleaning_Op ?text (count(?Pipeline_id) AS ?count)
+    WHERE
+    {
+    # query pipeline-default graph
+        ?Pipeline_id            rdf:type                kglids:Pipeline     ;
+                                rdfs:label              ?Pipeline           . 
+        # querying named-graphs for pipeline               
+        {
+            GRAPH ?Pipeline_id
+            {     
+                ?Statement_2        pipeline:readsTable     ?Table               .
+                ?Statement_3        pipeline:callsClass     ?Class               ;
+                                    pipeline:hasText         ?text   ;
+                                    pipeline:hasParameter     ?p.
+
+
+                FILTER ((regex(str(?p), 'strategy') && (regex(str(?Class), 'http://kglids.org/resource/library/sklearn/impute/SimpleImputer')) && 
+                            (regex(str(?text), 'mean')||regex(str(?text), 'median') || regex(str(?text), 'constant')||regex(str(?text), 'most_frequent')||
+                            regex(str(?text), '()')))
+                        || (regex(str(?Class), 'http://kglids.org/resource/library/sklearn/impute/KNNImputer')) 
+                        || (regex(str(?Class), 'http://kglids.org/resource/library/sklearn/impute/IterativeImputer'))).
+                BIND(?Class AS ?Cleaning_Op )
+            }
+        }
+        Union
+        {
+            GRAPH ?Pipeline_id
+            {
+                ?Statement          pipeline:callsFunction  ?Function_id        ;
+                                    pipeline:hasText         ?text   .
+                ?Statement_2        pipeline:readsTable     ?Table               .
+            }
+            {
+                ?Function_id kglids:isPartOf <http://kglids.org/resource/library/pandas/DataFrame>.
+                FILTER(?Function = "pandas.DataFrame.interpolate" || ?Function = "pandas.DataFrame.fillna" || ?Function = "pandas.DataFrame.dropna")
+                BIND(STRAFTER(str(?Function_id), str(lib:)) as ?Function1)             
+                BIND(REPLACE(?Function1, '/', '.', 'i') AS ?Function)
+                BIND(?Function_id AS ?Cleaning_Op ) 
+            }
+        }        
+    }
+    Group by ?Cleaning_Op ?Table ?text ?Statement ?p
+    ORDER BY ?Table  DESC(?count)
+    """
+
+    return execute_query(config, query)
+
 def get_data_cleaning_info(config, table_id, show_query):
     query = """
     SELECT DISTINCT ?Table ?Function ?Parameter ?Value ?Feature_view

@@ -11,7 +11,7 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from helpers.helper import connect_to_stardog
-from operations.template import get_cleaning_on_columns
+from operations.template import get_cleaning_on_tables
 from sklearn.pipeline import Pipeline
 
 
@@ -53,7 +53,7 @@ class Recommender:
             return table_id
 
         def clean_col():
-            cleaning_table = get_cleaning_on_columns(self.config)
+            cleaning_table = get_cleaning_on_tables(self.config)
             print('ct',cleaning_table)
 
             def change_value(row):
