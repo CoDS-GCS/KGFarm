@@ -4,17 +4,16 @@
     </a>
 </p>
 
-### <p align="center"><b>A Holistic Platform for Data Preparation and Feature Discovery</b></p>
+### <p align="center"><b>A Holistic Platform for Automating Data Preparation</b></p>
 <p align="center">
 <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue"/></a>
 </p>
 
 ## 📐 System Design
-<p align="center"><img src="docs/graphics/KGFarm.jpeg" alt="kgfarm" height="450" width="400"/></p>
+<p align="center"><img src="docs/graphics/KGFarm.png" alt="kgfarm" height="450" width="400"/></p>
 
 
-<p align="justify">Data preparation and feature discovery are critical for improving model accuracy. However, data scientists often work independently and spend most of their time writing code for these steps without support for auto-learning from each other's work. KGFarm is the first holistic platform automating data preparation and feature discovery based on the semantics of seen pipelines applied to different datasets. This semantics is captured in a knowledge graph (KG).
-KGFarm provides seamless integration with existing data science platforms to effectively enable scientific communities to automatically discover and learn about each other's work. Thus, KGFarm enables data scientists to quickly automate pipelines with high accuracy for seen and unseen datasets. Our comprehensive evaluation used a KG constructed from Kaggle datasets and pipelines. KGFarm scales better than existing methods in recommending data transformation, cleaning, and feature selection while achieving better or comparable accuracy.</p>
+<p align="justify">Data preparation and feature engineering are critical for improving model accuracy. However, data scientists often work independently and spend most of their time writing code for these steps without support for automatic learning from each other’s work. To address this challenge we developed KGFarm, a holistic platform automating data preparation and feature engineering based on machine learning models trained using the semantics of data science artifacts, including pipeline scripts applied to different datasets. We capture the semantics of these artifacts as a knowledge graph (KG). KGFarm provides seamless integration with existing data science platforms, enabling scientific communities to automatically discover and learn about each other’s work. We trained KGFarm’s models on top of a KG constructed from top-rated 1000 Kaggle datasets and 13800 pipeline scripts with the highest number of votes. KGFarm is tested on <a href="experiments/README.md">130 unseen datasets</a> collected from different AutoML benchmarks to compare KGFarm against the state-of-the-art (SOTA) systems in data cleaning, transformation, and feature engineering. Our experiments show that KGFarm consumes significantly less time and memory w.r.t the SOTA systems while achieving comparable or better accuracy than them. </p>
 
 ## ⚡ Quick Start
 Try the sample <b>[KGFarm Colab notebook](https://colab.research.google.com/drive/1u4z4EKGd8G1ju61Q3sPk5fH9BrMp8IRM?usp=sharing)</b> for a quick hands-on! 
@@ -49,8 +48,8 @@ python build.py -db Database_name
 
 ## 🧪 Experiments 
 
-We compared KGFarm to several related system. More information regarding our evaluations per task is available below:
-1. [Data transformation](https://github.com/CoDS-GCS/KGFarm/blob/standalone/experiments/results/evaluations%20KGFarm%20PVLDB%202023%20-%20Data%20transformation.pdf)
+We compared KGFarm to several state-of-the-art systems on [130 open datasets](experiments/README.md). More information regarding our evaluations per task is available below:
+1. [Data transformation](experiments/results/data_transformation.pdf)
 2. [Data cleaning](https://github.com/CoDS-GCS/KGFarm/blob/standalone/experiments/results/evaluations%20KGFarm%20PVLDB%202023%20-%20Data%20cleaning.pdf)
 3. [Feature selection](https://github.com/CoDS-GCS/KGFarm/blob/standalone/experiments/results/evaluations%20KGFarm%20PVLDB%202023%20-%20Feature%20selection.pdf)
 
