@@ -396,7 +396,7 @@ def get_cleaning_on_tables(config):
                 ?Statement_3        pipeline:callsClass     ?Class               ;
                                     pipeline:hasText         ?text   ;
                                     pipeline:hasParameter     ?p.
-
+    
 
                 FILTER ((regex(str(?p), 'strategy') && (regex(str(?Class), 'http://kglids.org/resource/library/sklearn/impute/SimpleImputer')) && 
                             (regex(str(?text), 'mean')||regex(str(?text), 'median') || regex(str(?text), 'constant')||regex(str(?text), 'most_frequent')||
@@ -421,7 +421,8 @@ def get_cleaning_on_tables(config):
                 BIND(REPLACE(?Function1, '/', '.', 'i') AS ?Function)
                 BIND(?Function_id AS ?Cleaning_Op ) 
             }
-        }        
+        }
+                
     }
     Group by ?Cleaning_Op ?Table ?text ?Statement ?p
     ORDER BY ?Table  DESC(?count)
@@ -429,6 +430,35 @@ def get_cleaning_on_tables(config):
 
     return execute_query(config, query)
 
+def get_outlier_cleaning(config):
+    query = """
+    SELECT ?Table ?Cleaning_Op  (count(?Pipeline_id) AS ?count) 
+        WHERE
+        {
+        # query pipeline-default graph
+            ?Pipeline_id            rdf:type                kglids:Pipeline     ;
+                                    rdfs:label              ?Pipeline           . 
+            # querying named-graphs for pipeline               
+
+            GRAPH ?Pipeline_id
+            {     
+                ?Statement_2        pipeline:readsTable     ?Table               .
+                ?Statement_3        pipeline:callsClass     ?Class               .
+
+
+                FILTER ((regex(str(?Class), 'http://kglids.org/resource/library/sklearn/neighbors/LocalOutlierFactor'))).
+                        # || (regex(str(?Class), 'http://kglids.org/resource/library/sklearn/ensemble/IsolationForest')) 
+                        # || (regex(str(?Class), 'http://kglids.org/resource/library/sklearn/svm/OneClassSVM'))).
+                BIND(?Class AS ?Cleaning_Op )
+            }
+
+        }
+        Group by ?Cleaning_Op ?Table  
+        ORDER BY ?Table  DESC(?count)
+    """
+
+    return execute_query(config, query)
+    
 def get_data_cleaning_info(config, table_id, show_query):
     query = """
     SELECT DISTINCT ?Table ?Function ?Parameter ?Value ?Feature_view
