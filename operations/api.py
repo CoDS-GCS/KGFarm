@@ -12,6 +12,7 @@ from operations.template import *
 from sklearn.preprocessing import *
 from matplotlib import pyplot as plt
 from helpers.helper import connect_to_stardog
+from sklearn.neighbors import LocalOutlierFactor
 from sklearn.impute import  SimpleImputer, KNNImputer
 from sklearn.feature_selection import SelectKBest, f_classif
 from operations.recommendation.recommender import Recommender
@@ -755,7 +756,7 @@ class KGFarm:
         print(similar_tables.columns)
         return similar_tables
 
-    def clean(self, entity_df: pd.DataFrame, technique: pd.DataFrame = None):
+    def clean(self, entity_df: pd.DataFrame, technique: pd.DataFrame = None, clean_outliers = True):
         """
         cleans entity_df from info coming from kgfarm.recommend_cleaning_operations
         """
@@ -773,102 +774,66 @@ class KGFarm:
                 columns = list(self.get_columns_to_be_cleaned(df=entity_df)['Feature'])
                 #Subset_df is columns in the original df that need to be cleaned
                 subset_df = entity_df[columns]
+                # Check if there are string columns
+                object_cols = subset_df.select_dtypes(include=['object']).columns
                 print('technique', technique, type(technique))
                 if technique == 0:
                     print('The data is clean')
                     return entity_df
-                elif technique == 'drop':
-                    entity_df.dropna(how='any', inplace=True)
-                    entity_df.reset_index(drop=True, inplace=True)
-                    print(f'missing values from {columns} were dropped')
-                    check_for_uncleaned_features(df=entity_df)
-                    df_imputed = entity_df.copy()
-
                 elif technique.__contains__('fill'):
-                    def fillna_median(column):
-                        median = column.median()
-                        return column.fillna(median, inplace=True)
                     def fillna_mean(column):
                         mean = column.mean()
                         return column.fillna(mean, inplace=True)
-                    def fillna_mode(column):
-                        mode = column.mode()
-                        return column.fillna(mode, inplace=True)
-
-                    if technique == 'fill-median':
-                        subset_df.apply(fillna_median)
-                    elif technique == 'fill-mean':
-                        subset_df.apply(fillna_mean)
-                    elif technique == 'fill-mode':
-                        subset_df.apply(fillna_mode)
-                    elif technique == 'fill-outlier':
-                        object_cols = subset_df.select_dtypes(include=['object']).columns
+                    
+                    # If there are string columns, apply fill outlier
+                    if len(object_cols) > 0:
                         subset_df[object_cols] = subset_df[object_cols].fillna(value='x')
                         subset_df = subset_df.fillna(value=0)
-                    print('resetting')
+                
+                    else:
+                        subset_df.apply(fillna_mean)
+                    
                     subset_df.reset_index(drop=True, inplace=True)
                     print('check for unclean')
                     check_for_uncleaned_features(df=subset_df)
                     df_imputed = subset_df.copy()
                 elif technique == 'interpolate':
-                    try:
+                # If there are string columns, apply pad
+                    if len(object_cols) > 0:
+                        subset_df.interpolate(axis=1, inplace=True, method='pad')
+                    else:
                         subset_df.interpolate(axis=1, inplace=True)
-                    except TypeError:
-                        print('only numerical features can be interpolated')
-                    check = check_for_uncleaned_features(df=subset_df)
-                    count = 0
-
-                    while check == 1 and count<10:
-                        print(subset_df.isnull())
-                        print('reinterpolating...')
-                        count = count + 1
-                        if count%2 ==0:
-                            print('count',count)
-                            subset_df.interpolate(inplace=True)
-                            check = check_for_uncleaned_features(df=subset_df)
-                        else:
-                            print('count',count)
-                            subset_df.interpolate(limit_direction='backward', inplace=True)
-                            check = check_for_uncleaned_features(df=subset_df)
+                        check = check_for_uncleaned_features(df=subset_df)
+                        count = 0
+  
+                        while check == 1 and count<10:
+                            print(subset_df.isnull())
+                            print('reinterpolating...')
+                            count = count + 1
+                            if count%2 ==0:
+                                print('count',count)
+                                subset_df.interpolate(inplace=True)
+                                check = check_for_uncleaned_features(df=subset_df)
+                            else:
+                                print('count',count)
+                                subset_df.interpolate(limit_direction='backward', inplace=True)
+                                check = check_for_uncleaned_features(df=subset_df)
                     df_imputed = subset_df.copy()
 
-                elif technique.__contains__('SimpleImputer'):
-                    try:
-                        if technique == 'SimpleImputer-median':
-                            imputer = SimpleImputer(strategy='median')
-                            imputer.fit(subset_df)
-                            df_imputed = imputer.transform(subset_df)
-                        elif technique == 'SimpleImputer-most_frequent':
-                            imputer = SimpleImputer(strategy='most_frequent')
-                            imputer.fit(subset_df)
-                            df_imputed = imputer.transform(subset_df)
-                        elif technique == 'SimpleImputer-constant':
-                            imputer = SimpleImputer(strategy='constant')
-                            imputer.fit(subset_df)
-                            df_imputed = imputer.transform(subset_df)
-                        else:
-                            imputer = SimpleImputer(strategy='mean')
-                            imputer.fit(subset_df)
-                            df_imputed = imputer.transform(subset_df)
-                    except TypeError:
-                        print('only numerical features can be interpolated')
-                    check_for_uncleaned_features(df=subset_df)
-                elif technique == 'IterativeImputer':
-                    imputer = IterativeImputer(BayesianRidge())
-                    imputer.fit(subset_df)
-                    df_imputed = imputer.transform(subset_df)
-                    check_for_uncleaned_features(df=X_imputed)
-                    #return X_imputed
-                elif technique == 'KNNImputer':
-                    try:
-                        #Divide the columns and values
+                elif technique.__contains__('Imputer'):
+                    # If there are string columns, apply SimpleImputer with a most-frequent argument
+                    if len(object_cols) > 0:
+                        imputer = SimpleImputer(strategy='most_frequent')
+                        imputer.fit(subset_df)
+                        df_imputed = imputer.transform(subset_df)
+                    else:
+                    #Divide the columns and values
                         col = subset_df.columns
                         imputer = KNNImputer()
                         subset_df = imputer.fit_transform(subset_df)
                         df_imputed = pd.DataFrame(subset_df, columns=col)
                         check_for_uncleaned_features(df=df_imputed)
-                    except TypeError:
-                        print('only numerical features can be interpolated')
+                        
                 else:
                     if technique not in {'drop', 'fill', 'interpolate', 'imputer'}:
                         raise ValueError("technique must be one out of 'drop', 'fill', 'interpolate, 'imputer''")
@@ -880,8 +845,26 @@ class KGFarm:
                 return entity_df
 
         entity_df = apply_operation(technique, entity_df)#.index[0]
-        return entity_df
 
+        
+        if clean_outliers:
+            # Separate numerical columns
+            numerical_entity_df = entity_df.select_dtypes(include=['number'])
+            categorical_entity_df = entity_df.drop(numerical_entity_df.columns, axis=1)
+            
+            outlier_detection_method = self.recommender.apply_outlier_detection(numerical_entity_df)
+            if outlier_detection_method == 1:
+                outlier_model = LocalOutlierFactor(contamination = 0.05)
+                outlier_scores = outlier_model.fit_predict(numerical_entity_df)
+                # Replacing outliers with NA
+                numerical_entity_df[outlier_scores == -1] = 'none'
+            # Put numerical and categorical back together
+            entity_df = pd.concat([categorical_entity_df, numerical_entity_df], axis=1)
+            if check_for_uncleaned_features(entity_df) == 1:
+                # Reapply cleaning
+                entity_df = apply_operation(technique, entity_df)
+        return entity_df
+        
 
 
     """

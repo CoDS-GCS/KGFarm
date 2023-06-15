@@ -58,41 +58,12 @@ class Recommender:
 
             def change_value(row):
                 if row['Cleaning_Op'] == 'http://kglids.org/resource/library/pandas/DataFrame/fillna':
-                    if row['text'].__contains__('median'):
-                        row['Cleaning_Op'] = 'fill-median'
-                    elif row['text'].__contains__('mode'):
-                        row['Cleaning_Op'] = 'fill-mode'
-                    elif row['text'].__contains__('mean'):
-                        row['Cleaning_Op'] = 'fill-mean'
-                    elif row['text'].__contains__('ffill'):
-                        row['Cleaning_Op'] = 'fill-ffill'
-                    elif row['text'].__contains__('backfill'):
-                        row['Cleaning_Op'] = 'fill-backfill'
-                    elif row['text'].__contains__('bfill'):
-                        row['Cleaning_Op'] = 'fill-bfill'
-                    elif row['text'].__contains__('pad'):
-                        row['Cleaning_Op'] = 'fill-pad'
-                    elif row['text'].__contains__('fillna(0') or row['text'].__contains__('fillna(value=0') or\
-                            row['text'].__contains__('fillna(value="0') or row['text'].__contains__("fillna(value='0") or\
-                            row['text'].lower().__contains__('fillna("none') or row['text'].lower().__contains__("fillna('none") or\
-                            row['text'].lower().__contains__('fillna("null') or row['text'].lower().__contains__("fillna('null") or \
-                            row['text'].lower().__contains__('fillna("missing') or row['text'].lower().__contains__("fillna('missing") or \
-                            row['text'].lower().__contains__('fillna("unknown') or row['text'].lower().__contains__("fillna('unknown") or \
-                            row['text'].__contains__("fillna(''"):
-                        row['Cleaning_Op'] = 'fill-outlier'
-                    else:
-                        row['Cleaning_Op'] = 'To be dropped'
-                elif row['Cleaning_Op'] == 'http://kglids.org/resource/library/sklearn/impute/SimpleImputer':
-                    if row['text'].__contains__('median'):
-                        row['Cleaning_Op'] = 'SimpleImputer-median'
-                    elif row['text'].__contains__('most_frequent'):
-                        row['Cleaning_Op'] = 'SimpleImputer-most_frequent'
-                    elif row['text'].__contains__('mean'):
-                        row['Cleaning_Op'] = 'SimpleImputer-mean'
-                    elif row['text'].__contains__('constant'):
-                        row['Cleaning_Op'] = 'SimpleImputer-constant'
-                    else:
-                        row['Cleaning_Op'] = 'To be dropped'
+                    row['Cleaning_Op'] = 'fill'
+                elif row['Cleaning_Op'] == 'http://kglids.org/resource/library/sklearn/impute/SimpleImputer' or\
+                    row['Cleaning_Op'] == 'http://kglids.org/resource/library/sklearn/impute/IterativeImputer' or\
+                    row['Cleaning_Op'] == 'http://kglids.org/resource/library/sklearn/impute/KNNImputer':
+                    row['Cleaning_Op'] = 'Imputer'
+
                 elif row['Cleaning_Op'] == 'http://kglids.org/resource/library/pandas/DataFrame/dropna':
                     row['Cleaning_Op'] = 'To be dropped'
                 return row
@@ -193,13 +164,13 @@ class Recommender:
         if export:
             if not os.path.exists('out'):
                 os.mkdir('out')
-            joblib.dump(self.classifier, 'out/cleaning_{}.pkl'.format('test'), compress=9)
+            joblib.dump(self.classifier, 'out/cleaning_{}.pkl'.format('noargs'), compress=9)
 
 
 def build():
     recommender = Recommender()
     recommender.generate_modeling_data()
-    recommender.save(scores=recommender.train_test_evaluate_pivot(True))
+    recommender.save(scores=recommender.train_test_evaluate_pivot(False))
     print('done.')
 
 

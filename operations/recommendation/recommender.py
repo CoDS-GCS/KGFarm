@@ -15,7 +15,8 @@ from operations.recommendation.utils.column_embeddings import load_numeric_embed
 class Recommender:
     def __init__(self):
         # KGFarm cleaning recommendation
-        self.cleaning_recommender = joblib.load('operations/recommendation/utils/models/cleaning_test.pkl')
+        self.cleaning_recommender = joblib.load('operations/recommendation/utils/models/cleaning.pkl')
+        self.outlier_cleaning_recommender = joblib.load('operations/recommendation/utils/models/outlier_cleaning.pkl')
         # KGFarm transformation recommendation
         self.numeric_transformation_recommender = joblib.load(
             'operations/recommendation/utils/models/transformation_recommender_numerical.pkl')
@@ -334,20 +335,17 @@ class Recommender:
         probability = self.cleaning_recommender.predict(np.array(embedding).reshape(1, -1))[0]
         print('pred:',probability)
         # Create an index array
-        index = np.array(['SimpleImputer-median', 'SimpleImputer-constant', 'SimpleImputer-mean',
-                          'SimpleImputer-most_frequent', 'fill-backfill','fill-bfill',
-                          'fill-ffill','fill-mean', 'fill-median', 'fill-mode', 'fill-outlier', 'fill-pad', 'interpolate', 'IterativeImputer',
-                          'KNNImputer'])
+        index = np.array(['Imputer', 'fill', 'interpolate'])
         # Set the index of the array
         probability = pd.DataFrame(probability)
         probability.index = index
         probability.columns = ['probability']
         #probability = probability.drop(index='drop', axis=0)
-        if string_embeddings:
-            #List of operations incompatible with strings
-            operations = ['interpolate', 'fill-mean', 'fill-median', 'SimpleImputer-constant',
-                          'SimpleImputer-most_frequent', 'IterativeImputer', 'KNNImputer']
-            probability = probability.drop(index=operations, axis=0)
+#        if string_embeddings:
+#            #List of operations incompatible with strings
+#            operations = ['interpolate', 'fill-mean', 'fill-median', 'SimpleImputer-constant',
+#                          'SimpleImputer-most_frequent', 'IterativeImputer', 'KNNImputer']
+#            probability = probability.drop(index=operations, axis=0)
 
 
         probability.sort_values('probability', inplace=True, ascending=False)
@@ -362,9 +360,45 @@ class Recommender:
         similar_table_uris = Counter(
             similar_table_uris.values())  # count similar tables and sort by most occurring tables
         return tuple(dict(sorted(similar_table_uris.items(), key=lambda item: item[1], reverse=True)).keys())
+        
+    def apply_outlier_detection(self, entity_df):
+        # Get embeddings for columns
+        numeric_embeddings, string_embeddings = self.compute_cleaning_content_embeddings(entity_df=entity_df)
+        
+        #print('emb', numeric_embeddings)
+        if len(numeric_embeddings) > 0:
+            numeric_embeddings_avg = np.mean(list(numeric_embeddings.values()), axis=0)
+            #print('outlier emb', numeric_embeddings_avg.reshape(1, -1))
+            y_pred = self.outlier_cleaning_recommender.predict(numeric_embeddings_avg.reshape(1, -1))
+            print('y_pred: ',y_pred)
+            return y_pred
+        else:
+            return 0
+    """
+    def apply_outlier_detection(self, entity_df):
+        # Get embeddings for columns
+        numeric_embeddings, string_embeddings = self.compute_cleaning_content_embeddings(entity_df=entity_df)
 
+        if numeric_embeddings:
+            numeric_embeddings_avg = np.mean(list(numeric_embeddings.values()), axis=0)
+        else:
+            numeric_embeddings_avg = np.zeros(300)
 
-
+        # Make prediction
+        probability = self.outlier_cleaning_recommender.predict(np.array(numeric_embeddings_avg).reshape(1, -1))[0]
+        print('pred:', probability)
+        # Create an index array
+        index = np.array(['http://kglids.org/resource/library/sklearn/ensemble/IsolationForest',
+                          'http://kglids.org/resource/library/sklearn/neighbors/LocalOutlierFactor',
+                          'http://kglids.org/resource/library/sklearn/svm/OneClassSVM','NoOutlier'])
+        # Set the index of the array
+        probability = pd.DataFrame(probability)
+        probability.index = index
+        probability.columns = ['probability']
+        probability.sort_values('probability', inplace=True, ascending=False)
+        # print('prob', probability)
+        return probability
+    """
     def get_feature_selection_score(self, task: str, entity_df: pd.DataFrame, dependent_variable: str):
 
         def get_bin_repr(val):
