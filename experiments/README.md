@@ -1,8 +1,6 @@
 # Experiments
 <p align="justify">KGFarm is evaluated against state-of-the-art on the <a href="benchmark/README.md">130 open datasets</a>. For data cleaning, we compare it against <a href="https://github.com/HoloClean/holoclean">HoloClean</a> a data cleaning system that uses statistical learning and inference to unify a range of data repairing methods, and <a href="https://github.com/awslabs/datawig">DataWig</a>, an open-source library that uses deep learning feature extractors to perform missing value imputations. For data transformation and feature engineering, we compare it against <a href="https://github.com/saket-maheshwary/AutoLearn">AutoLearn</a>, a regression-based feature learning algorithm that automates feature engineering, and <a href="https://www.ijcai.org/Proceedings/2017/0352.pdf">LFE*</a>, a meta-learning approach that automates data transformation for classification problems. <br><br>NOTE: All experiments have been executed on a machine running Ubuntu 20.04.4 LTS, with a 2.40 GHz Intel Core Processor CPU with 16 cores and 88.5 GB of RAM.</p>
 
-<hr/>
-
 ## Data Cleaning
 
 ![data_cleaning](../docs/graphics/experiment_results/data_cleaning.png)
