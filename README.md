@@ -50,7 +50,7 @@ python build.py -db Database_name
 We [evaluated](experiments/README.md) KGFarm to several state-of-the-art systems on [130 open datasets](experiments/benchmark/README.md). More information regarding our evaluations per task is available below:
 1. [Data transformation](experiments/results/data_transformation.pdf)
 2. [Data Cleaning](experiments/results/data_cleaning.pdf)
-3. [Feature Engineering](experiments/results/)
+3. [Feature Engineering](experiments/results/feature_engineering.pdf)
 
 ## <img src="docs/graphics/icons/youtube.svg" alt="youtube" height="20" width="29"> KGFarm Demo
 <a href="https://rebrand.ly/kgfarm"><img src="docs/graphics/thumbnails/kgfarm_tutorial.png"/></a>
