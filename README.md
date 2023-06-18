@@ -48,7 +48,7 @@ python build.py -db Database_name
 ## 🧪 Experiments 
 
 We [evaluated](experiments/README.md) KGFarm to several state-of-the-art systems on [130 open datasets](experiments/benchmark/README.md). More information regarding our evaluations per task is available below:
-1. [Data transformation](experiments/results/data_transformation.pdf)
+1. [Data Transformation](experiments/results/data_transformation.pdf)
 2. [Data Cleaning](experiments/results/data_cleaning.pdf)
 3. [Feature Engineering](experiments/results/feature_engineering.pdf)
 
