@@ -8,13 +8,13 @@
 
 ## Data Transformation
 ![data_transformation](../docs/graphics/experiment_results/data_transformation.png)
-<p align="justify">KGFarm vs. existing systems on multiple ML tasks on 13 datasets. (a) in the radar diagram, the outer numbers indicate different dataset IDs and the ticks inside the figure denote performance ranges of respective metrics, e.g., 0.2, 0.4, ..., etc. for F1 in each ML task per dataset. For any dataset, the system with the out most curve has the best performance. KGFarm outperforms LFE and AutoLearn in most cases. (b) and (c) the time and memory consumed per system to perform data transformation on the dataset and train the model. *F1 scores of LFE are reported by the authors, but its code is not available. KGFarm outperforms Autolearn in terms of time and memory performance.</p>
+<p align="justify">KGFarm vs. existing systems on multiple ML tasks on 13 datasets. (a) in the radar diagram, the outer numbers indicate different dataset IDs and the ticks inside the figure denote performance ranges of respective metrics, e.g., 0.2, 0.4, ..., etc. for F1 in each ML task per dataset. For any dataset, the system with the out most curve has the best performance. KGFarm outperforms LFE and AutoLearn in most cases. (b) and (c) the time and memory consumed per system to perform data transformation on the dataset and train the model. *F1 scores of LFE are reported by the authors, but its code is not available. KGFarm outperforms AutoLearn in terms of time and memory performance.</p>
 
 ## Feature Engnieering
 ![feature_engineering](../docs/graphics/experiment_results/feature_engineering_effectiveness.png)
-<p align="justify">KGFarm vs. AutoLean on multiple ML tasks on 104 datasets categorized into (a) Binary Classification Tasks, (b) Multi-Classification Tasks, and (c) Regression Tasks. After feature engineering, we trained using different ML and DL methods as indicated with variant colors. In the radar diagram, the outer numbers indicate different dataset IDs and the ticks inside the figure denote performance ranges of respective metrics. For any dataset, the system with the out most curve has the best performance. KGFarm outperforms AutoLearn in most cases.</p>
+<p align="justify">KGFarm vs. AutoLearn on multiple ML tasks on 104 datasets categorized into (a) Binary Classification Tasks, (b) Multi-Classification Tasks, and (c) Regression Tasks. After feature engineering, we trained using different ML and DL methods as indicated with variant colors. In the radar diagram, the outer numbers indicate different dataset IDs and the ticks inside the figure denote performance ranges of respective metrics. For any dataset, the system with the out most curve has the best performance. KGFarm outperforms AutoLearn in most cases.</p>
 
 <p align="center">
 <img src="../docs/graphics/experiment_results/feature_engineering_efficiency.png" alt="feature_engineering" width="50%", align="center">
 </p>
-<p align="justify">(a) Time and (b) Memory consumed for Feature Engineering. KGFarm consumes significantly less time and memory on average than AutoLean.</p>
+<p align="justify">(a) Time and (b) Memory consumed for Feature Engineering. KGFarm consumes significantly less time and memory on average than AutoLearn.</p>
