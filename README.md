@@ -43,7 +43,7 @@ python build.py -db Database_name
 * [X] Automated Feature Selection
 
 ## ⚙️ APIs & Library Interface
-KGFarm APIs are designed to promote seamless integration with conventional ML workflows. For taking advantage of KGFarm with your data, checkout [KGFarm_tutorial.ipynb](docs/concepts/KGFarm_tutorial.ipynb).
+KGFarm APIs are designed to promote seamless integration with conventional ML workflows. For taking advantage of KGFarm with your data, checkout [KGFarm_tutorial.ipynb](docs/KGFarm_tutorial.ipynb).
 
 ## 🧪 Experiments 
 
