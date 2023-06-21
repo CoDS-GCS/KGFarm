@@ -28,7 +28,7 @@ pip install -r requirements.txt
 stardog-admin server start
 ```
 3. Run KGFarm's [<code>graph_builder</code>](feature_discovery/src/graph_builder/build.py):<br/>
-for generating [<code>farm.ttl</code>](https://github.com/CoDS-GCS/KGFarm/blob/645f12dfd63bae0bd319401c2cf10f8378dd6679/feature_discovery/src/graph_builder/farm.ttl) and uploading it to the [stardog](https://cloud.stardog.com/)
+for augmenting the [LiDS](https://github.com/CoDS-GCS/KGFarm/blob/645f12dfd63bae0bd319401c2cf10f8378dd6679/feature_discovery/src/graph_builder/farm.ttl) graph and uploading it to the [stardog](https://cloud.stardog.com/)
 
 ```bash
 cd feature_discovery/src/graph_builder
@@ -36,14 +36,14 @@ python build.py -db Database_name
 ```
 4. Start using KGFarm APIs (checkout [<code>KGFarm_demo.ipynb</code>](KGFarm_demo.ipynb))
 
-## 🚧 Roadmap
+## 🚀 Functionalities
 
-* [X] Entity Extraction
-* [X] Dataset enrichment
-* [X] Data Cleaning
-* [X] Data Transformation
-* [X] Feature selection
-* [X] Feature engineering pipeline
+* [X] Automated Data Cleaning
+* [X] Automated Data Transformation
+* [X] Automated Feature Selection
+
+## ⚙️ APIs & Library Interface
+KGFarm APIs are designed to promote seamless integration with conventional ML workflows. For taking advantage of KGFarm with your data, checkout [KGFarm_tutorial.ipynb](docs/concepts/KGFarm_tutorial.ipynb).
 
 ## 🧪 Experiments 
 

@@ -306,18 +306,18 @@ class Recommender:
         if task == 'regression':
             print(f'loading operations/recommendation/utils/models/feature_selector_{task}.pkl')
             self.feature_selector = joblib.load(
-                f'../../operations/recommendation/utils/models/feature_selector_{task}.pkl')
+                f'operations/recommendation/utils/models/feature_selector_{task}.pkl')
         elif task == 'multiclass':
             print(
                 f'loading operations/recommendation/utils/models/feature_selector_{task.replace("-", "")}_classification.pkl')
             entity_df[dependent_variable] = LabelEncoder().fit_transform(entity_df[dependent_variable])
             self.feature_selector = joblib.load(
-                f'../../operations/recommendation/utils/models/feature_selector_{task}_classification.pkl')
+                f'operations/recommendation/utils/models/feature_selector_{task}_classification.pkl')
         elif task == 'binary':
             print(f'loading operations/recommendation/utils/models/feature_selector_{task}_classification.pkl')
             entity_df[dependent_variable] = LabelEncoder().fit_transform(entity_df[dependent_variable])
             self.feature_selector = joblib.load(
-                f'../../operations/recommendation/utils/models/feature_selector_{task}_classification.pkl')
+                f'operations/recommendation/utils/models/feature_selector_{task}_classification.pkl')
 
         numerical_features = [feature for feature in entity_df.columns if
                               feature != dependent_variable and pd.api.types.is_numeric_dtype(entity_df[feature])]
