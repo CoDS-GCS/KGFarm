@@ -5,11 +5,11 @@
 </p>
 
 ### <p align="center"><b>A Holistic Platform for Automating Data Preparation</b></p>
-<div style="text-align: center;">
-    <a href="TEST"><img src="https://github.com/CoDS-GCS/KGFarm/actions/workflows/apis.yml/badge.svg"></a>
-    <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue"/></a>
-</div>
 
+<p align="center">
+<a href="TEST"><img src="https://github.com/CoDS-GCS/KGFarm/actions/workflows/apis.yml/badge.svg"></a>
+<a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue"/></a>
+</p>
 
 
 ## 📐 System Design
