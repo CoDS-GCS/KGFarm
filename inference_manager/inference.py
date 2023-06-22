@@ -45,10 +45,10 @@ class InferenceManager:
                                          'sqrt': 'Sqrt',
                                          'Ordinal encoding': 'OrdinalEncoder',
                                          'Nominal encoding': 'OneHotEncoder'}
-        self.transformation_type = {'Log': 'unary transformation',
-                                    'Sqrt': 'unary transformation',
-                                    'OrdinalEncoder': 'ordinal encoding',
-                                    'OneHotEncoder': 'nominal encoding'}
+        self.transformation_type = {'Log': 'unary',
+                                    'Sqrt': 'unary',
+                                    'OrdinalEncoder': 'categorical',
+                                    'OneHotEncoder': 'categorical'}
 
     def compute_content_embeddings(self, entity_df: pd.DataFrame):  # DDE for numeric columns, Minhash for string columns
         numeric_column_embeddings = {}
@@ -163,6 +163,7 @@ class InferenceManager:
         except IndexError:
             recommendations.append(
                 pd.DataFrame({'Feature': [list(X.columns)], 'Recommended_transformation': 'StandardScaler'}))
+
         # unary transformation (categorical features)
         if categorical_feature_embeddings:
             categorical_embedding_df = pd.DataFrame(
@@ -185,7 +186,11 @@ class InferenceManager:
         recommendations = pd.concat(recommendations).reset_index(drop=True)
         recommendations['Recommended_transformation'] = recommendations['Recommended_transformation'].apply(lambda x: self.transformation_technique.get(x) if x in self.transformation_technique else x)
         recommendations['Transformation_type'] = recommendations['Recommended_transformation'].apply(lambda x: self.transformation_type.get(x) if x in self.transformation_type else 'scaling')
-        return recommendations
+
+        # sort transformation recommendations by categorical, scaling and finally unary
+        sequence_in_which_transformations_appear = ['categorical', 'scaling', 'unary']
+        recommendations = recommendations.sort_values('Transformation_type', key=lambda x: x.map({v: i for i, v in enumerate(sequence_in_which_transformations_appear)}))
+        return recommendations.reset_index(drop=True)
 
     @staticmethod
     def get_cleaning_recommendation(entity_df: pd.DataFrame):

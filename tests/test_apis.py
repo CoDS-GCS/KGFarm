@@ -17,7 +17,7 @@ class TestAPIs(unittest.TestCase):
 
     def test_data_transformation(self):
         transformation_info = self.kgfarm.recommend_transformations(X=self.X)
-        expected_transformations = ['StandardScaler', 'Log', 'OrdinalEncoder']
+        expected_transformations = ['OrdinalEncoder', 'StandardScaler', 'Log']
 
         self.assertEqual(list(transformation_info['Recommended_transformation']),
                          expected_transformations)
