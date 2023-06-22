@@ -11,15 +11,17 @@
 <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue"/></a>
 </p>
 
-
 ## 📐 System Design
 <p align="center"><img src="docs/graphics/architecture.png" alt="kgfarm" height="450" width="400"/></p>
 
 <p align="justify">Data preparation and feature engineering are critical for improving model accuracy. However, data scientists often work independently and spend most of their time writing code for these steps without support for automatic learning from each other’s work. To address this challenge we developed KGFarm, a holistic platform automating data preparation and feature engineering based on machine learning models trained using the semantics of data science artifacts, including pipeline scripts applied to different datasets. We capture the semantics of these artifacts as a knowledge graph (KG). KGFarm provides seamless integration with existing data science platforms, enabling scientific communities to automatically discover and learn about each other’s work. We trained KGFarm’s models on top of a KG constructed from top-rated 1000 Kaggle datasets and 13800 pipeline scripts with the highest number of votes. KGFarm is tested on <a href="experiments/benchmark/README.md">130 unseen datasets</a> collected from different AutoML benchmarks to compare KGFarm against the state-of-the-art (SOTA) systems in data cleaning, transformation, and feature engineering. Our <a href="experiments/README.md">experiments</a> show that KGFarm consumes significantly less time and memory w.r.t the SOTA systems while achieving comparable or better accuracy than them. </p>
 
+<center><b>Unleashing the power of Automated <img src="docs/graphics/icons/test.gif" width="13%" style="margin-bottom: -5px"/></b></center>
+
+
 ## ⚡ Quick Start
 
-Try the sample <a href="https://colab.research.google.com/drive/1u4z4EKGd8G1ju61Q3sPk5fH9BrMp8IRM?usp=sharing"><span style="color: orange;">KGFarm colab notebook</span></a> for a quick hands-on! 
+Try the sample <a href="https://colab.research.google.com/drive/1u4z4EKGd8G1ju61Q3sPk5fH9BrMp8IRM?usp=sharing"> <img src="docs/graphics/icons/kgfarm_colab_notebook.svg" width="220" style="margin-bottom: -9px"/></a> for a quick hands-on! 
 Alternatively run [setup.py](helpers/setup.py) to setup the demo in a local environment!
 
 1. Install dependencies
@@ -37,7 +39,7 @@ for augmenting the [LiDS](https://github.com/CoDS-GCS/KGFarm/blob/645f12dfd63bae
 cd feature_discovery/src/graph_builder
 python build.py -db Database_name
 ```
-4. Start using KGFarm APIs (checkout [<code>KGFarm_demo.ipynb</code>](KGFarm_demo.ipynb))
+4. Start using KGFarm APIs (checkout this [use case](docs/KGFarm_full_demo.ipynb))
 
 ## 🚀 Functionalities
 
@@ -56,7 +58,7 @@ We [evaluated](experiments/README.md) KGFarm to several state-of-the-art systems
 3. [Feature Engineering](experiments/results/feature_engineering.pdf)
 
 ## <img src="docs/graphics/icons/youtube.svg" alt="youtube" height="20" width="29"> KGFarm Demo
-<a href="https://rebrand.ly/kgfarm"><img src="docs/graphics/thumbnails/kgfarm_tutorial.png"/></a>
+<a href="https://rebrand.ly/kgfarm"><img src="docs/graphics/icons/kgfarm_tutorial.png"/></a>
 
 ## 🦾 Contributors
 <p float="left">
