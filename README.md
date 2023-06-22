@@ -16,7 +16,7 @@
 
 <p align="justify">Data preparation and feature engineering are critical for improving model accuracy. However, data scientists often work independently and spend most of their time writing code for these steps without support for automatic learning from each other’s work. To address this challenge we developed KGFarm, a holistic platform automating data preparation and feature engineering based on machine learning models trained using the semantics of data science artifacts, including pipeline scripts applied to different datasets. We capture the semantics of these artifacts as a knowledge graph (KG). KGFarm provides seamless integration with existing data science platforms, enabling scientific communities to automatically discover and learn about each other’s work. We trained KGFarm’s models on top of a KG constructed from top-rated 1000 Kaggle datasets and 13800 pipeline scripts with the highest number of votes. KGFarm is tested on <a href="experiments/benchmark/README.md">130 unseen datasets</a> collected from different AutoML benchmarks to compare KGFarm against the state-of-the-art (SOTA) systems in data cleaning, transformation, and feature engineering. Our <a href="experiments/README.md">experiments</a> show that KGFarm consumes significantly less time and memory w.r.t the SOTA systems while achieving comparable or better accuracy than them. </p>
 
-<center><b>Unleashing the power of Automated <img src="docs/graphics/icons/test.gif" width="13%" style="margin-bottom: -5px"/></b></center>
+<center><b>Unleashing the power of Automated <img src="docs/graphics/icons/data_preparation.gif" width="13%" style="margin-bottom: -5px"/></b></center>
 
 
 ## ⚡ Quick Start
