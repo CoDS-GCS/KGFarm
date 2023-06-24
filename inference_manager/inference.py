@@ -242,9 +242,9 @@ class InferenceManager:
         probability.index = np.array(['Impute', 'Fill', 'Interpolate'])
         probability.columns = ['Confidence']
         probability = probability.sort_values('Confidence', ascending=False)
-        probability['Operation'] = probability.index
+        probability['Recommended_operation'] = probability.index
         probability['Confidence'] = probability['Confidence'].apply(lambda x: float(f'{x/100:.2f}'))
-        return probability.reset_index(drop=True)[['Operation', 'Confidence']]
+        return probability.reset_index(drop=True)[['Recommended_operation', 'Confidence']]
 
     def check_for_outliers(self, df: pd.DataFrame):
         numeric_embeddings, _ = self.compute_cleaning_content_embeddings(df=df)

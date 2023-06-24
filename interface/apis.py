@@ -162,7 +162,7 @@ class KGFarm:
 
     def clean(self, df: pd.DataFrame, recommendation: pd.Series, handle_outliers: bool = True):
 
-        if recommendation['Operation'] not in {'Fill', 'Interpolate', 'Impute'}:
+        if recommendation['Recommended_operation'] not in {'Fill', 'Interpolate', 'Impute'}:
             raise ValueError('Operation must be Fill, Interpolate or Impute')
 
         if handle_outliers:
@@ -180,7 +180,7 @@ class KGFarm:
         uncleaned_numerical_features, uncleaned_categorical_features = \
             self.separate_numerical_and_categorical_features(df=df[columns_to_be_cleaned])
 
-        if recommendation['Operation'] == 'Fill':
+        if recommendation['Recommended_operation'] == 'Fill':
             print('cleaning by Fill')
             for feature in tqdm(columns_to_be_cleaned):
                 if feature in uncleaned_numerical_features:
@@ -188,14 +188,14 @@ class KGFarm:
                 else:
                     df[feature] = df[feature].fillna(df[feature].mode().values[0])
 
-        elif recommendation['Operation'] == 'Interpolate':
+        elif recommendation['Recommended_operation'] == 'Interpolate':
             print('cleaning by Interpolation')
             for feature in tqdm(columns_to_be_cleaned):
                 df[feature] = df[feature].interpolate()
                 df[feature] = df[feature].interpolate(method='ffill')
                 df[feature] = df[feature].interpolate(method='bfill')
 
-        elif recommendation['Operation'] == 'Impute':
+        elif recommendation['Recommended_operation'] == 'Impute':
             print('cleaning by Imputation')
             for feature in tqdm(columns_to_be_cleaned):
                 if feature in uncleaned_numerical_features:
