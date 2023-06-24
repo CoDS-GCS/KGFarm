@@ -3,9 +3,13 @@ import sys
 import warnings
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from pathlib import Path
 from tqdm.notebook import tqdm
 from sklearn.preprocessing import *
+from matplotlib import pyplot as plt
+from sklearn.neighbors import LocalOutlierFactor
+from sklearn.impute import SimpleImputer, KNNImputer
 from inference_manager.inference import InferenceManager
 
 warnings.filterwarnings('ignore')
@@ -22,6 +26,12 @@ class KGFarm:
     @staticmethod
     def load_titanic_dataset():
         return pd.read_csv(os.path.dirname(os.path.abspath(__file__))+'/titanic.csv')
+
+    @staticmethod
+    def separate_numerical_and_categorical_features(df: pd.DataFrame):
+        categorical_features = set(df.select_dtypes(include=['object']).columns)
+        numerical_features = set(df.columns) - categorical_features
+        return list(numerical_features), list(categorical_features)
 
     def recommend_transformations(self, X: pd.DataFrame):
         return self.recommender.recommend_transformations(X=X)
@@ -87,6 +97,113 @@ class KGFarm:
 
         else:
             raise ValueError(f'{transformation} not supported')
+
+    @staticmethod
+    def get_columns_to_be_cleaned(df: pd.DataFrame):
+        for na_type in {'none', 'n/a', 'na', 'nan', 'missing', '?', '', ' '}:
+            if na_type in {'?', '', ' '}:
+                df.replace(na_type, np.nan, inplace=True)
+            else:
+                df.replace(r'(^)' + na_type + r'($)', np.nan, inplace=True, regex=True)
+
+        columns = pd.DataFrame(df.isnull().sum())
+        columns.columns = ['Missing values']
+        columns['Feature'] = columns.index
+        columns = columns[columns['Missing values'] > 0]
+        columns.sort_values(by='Missing values', ascending=False, inplace=True)
+        columns.reset_index(drop=True, inplace=True)
+        return columns
+
+    def recommend_cleaning_operations(self, df: pd.DataFrame, visualize_missing_data: bool = True):
+
+        def plot_heat_map():
+            plt.rcParams['figure.dpi'] = 300
+            plt.figure(figsize=(15, 7))
+            sns.heatmap(df.isnull(), yticklabels=False, cmap='Greens_r')
+            plt.show()
+
+        def plot_bar_graph(columns: pd.DataFrame):
+            if len(columns) == 0:
+                return
+            sns.set_color_codes('pastel')
+            plt.rcParams['figure.dpi'] = 300
+            plt.figure(figsize=(6, 3))
+
+            ax = sns.barplot(x="Feature", y="Missing values", data=columns,
+                             palette='Greens_r', edgecolor='gainsboro')
+            ax.bar_label(ax.containers[0], fontsize=6)
+
+            def change_width(axis, new_value):
+                for patch in axis.patches:
+                    current_width = patch.get_width()
+                    diff = current_width - new_value
+                    patch.set_width(new_value)
+                    patch.set_x(patch.get_x() + diff * .5)
+
+            change_width(ax, .20)
+            plt.grid(color='lightgray', axis='y')
+            plt.ylabel('Missing value', fontsize=5.5)
+            plt.xlabel('')
+            ax.tick_params(axis='both', which='major', labelsize=5.5)
+            ax.tick_params(axis='x', labelrotation=90, labelsize=5.5)
+            plt.show()
+
+        columns_to_be_cleaned = self.get_columns_to_be_cleaned(df=df)
+        if visualize_missing_data:
+            plot_heat_map()
+            plot_bar_graph(columns=columns_to_be_cleaned)
+
+        if len(columns_to_be_cleaned) == 0:
+            print('nothing to clean')
+            return df
+
+        cleaning_recommendation = self.recommender.get_cleaning_recommendation(df[columns_to_be_cleaned['Feature']])
+        return cleaning_recommendation
+
+    def clean(self, df: pd.DataFrame, recommendation: pd.Series, handle_outliers: bool = True):
+
+        if recommendation['Operation'] not in {'Fill', 'Interpolate', 'Impute'}:
+            raise ValueError('Operation must be Fill, Interpolate or Impute')
+
+        if handle_outliers:
+            numerical_features, categorical_features = self.separate_numerical_and_categorical_features(df=df)
+            if len(numerical_features) > 0 and self.recommender.check_for_outliers(df=df[numerical_features]):
+                outlier_rows = LocalOutlierFactor(contamination=0.05).fit_predict(df[numerical_features])
+                df[numerical_features][outlier_rows == -1] = 'none'
+                df = pd.concat([df[categorical_features], df[numerical_features]], axis=1)
+
+        columns_to_be_cleaned = list(self.get_columns_to_be_cleaned(df=df)['Feature'])
+
+        if len(columns_to_be_cleaned) == 0:
+            print('nothing to clean')
+
+        uncleaned_numerical_features, uncleaned_categorical_features = \
+            self.separate_numerical_and_categorical_features(df=df[columns_to_be_cleaned])
+
+        if recommendation['Operation'] == 'Fill':
+            print('cleaning by Fill')
+            for feature in tqdm(columns_to_be_cleaned):
+                if feature in uncleaned_numerical_features:
+                    df[feature] = df[feature].fillna(df[feature].mean())
+                else:
+                    df[feature] = df[feature].fillna(df[feature].mode().values[0])
+
+        elif recommendation['Operation'] == 'Interpolate':
+            print('cleaning by Interpolation')
+            for feature in tqdm(columns_to_be_cleaned):
+                df[feature] = df[feature].interpolate()
+                df[feature] = df[feature].interpolate(method='ffill')
+                df[feature] = df[feature].interpolate(method='bfill')
+
+        elif recommendation['Operation'] == 'Impute':
+            print('cleaning by Imputation')
+            for feature in tqdm(columns_to_be_cleaned):
+                if feature in uncleaned_numerical_features:
+                    df[feature] = KNNImputer().fit_transform(np.array(df[feature]).reshape(-1, 1))
+                else:
+                    df[feature] = SimpleImputer(strategy='most_frequent').fit_transform(np.array(df[feature]).reshape(-1, 1))
+
+        return df
 
     def recommend_features_to_be_selected(self, task: str, X: pd.DataFrame, y: pd.Series,
                                           k: int = None):
