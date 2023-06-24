@@ -1,4 +1,5 @@
 bitstring==4.0.2
+chars2vec==0.1.7
 dask
 datasketch==1.5.9
 ipykernel
