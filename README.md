@@ -67,4 +67,4 @@ We [evaluated](experiments/README.md) KGFarm to several state-of-the-art systems
   <img src="docs/graphics/icons/borealisAI.png" width="170"/>
 </p>
 
-For any questions, contact us at: <b>[shubham.vashisth@concordia.ca](mailto:shubham.vashisth@concordia.ca)</b>, [niki.monjazeb@concordia.ca](mailto:niki.monjazeb@concordia.ca), [antonio.cavalcante@borealisai.com](mailto:antonio.cavalcante@borealisai.com), [philippe.carrier@concordia.ca](mailto:philippe.carrier@concordia.ca), [khaled.ammar@borealisai.com](mailto:khaled.ammar@borealisai.com]), [essam.mansour@concorida.ca](mailto:essam.mansour@concorida.ca)
+For any questions, contact us at: <b>[shubham.vashisth@concordia.ca](mailto:shubham.vashisth@concordia.ca)</b>, [niki.monjazeb@concordia.ca](mailto:niki.monjazeb@concordia.ca), [antonio.cavalcante@borealisai.com](mailto:antonio.cavalcante@borealisai.com), [philippe.carrier@concordia.ca](mailto:philippe.carrier@concordia.ca), [khaled.ammar@borealisai.com](mailto:khaled.ammar@borealisai.com]), [essam.mansour@concordia.ca](mailto:essam.mansour@concordia.ca)
