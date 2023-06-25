@@ -54,8 +54,8 @@ KGFarm APIs are designed to promote seamless integration with conventional ML wo
 ## 🧪 Experiments 
 
 We [evaluated](experiments/README.md) KGFarm to several state-of-the-art systems on [130 open datasets](experiments/benchmark/README.md). More information regarding our evaluations per task is available below:
-1. [Data Transformation](experiments/results/data_transformation.pdf)
-2. [Data Cleaning](experiments/results/data_cleaning.pdf)
+1. [Data Cleaning](experiments/results/data_cleaning.pdf)
+2. [Data Transformation](experiments/results/data_transformation.pdf)
 3. [Feature Engineering](experiments/results/feature_engineering.pdf)
 
 ## <img src="docs/graphics/icons/youtube.svg" alt="youtube" height="20" width="29"> KGFarm Demo
@@ -67,3 +67,4 @@ We [evaluated](experiments/README.md) KGFarm to several state-of-the-art systems
   <img src="docs/graphics/icons/borealisAI.png" width="170"/>
 </p>
 
+For any questions, contact us at: <b>[shubham.vashisth@concordia.ca](mailto:shubham.vashisth@concordia.ca)</b>, [niki.monjazeb@concordia.ca](mailto:niki.monjazeb@concordia.ca), [antonio.cavalcante@borialisai.com](mailto:antonio.cavalcante@borialisai.com), [philippe.carrier@concordia.ca](mailto:philippe.carrier@concordia.ca), [khaled.ammar@borealisai.com](mailto:khaled.ammar@borealisai.com]), [essam.mansour@concorida.ca](mailto:essam.mansour@concorida.ca)
