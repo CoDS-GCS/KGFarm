@@ -155,15 +155,12 @@ class KGFarm:
 
         if len(columns_to_be_cleaned) == 0:
             print('nothing to clean')
-            return df
+            return
 
         cleaning_recommendation = self.recommender.get_cleaning_recommendation(df[columns_to_be_cleaned['Feature']])
         return cleaning_recommendation
 
     def clean(self, df: pd.DataFrame, recommendation: pd.Series, handle_outliers: bool = True):
-
-        if recommendation['Recommended_operation'] not in {'Fill', 'Interpolate', 'Impute'}:
-            raise ValueError('Operation must be Fill, Interpolate or Impute')
 
         if handle_outliers:
             numerical_features, categorical_features = self.separate_numerical_and_categorical_features(df=df)
@@ -176,6 +173,7 @@ class KGFarm:
 
         if len(columns_to_be_cleaned) == 0:
             print('nothing to clean')
+            return df
 
         uncleaned_numerical_features, uncleaned_categorical_features = \
             self.separate_numerical_and_categorical_features(df=df[columns_to_be_cleaned])
