@@ -280,7 +280,7 @@ class KGFarm:
 
         def compute_feature_correlation(train: pd.DataFrame, test: pd.DataFrame, theta2: float):
             nonlocal pruning_info
-            features = train[set(numerical_features).intersection(set(pruning_info.keys()))]
+            features = train[list(set(numerical_features).intersection(set(pruning_info.keys())))]
             if target in list(features.columns):
                 features = train.drop(target, axis=1)
             features_to_discard = set()
