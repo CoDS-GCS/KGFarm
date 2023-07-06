@@ -7,7 +7,7 @@
 ### <p align="center"><b>A Holistic Platform for Automating Data Preparation</b></p>
 
 <p align="center">
-<a href="tests/test_apis.py"><img src="https://github.com/CoDS-GCS/KGFarm/actions/workflows/apis.yml/badge.svg"></a>
+<a href="https://github.com/CoDS-GCS/KGFarm/actions"><img src="https://github.com/CoDS-GCS/KGFarm/actions/workflows/apis.yml/badge.svg"></a>
 <a href="LICENSE"><img src="docs/graphics/icons/badge_license.svg"/></a>
 <a href="https://kgfarmworkspace.slack.com/archives/C05F4232NRG"><img src="docs/graphics/icons/badge_slack.svg"/></a>
 <a href="requirements.txt"><img src="docs/graphics/icons/badge_python.svg"/></a>
