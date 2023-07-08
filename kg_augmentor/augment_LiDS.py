@@ -6,7 +6,7 @@ from time import time
 from skimpy import clean_columns
 from tqdm import tqdm
 
-sys.path.append('../../../')
+sys.path.append('../../')
 from helpers.helper import *
 from operations.template import *
 

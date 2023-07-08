@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt
 from helpers.helper import connect_to_stardog
 from sklearn.feature_selection import SelectKBest, f_classif
 from operations.recommendation.recommender import Recommender
-from feature_discovery.src.graph_builder.governor import Governor
+from kg_augmentor.src.graph_builder.governor import Governor
 
 warnings.filterwarnings('ignore')
 pd.set_option('display.max_columns', None)

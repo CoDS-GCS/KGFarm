@@ -78,6 +78,6 @@ if __name__ == '__main__':
     populate_pipelines_graph()
     update_path_in_data_items_graph()
     os.system('stardog data add --format turtle {} {}'.format(database, data_items_root))
-    os.chdir('../feature_discovery/src/graph_builder')
+    os.chdir('../kg_augmentor/src/graph_builder')
     os.system(f'python build.py -db {database}')
     print(f'Setup success! Try running KGFarm_demo.ipynb')

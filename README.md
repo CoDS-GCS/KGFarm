@@ -35,7 +35,7 @@ pip install -r requirements.txt
 ```bash
 stardog-admin server start
 ```
-3. Run KGFarm's [<code>graph_builder</code>](feature_discovery/src/graph_builder/build.py):<br/>
+3. Run KGFarm's [<code>graph_builder</code>](kg_augmentor/src/graph_builder/build.py):<br/>
 for augmenting the [LiDS](https://github.com/CoDS-GCS/KGFarm/blob/645f12dfd63bae0bd319401c2cf10f8378dd6679/feature_discovery/src/graph_builder/farm.ttl) graph and uploading it to the [stardog](https://cloud.stardog.com/)
 
 ```bash
