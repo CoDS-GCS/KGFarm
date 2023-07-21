@@ -29,7 +29,7 @@ class TransformationRecommender:
         self.model = RandomForestClassifier(random_state=RANDOM_STATE)
         self.label_encoder = LabelEncoder()
 
-    def __load_column_embeddings(self, path_to_embeddings: str = '../../storage/CoLR_embeddings_data_transformation'):
+    def __load_column_embeddings(self, path_to_embeddings: str = '../kg_augmentor/embeddings/CoLR_embeddings_data_transformation'):
         for data_type in os.listdir(path=path_to_embeddings):
             if data_type == '.DS_Store':
                 continue
@@ -90,7 +90,7 @@ class TransformationRecommender:
 
         scaling_transformation_column = []
         table_embedding_column = []
-
+        table_id = []
         # average embedding by grouping on table
         embeddings_per_table = []
         previous_table_id = list(scaling_df['Table_id'])[0]
@@ -106,11 +106,13 @@ class TransformationRecommender:
                 averaged_embeddings = average_embeddings(embeddings=embeddings_per_table)
                 scaling_transformation_column.append(transformation)
                 table_embedding_column.append(averaged_embeddings)
+                table_id.append(previous_table_id)
+                # refresh variables
                 embeddings_per_table = [column_embedding]
                 previous_table_id = current_table_id
 
-        self.modeling_data_scaling = pd.DataFrame({'Transformation': scaling_transformation_column, 'Embeddings': table_embedding_column})
-        self.modeling_data_unary = unary_df.drop('Transformed_column_id', axis=1)
+        self.modeling_data_scaling = pd.DataFrame({'Transformation': scaling_transformation_column, 'Transformed_table_id': table_id, 'Embeddings': table_embedding_column})
+        self.modeling_data_unary = unary_df
         self.modeling_data_scaling.to_csv('modeling_data_scaling.csv', index=False)
         self.modeling_data_unary.to_csv('modeling_data_unary.csv', index=False)
         print('done.')
