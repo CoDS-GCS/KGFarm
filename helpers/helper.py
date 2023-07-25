@@ -1,14 +1,14 @@
 import io
 import os
 import urllib.parse
-import SPARQLWrapper.Wrapper
+# import SPARQLWrapper.Wrapper
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import stardog
 import yaml
 from urllib.parse import quote_plus
-from SPARQLWrapper import JSON, SPARQLWrapper
+# from SPARQLWrapper import JSON, SPARQLWrapper
 from matplotlib import pyplot as plt
 
 PREFIXES = """
@@ -74,11 +74,11 @@ def drop_glac(namespace: str, port=9999):
     os.system(command)
 
 
-def connect_to_blazegraph(port, namespace, show_status: bool):
-    endpoint = 'http://localhost:{}/blazegraph/namespace/'.format(port) + namespace + '/sparql'
-    if show_status:
-        print('connected to {}'.format(endpoint))
-    return SPARQLWrapper(endpoint)
+# def connect_to_blazegraph(port, namespace, show_status: bool):
+#     endpoint = 'http://localhost:{}/blazegraph/namespace/'.format(port) + namespace + '/sparql'
+#     if show_status:
+#         print('connected to {}'.format(endpoint))
+#     return SPARQLWrapper(endpoint)
 
 
 def connect_to_stardog(port, db: str, show_status: bool):
@@ -93,10 +93,10 @@ def connect_to_stardog(port, db: str, show_status: bool):
     return conn
 
 
-def execute_query_blazegraph(sparql: SPARQLWrapper, query: str):
-    sparql.setQuery(PREFIXES + query)
-    sparql.setReturnFormat(JSON)
-    return sparql.query().convert()
+# def execute_query_blazegraph(sparql: SPARQLWrapper, query: str):
+#     sparql.setQuery(PREFIXES + query)
+#     sparql.setReturnFormat(JSON)
+#     return sparql.query().convert()
 
 
 # TODO: rename return_type to appropriate variable name to avoid confusion

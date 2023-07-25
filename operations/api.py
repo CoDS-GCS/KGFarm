@@ -7,14 +7,14 @@ import pandas as pd
 import seaborn as sns
 from pathlib import Path
 from datetime import timedelta
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 from operations.template import *
 from sklearn.preprocessing import *
 from matplotlib import pyplot as plt
 from helpers.helper import connect_to_stardog
 from sklearn.feature_selection import SelectKBest, f_classif
 from operations.recommendation.recommender import Recommender
-from kg_augmentor.src.graph_builder.governor import Governor
+from kg_augmentor.augmentor import Governor
 
 warnings.filterwarnings('ignore')
 pd.set_option('display.max_columns', None)
