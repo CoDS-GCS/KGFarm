@@ -25,7 +25,7 @@
 Try the sample <a href="https://colab.research.google.com/drive/1u4z4EKGd8G1ju61Q3sPk5fH9BrMp8IRM?usp=sharing"><span style="color: orange;">KGFarm Colab Notebook</span></a>  for a quick hands-on! 
 Alternatively run [setup.py](helpers/setup.py) to setup the demo in a local environment!
 
-1. Install dependencies
+1. Install [dependencies](requirements.txt)
 ```bash
 pip install -r requirements.txt
 ```
@@ -33,12 +33,10 @@ pip install -r requirements.txt
 ```bash
 stardog-admin server start
 ```
-3. Run KGFarm's [<code>graph_builder</code>](kg_augmentor/src/graph_builder/build.py):<br/>
-for augmenting the [LiDS](https://github.com/CoDS-GCS/KGFarm/blob/645f12dfd63bae0bd319401c2cf10f8378dd6679/feature_discovery/src/graph_builder/farm.ttl) graph and uploading it to the [stardog](https://cloud.stardog.com/)
+3. Run KGFarm's KG Augmentor to augment the [LiDS](https://github.com/CoDS-GCS/KGFarm/blob/645f12dfd63bae0bd319401c2cf10f8378dd6679/feature_discovery/src/graph_builder/farm.ttl) graph* (for entity extraction and exploration)
 
 ```bash
-cd feature_discovery/src/graph_builder
-python build.py -db Database_name
+python kg_augmentor/augment_LiDS.py -db Database_name
 ```
 4. Start using KGFarm APIs (checkout this [use case](docs/KGFarm_full_demo.ipynb))
 
@@ -49,10 +47,10 @@ python build.py -db Database_name
 * [X] Automated Feature Selection
 
 ## ⚙️ APIs & Library Interface
-KGFarm APIs are designed to promote seamless integration with conventional ML workflows. For taking advantage of KGFarm with your data, checkout [KGFarm_tutorial.ipynb](docs/KGFarm_tutorial.ipynb).
+KGFarm APIs are designed to promote seamless integration with conventional ML workflows. For performing Data Preparation with KGFarm as human-in-the-loop, please refer to [KGFarm_tutorial.ipynb](docs/KGFarm_tutorial.ipynb). For full automation on profiled data try KGFarm's [Pipeline Generator](operations/pipeline_generator.py) (see the example below). 
+<p align="center"><img src="docs/graphics/pipeline_generator.gif" width="100%"></p>
 
 [//]: # (## 🧪 Experiments )
-
 [//]: # ()
 [//]: # (We [evaluated]&#40;experiments/README.md&#41; KGFarm to several state-of-the-art systems on [130 open datasets]&#40;experiments/benchmark/README.md&#41;. More information regarding our evaluations per task is available below:)
 
@@ -61,9 +59,14 @@ KGFarm APIs are designed to promote seamless integration with conventional ML wo
 [//]: # (2. [Data Transformation]&#40;experiments/results/data_transformation.pdf&#41;)
 
 [//]: # (3. [Feature Engineering]&#40;experiments/results/feature_engineering.pdf&#41;)
-
 ## <img src="docs/graphics/icons/youtube.svg" alt="youtube" height="20" width="29"> KGFarm Demo
-<a href="https://rebrand.ly/kgfarm"><img src="docs/graphics/icons/kgfarm_tutorial.png"/></a>
+<p align="center"><a href="https://rebrand.ly/kgfarm"><img src="docs/graphics/icons/kgfarm_tutorial.png" width="73%"></a></p>
+
+## 🏆Achievements
+
+* [Best Poster Award](https://www.linkedin.com/feed/update/urn:li:activity:7090450990549630976/) [@VLDB SS](https://vldb.org/summerschool/2023/), 2023, Cluj-Napoca, Romania 🇷🇴
+* [Best Poster Award](https://www.linkedin.com/feed/update/urn:li:activity:6996172330880139265/) [@DSDS Workshop](https://sites.google.com/view/dsds22/), 2022, Montreal, Canada 🇨🇦
+
 
 ## 🦾 Contributors
 <p float="left">
