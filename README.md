@@ -14,7 +14,7 @@
 </p>
 
 ## 📐 System Design
-<p align="center"><img src="docs/graphics/architecture.png" alt="kgfarm" height="450" width="400"/></p>
+<p align="center"><img src="docs/graphics/architecture.svg" alt="kgfarm" height="450" width="400"/></p>
 
 <p align="justify">Data preparation is critical for improving model accuracy. However, data scientists often work independently and spend most of their time writing code for preparing data without support for automatic learning from each other’s work. To address this challenge we developed KGFarm, a holistic platform for automating data preparation using machine learning models trained on knowledge graph capturing the semantics of data science artifacts, including datasets and pipeline scripts. KGFarm provides seamless integration with existing data science platforms, enabling scientific communities to automatically discover and learn about each other’s work.</p>
 
