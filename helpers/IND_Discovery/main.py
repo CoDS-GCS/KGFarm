@@ -4,7 +4,7 @@ def Convert(lst):
     return res_dct
 
 def read_file():
-    name = 'Basketball_men'
+    name = 'tpcc'
     file1 = open(name, 'r')
     Lines = file1.readlines()
     line_num = 0
@@ -46,10 +46,11 @@ def read_file():
             if i[1] == c[0]:
                 pk = c[1:3]
                 B = "http://kglids.org/resource/kaggle/"+name+"/dataResource/"+pk[1]+"/"+pk[0]
-        pairs.append([fk[1].replace('.csv',''),fk[0],A,pk[1].replace('.csv',''),pk[0],B])
+        # pairs.append([fk[1].replace('.csv',''),fk[0],A,pk[1].replace('.csv',''),pk[0],B])
+        pairs.append([fk[1].replace('.csv', ''), fk[0], A, pk[1].replace('.csv', ''), pk[0], B])
 
 
-    f = open(name+".csv", "w")
+    f = open("sawfish-"+name+".csv", "w")
     f.write("Foreign_table,Foreign_key,A,Primary_table,Primary_key,B\n")
     for p in pairs:
         pClean=str(p)

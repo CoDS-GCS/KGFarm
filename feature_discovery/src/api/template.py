@@ -1,3 +1,5 @@
+import pandas as pd
+
 from helpers.helper import execute_query, display_query
 
 
@@ -123,7 +125,7 @@ def get_INDs(config, show_query: bool = False):
 
 def get_content_similar_pairs(config, show_query: bool = False):
     query = """
-    SELECT(strbefore(?Foreign_table_name, '.csv') as ?Foreign_table) (?Name_A as ?Foreign_key) ?A(strbefore(?Primary_table_name, '.csv') as ?Primary_table) (?Name_B as ?Primary_key) ?B
+    SELECT(strbefore(?Foreign_table_name, '.csv') as ?Foreign_table) (?Name_A as ?Foreign_key) ?A(strbefore(?Primary_table_name, '.csv') as ?Primary_table) (?Name_B as ?Primary_key) ?B ?Score
     WHERE
     {
     ?B          schema:name                 ?Name_B                                         ;
@@ -135,12 +137,21 @@ def get_content_similar_pairs(config, show_query: bool = False):
 
     ?Table_B    schema:name                 ?Primary_table_name                             .
     ?Table_A    schema:name                 ?Foreign_table_name                             .
-    FILTER(?Score>=(1))
+    FILTER(?Score>(0.75))
     }"""
     if show_query:
         display_query(query)
+    df = execute_query(config, query)
+    # Calculate the 25th percentile threshold
+    unique_scores = df['Score'].unique()
 
-    return execute_query(config, query)
+    # Calculate the 75th percentile threshold for unique scores
+    threshold = pd.Series(unique_scores).quantile(0.7)
+    print(threshold)
+    # Filter rows where the score is in the top 25%
+    top_25_percent = df[df['Score'] >= threshold]
+    top_25_percent.drop('Score',axis=1, inplace=True)
+    return top_25_percent
 
 def get_distinct_dependent_values(config, show_query: bool = False):
     query = """
@@ -158,7 +169,7 @@ def get_distinct_dependent_values(config, show_query: bool = False):
 
 def get_content_similarity(config, show_query: bool = False):
     query = """
-    SELECT ?A ?B ((1-?Score) AS ?F2)
+    SELECT ?A ?B (?Score AS ?F2)
     WHERE
     {   
         <<?B data:hasContentSimilarity           ?A>>    data:withCertainty  ?Score  .                         

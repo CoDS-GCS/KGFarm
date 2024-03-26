@@ -1,3 +1,4 @@
+import csv
 import json
 import os
 import warnings
@@ -22,8 +23,9 @@ RANDOM_STATE = 7
 class Recommender:
     """A classifier that recommends type of feature transformation based on column (feature) embeddings"""
 
-    def __init__(self, port: int = 5820, database: str = 'Niki-kaggle-pipeline',
-                 metadata: str = '../../../operations/storage/CoLR_embeddings',
+    def __init__(self, port: int = 5822, database: str = 'Niki-kaggle-pipeline',
+                 metadata: str = '../../../operations/storage/metadata_Niki-kaggle',
+                 #metadata: str = '../../../operations/storage/CoLR_embeddings',
                  show_connection_status: bool = False):
         self.database = database
         self.metadata = metadata
@@ -54,7 +56,7 @@ class Recommender:
 
         def clean_col():
             cleaning_table = get_cleaning_on_columns(self.config)
-            print('ct',cleaning_table)
+            #print('ct',cleaning_table)
 
             def change_value(row):
                 if row['Cleaning_Op'] == 'http://kglids.org/resource/library/pandas/DataFrame/fillna':
@@ -115,8 +117,8 @@ class Recommender:
             dtype = profile['data_type']
             missing_value = profile['missing_values_count']
 
-            if missing_value == 0:
-                continue
+            # if missing_value == 0:
+            #     continue
 
             table_key = generate_table_id(profile['path'], profile['table_name'])
             table_set.add(table_key)
@@ -144,6 +146,20 @@ class Recommender:
 
             self.profiles[table] = np.concatenate((string_embeddings_avg, numerical_embeddings_avg))
 
+        for key, value in self.profiles.items():
+            if isinstance(value, np.ndarray):
+                self.profiles[key] = value.tolist()
+        file_path = "model.csv"
+
+        with open(file_path, "w", newline='') as f:
+            writer = csv.writer(f)
+
+            # Write each key-value pair as a row in the CSV file
+            for key, value in self.profiles.items():
+                writer.writerow([key, value])
+
+        # with open('model.json', "w") as f:
+        #     json.dump(self.profiles, f)
 
         self.modeling_data = clean_col()
 
@@ -163,7 +179,7 @@ class Recommender:
 
 
     def train_test_evaluate_pivot(self, test):
-        print(self.modeling_data)
+        #print(self.modeling_data)
         X = np.array(self.modeling_data.index)
         y = np.array(self.modeling_data.values)
         # For y to be integers instead of floats

@@ -13,7 +13,7 @@ from sklearn.naive_bayes import GaussianNB
 from matplotlib.pyplot import figure
 from feature_generator import generate
 from time import process_time
-from sklearn.model_selection import GridSearchCV, cross_val_score, cross_val_predict
+from sklearn.model_selection import GridSearchCV, cross_val_score, cross_val_predict, KFold
 from sklearn.model_selection import train_test_split
 from collections import Counter
 from sklearn.datasets import make_classification
@@ -64,7 +64,7 @@ def get_importance(rf, X_train):
     pyplot.show()
 
 def get_results_without_kfold(X,y):
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=12, stratify=y)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=42, stratify=y)
     print(X_train)
     print(X_test)
     print(Counter(y_train))
@@ -74,18 +74,18 @@ def get_results_without_kfold(X,y):
     print(y_test.value_counts())
 
     # Grid Search for SVM
-    param_grid = {'C': [0.1, 1, 10, 100, 1000],
-                  'gamma': [1, 0.1, 0.01, 0.001, 0.0001],
-                  'kernel': ['rbf']}
-
-    grid = GridSearchCV(SVC(class_weight="balanced"), param_grid, refit=True)
-
-    # fitting the model for grid search
-    grid.fit(X_train, y_train)
+    # param_grid = {'C': [0.1, 1, 10, 100, 1000],
+    #               'gamma': [1, 0.1, 0.01, 0.001, 0.0001],
+    #               'kernel': ['rbf']}
+    #
+    # grid = GridSearchCV(SVC(class_weight="balanced",random_state=42), param_grid, refit=True)
+    #
+    # # fitting the model for grid search
+    # grid.fit(X_train, y_train)
 
     # Initiate classifiers1
-    svm = SVC()
-    rf = RandomForestClassifier(class_weight="balanced")
+    svm = SVC(random_state=42)
+    rf = RandomForestClassifier(class_weight="balanced",random_state=42)
     nb = GaussianNB()
 
     # Train classifiers
@@ -94,7 +94,7 @@ def get_results_without_kfold(X,y):
     rf.fit(X_train, y_train)
 
     # Get predictions
-    y_pred_svm = grid.predict(X_test)
+    y_pred_svm = svm.predict(X_test)
     y_pred_rf = rf.predict(X_test)
     y_pred_nb = nb.predict(X_test)
 
@@ -139,60 +139,142 @@ def get_results_without_kfold(X,y):
 
 
 def get_results_with_kfold(X, y):
-    #Grid Search for SVM
-    param_grid = {'C': [0.1, 1, 10, 100, 1000],
-                  'gamma': [1, 0.1, 0.01, 0.001, 0.0001],
-                  'kernel': ['rbf']}
+    # Set up k-fold cross-validation
+    kfold = KFold(n_splits=5, shuffle=True, random_state=42)
 
-    # Initiate classifiers1
-    svm = SVC()
-    rf = RandomForestClassifier(class_weight="balanced")
-    nb = GaussianNB()
+    # Initialize classifiers
+    nb_classifier = GaussianNB()
+    svm_classifier = SVC(random_state=42)
+    rf_classifier = RandomForestClassifier(random_state=42)
 
-    classifiers = [svm, rf, nb]
+    # Run k-fold cross-validation and get predictions
+    nb_predictions = cross_val_predict(nb_classifier, X, y, cv=kfold)
+    svm_predictions = cross_val_predict(svm_classifier, X, y, cv=kfold)
+    rf_predictions = cross_val_predict(rf_classifier, X, y, cv=kfold)
 
-    for classifier in classifiers:
-        print('Using ',classifier)
-        inner_cv = model_selection.KFold(n_splits=5, shuffle=True, random_state=0)
-        outer_cv = model_selection.KFold(n_splits=5, shuffle=True, random_state=0)
-        if classifier == svm:
-            classifier = GridSearchCV(estimator=classifier, param_grid=param_grid, cv=inner_cv)
-        #print(cross_val_score(estimator=classifier, X=X, y=y, cv=outer_cv, scoring='f1',error_score='raise'))
-        pred = cross_val_predict(classifier, X, y, cv=outer_cv)
-        print(classification_report(y_true=y, y_pred=pred,labels=[0,1]))
+    # Calculate accuracy and F1 score for Naive Bayes
+    nb_accuracy = accuracy_score(y, nb_predictions)
+    nb_f1 = f1_score(y, nb_predictions, average='weighted')
+
+    # Calculate accuracy and F1 score for SVM
+    svm_accuracy = accuracy_score(y, svm_predictions)
+    svm_f1 = f1_score(y, svm_predictions, average='weighted')
+
+    # Calculate accuracy and F1 score for Random Forest
+    rf_accuracy = accuracy_score(y, rf_predictions)
+    rf_f1 = f1_score(y, rf_predictions, average='weighted')
+
+    # Display the results
+    print("Naive Bayes Accuracy:", nb_accuracy)
+    print("Naive Bayes F1 Score:", nb_f1)
+
+    print("\nSVM Accuracy:", svm_accuracy)
+    print("SVM F1 Score:", svm_f1)
+
+    print("\nRandom Forest Accuracy:", rf_accuracy)
+    print("Random Forest F1 Score:", rf_f1)
+
+    # #Grid Search for SVM
+    # param_grid = {'C': [0.1, 1, 10, 100, 1000],
+    #               'gamma': [1, 0.1, 0.01, 0.001, 0.0001],
+    #               'kernel': ['rbf']}
+    #
+    # # Initiate classifiers1
+    # svm = SVC()
+    # rf = RandomForestClassifier(class_weight="balanced")
+    # nb = GaussianNB()
+    #
+    # classifiers = [svm, rf, nb]
+    #
+    # for classifier in classifiers:
+    #     print('Using ',classifier)
+    #     inner_cv = model_selection.KFold(n_splits=5, shuffle=True, random_state=0)
+    #     outer_cv = model_selection.KFold(n_splits=5, shuffle=True, random_state=0)
+    #     if classifier == svm:
+    #         classifier = GridSearchCV(estimator=classifier, param_grid=param_grid, cv=inner_cv)
+    #     #print(cross_val_score(estimator=classifier, X=X, y=y, cv=outer_cv, scoring='f1',error_score='raise'))
+    #     pred = cross_val_predict(classifier, X, y, cv=outer_cv)
+    #     print(classification_report(y_true=y, y_pred=pred,labels=[0,1]))
+
+def get_results_using_model(X,y):
+    # Load the model from the pickle file
+    rf = joblib.load('pk-fk_sub_w_f3.pkl')
+    # Check if the model is an instance of RandomForestClassifier
+    if isinstance(rf, RandomForestClassifier):
+        # Get feature importances
+        feature_importances = rf.feature_importances_
+
+        # Create a DataFrame to display feature names and their importance
+        importances_df = pd.DataFrame({'Feature': X.columns, 'Importance': feature_importances})
+
+        # Sort the DataFrame by importance in descending order
+        importances_df = importances_df.sort_values(by='Importance', ascending=False)
+
+        # Display the feature importances
+        print(importances_df)
+    kfold = KFold(n_splits=5, shuffle=True, random_state=42)
+    rf_predictions = cross_val_predict(rf, X, y, cv=kfold)
+
+    # Calculate accuracy and F1 score for Random Forest
+    rf_accuracy = accuracy_score(y, rf_predictions)
+    rf_f1 = f1_score(y, rf_predictions, average='weighted')
+    overall_report = classification_report(y, rf_predictions)
+    print(f"Overall Classification Report:\n{overall_report}")
+    overall_matrix = confusion_matrix(y, rf_predictions)
+    print(f"Overall Confusion Matrix:\n{overall_matrix}")
+    print("\nRandom Forest Accuracy:", rf_accuracy)
+    print("Random Forest F1 Score:", rf_f1)
 
 
 def Save_results(X, y):
     rf = RandomForestClassifier(class_weight="balanced")
+    print(X,y)
     rf.fit(X, y)
-    joblib.dump(rf, 'pk-fk.pkl', compress=9)
+    joblib.dump(rf, 'pk-fk_sub_w_f3.pkl', compress=9)#'SAP','tpcd','tpcds','Credit','Grants'
 
 def main():
     #train test split
-    database_list = ['MovieLens-09','SAT-15']#'MovieLens','SAT','SAP','TPC-H','Basketball_men', 'financial', 'financial_std', 'financial_ijs','cs']#,'tpcc'
-    features = generate(database_list)
+    # database_list = ['SAP','tpcd','tpcds','Credit','Grants']#['TPC-H', 'financial', 'financial_std', 'financial_ijs','cs', 'SAT','tpcc']#'joinability_study']#['TPC-H_old', 'financial_old', 'TPC-H', 'financial', 'financial_std', 'financial_ijs','cs', 'SAT']#'MovieLens-09','SAT-15']#'MovieLens','SAT','SAP','TPC-H','Basketball_men', 'financial', 'financial_std', 'financial_ijs','cs']#,'tpcc'
+    database_list = [ 'financial', 'financial_std', 'financial_ijs', 'cs', 'tpcc','tpcd', 'tpch','Credit','Grants']#'SAP','SAT'
 
-    total_pkfk_samples = features.loc[features['Has_pk_fk_relation'] == 1]
-    print("Total number of samples: ",len(total_pkfk_samples))
+    for i, item in enumerate(database_list):
+        # Print all items except the current one
+        remaining_items = [x for j, x in enumerate(database_list) if j != i]
+        features_train = generate(remaining_items)
+        features_test = generate([item])
+        X = features_train.drop(columns=['Has_pk_fk_relation'], axis=1)
+        y = features_train['Has_pk_fk_relation']
+        Save_results(X, y)
+        X = features_test.drop(columns=['Has_pk_fk_relation'], axis=1)
+        y = features_test['Has_pk_fk_relation']
+        get_results_using_model(X, y)
 
-    total_not_pkfk_samples = features.loc[features['Has_pk_fk_relation'] == 0]
-    print("Total number of non pk-fk samples: ", len(total_not_pkfk_samples))
-
-    #undersampling
-    not_pkfk_samples = total_not_pkfk_samples.sample(n=len(total_pkfk_samples) * 3)
-    print("not pf-fk samples after undersampling: ", len(not_pkfk_samples))
-
-    #merge pk-fk pairs and non pk-fk pairs
-    data = pd.concat([total_pkfk_samples, not_pkfk_samples])
-    data = data.sample(frac=1)
-    data_information(features, 'Testing Data')
-    X = data.drop(columns=['Has_pk_fk_relation'], axis=1)
-    y = data['Has_pk_fk_relation']
-
-    get_results_without_kfold(X,y)
-    get_results_with_kfold(X, y)
-
-    Save_results(X, y)
+    #
+    # total_pkfk_samples = features.loc[features['Has_pk_fk_relation'] == 1]
+    # print("Total number of samples: ",len(total_pkfk_samples))
+    #
+    # total_not_pkfk_samples = features.loc[features['Has_pk_fk_relation'] == 0]
+    # print("Total number of non pk-fk samples: ", len(total_not_pkfk_samples))
+    #
+    # #undersampling
+    # not_pkfk_samples = total_not_pkfk_samples.sample(n=len(total_pkfk_samples) * 3)
+    # print("not pf-fk samples after undersampling: ", len(not_pkfk_samples))
+    #
+    # #merge pk-fk pairs and non pk-fk pairs
+    # data = pd.concat([total_pkfk_samples, not_pkfk_samples])
+    # data = data.sample(frac=1)
+    # data_information(features, 'Testing Data')
+    # features = generate(database_list)
+    # X = features.drop(columns=['Has_pk_fk_relation'], axis=1)
+    # y = features['Has_pk_fk_relation']
+    # Save_results(X, y)
+    # X = features_test.drop(columns=['Has_pk_fk_relation'], axis=1)
+    # y = features_test['Has_pk_fk_relation']
+    # get_results_using_model(X,y)
+    # get_results_without_kfold(X,y)
+    # get_results_with_kfold(X, y)
+    #
+    # Save_results(X, y)
 
     # Confusion Matrix
     # cm = confusion_matrix(y_test, y_pred_rf)
