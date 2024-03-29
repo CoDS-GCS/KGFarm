@@ -14,7 +14,7 @@ from operations.template import *
 class Builder:
     def __init__(self, output_path: str = 'Farm.ttl', port: int = 5820, database: str = 'kgfarm_test',
                  show_connection_status: bool = False):
-        self.config = connect_to_stardog(port, database, show_connection_status)
+        self.config = connect_to_graphdb('http://localhost:7200/repositories/'+database)
         self.output_path = output_path
         self.graph = open(output_path, 'w')
         self.graph.write('# Farm Graph generated on ' + str(datetime.now()) + '\n')
@@ -113,8 +113,7 @@ class Builder:
                     if candidate_column_info['uniqueness'] == uniqueness_ratio:
                         candidate_column_ids.add(candidate_column_id)
                         n_relations = int(get_number_of_relations(self.config,
-                                                                  candidate_column_id)[0]['Number_of_relations'][
-                                              'value'])
+                                                                  candidate_column_id)['Number_of_relations'].iloc[0])
 
                         if max_number_of_relations <= n_relations:
                             column_id = candidate_column_id
@@ -234,7 +233,6 @@ class Builder:
         total_entities_generated = len(self.column_to_entity.values())
 
         graph_size = str(round((os.path.getsize(self.output_path) * 0.001), 3))
-
         print('\n• {} summary\n\t- Total entities generated: {}\n\t- Total feature views generated: {}'
               '\n\t- Feature view breakdown:\n\t\t-> Feature view with single entity: {} / {}'
               '\n\t\t-> Feature view with multiple entities: {} / {}'
@@ -279,4 +277,4 @@ if __name__ == "__main__":
     pd.set_option('display.max_columns', None)
     pd.set_option('display.max_colwidth', None)
     generate_farm_graph(db=target_database)
-    upload_farm_graph(db=target_database, farm_graph='Farm.ttl')
+    upload_farm_graph(db=target_database, farm_graph='xFarm.ttl')

@@ -1,0 +1,8 @@
+ent idx,ent name
+0,depth
+1,depthError
+2,dmin
+3,earthquake_id
+4,gap
+5,horizontalError
+6,magError

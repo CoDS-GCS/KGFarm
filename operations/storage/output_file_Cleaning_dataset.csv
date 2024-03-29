@@ -1,0 +1,8 @@
+Subject,Predicate,Object
+depth,http://kglids.org/ontology/isPartOf,Cleaning_dataset
+gap,http://kglids.org/ontology/isPartOf,Cleaning_dataset
+dmin,http://kglids.org/ontology/isPartOf,Cleaning_dataset
+earthquake_id,http://kglids.org/ontology/isPartOf,Cleaning_dataset
+horizontalError,http://kglids.org/ontology/isPartOf,Cleaning_dataset
+depthError,http://kglids.org/ontology/isPartOf,Cleaning_dataset
+magError,http://kglids.org/ontology/isPartOf,Cleaning_dataset

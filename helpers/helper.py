@@ -8,7 +8,7 @@ import seaborn as sns
 import stardog
 import yaml
 from urllib.parse import quote_plus
-from SPARQLWrapper import JSON, SPARQLWrapper
+from SPARQLWrapper import JSON, SPARQLWrapper, CSV
 from matplotlib import pyplot as plt
 
 PREFIXES = """
@@ -92,6 +92,10 @@ def connect_to_stardog(port, db: str, show_status: bool):
         print('Connected to Stardog!\nAccess the Stardog UI at: https://cloud.stardog.com/')
     return conn
 
+def connect_to_graphdb(sparql_endpoint):
+    graphdb = SPARQLWrapper(sparql_endpoint)
+    graphdb.setReturnFormat(CSV)
+    return graphdb
 
 def execute_query_blazegraph(sparql: SPARQLWrapper, query: str):
     sparql.setQuery(PREFIXES + query)
@@ -100,23 +104,30 @@ def execute_query_blazegraph(sparql: SPARQLWrapper, query: str):
 
 
 # TODO: rename return_type to appropriate variable name to avoid confusion
-def execute_query(conn: stardog.Connection, query: str, return_type: str = 'csv', timeout: int = 0):
-    query = PREFIXES + query
-    if return_type == 'csv':
-        result = conn.select(query, content_type='text/csv', timeout=timeout)
-        return pd.read_csv(io.BytesIO(bytes(result)))
-    elif return_type == 'json':
-        result = conn.select(query)
-        return result['results']['bindings']
-    elif return_type == 'ask':
-        result = conn.select(query)
-        return result['boolean']
-    elif return_type == 'update':
-        result = conn.update(query)
-        return result
-    else:
-        error = return_type + ' not supported!'
-        raise ValueError(error)
+def execute_query(sparql, query):
+    sparql.setQuery(PREFIXES + query)
+    sparql.setReturnFormat(CSV)
+    results = sparql.query().convert()
+    data_str = results.decode('utf-8')
+    df = pd.read_csv(io.StringIO(data_str))
+    return df
+# def execute_query(conn: stardog.Connection, query: str, return_type: str = 'csv', timeout: int = 0):
+#     query = PREFIXES + query
+#     if return_type == 'csv':
+#         result = conn.select(query, content_type='text/csv', timeout=timeout)
+#         return pd.read_csv(io.BytesIO(bytes(result)))
+#     elif return_type == 'json':
+#         result = conn.select(query)
+#         return result['results']['bindings']
+#     elif return_type == 'ask':
+#         result = conn.select(query)
+#         return result['boolean']
+#     elif return_type == 'update':
+#         result = conn.update(query)
+#         return result
+#     else:
+#         error = return_type + ' not supported!'
+#         raise ValueError(error)
 
 
 def display_query(query: str):

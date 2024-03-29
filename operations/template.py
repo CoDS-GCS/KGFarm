@@ -54,6 +54,7 @@ def get_columns(config, table, dataset):
 def get_entities(config, show_query):
     query = """
     SELECT ?Entity_name (?Physical_column_data_type as ?Entity_data_type) ?Physical_column (?Table as ?Physical_table) (?Score as ?Uniqueness_ratio)
+    WHERE
     {
         {
             <<?Table_id kgfarm:hasDefaultEntity ?Entity_id>>        kgfarm:confidence   ?Score  .
@@ -62,7 +63,7 @@ def get_entities(config, show_query):
         {
             <<?Table_id kgfarm:hasMultipleEntities ?Entity_id>>     kgfarm:confidence   ?Score  .
         }
-    
+
         ?Entity_id  entity:name         ?Entity_name                                            ;
                     schema:name         ?Physical_column                                        ;
                     data:hasDataType    ?Physical_column_data_type                              .
@@ -73,6 +74,7 @@ def get_entities(config, show_query):
         display_query(query)
 
     return execute_query(config, query)
+
 
 
 def get_feature_views_with_one_or_no_entity(config, show_query):
@@ -125,11 +127,11 @@ def get_feature_views_with_multiple_entities(config, show_query):
 
 def search_enrichment_options(config, show_query):
     query = """
-    SELECT DISTINCT ?Table ?Enrich_with (?Confidence_score as ?Joinability_strength) (?join_key_name as ?Join_key) ?Physical_joinable_table ?Table_path ?File_source ?Dataset ?Dataset_feature_view
+    SELECT DISTINCT ?Primary_column_id ?Table ?Enrich_with (?Confidence_score as ?Joinability_strength) (?join_key_name as ?Join_key) ?Physical_joinable_table ?Table_path ?File_source ?Dataset ?Dataset_feature_view
     WHERE
     {
         # {
-        <<?Primary_column_id        data:hasPrimaryKeyForeignKeySimilarity          ?Foreign_column_id>> data:withCertainty ?Confidence_score	.
+        <<?Primary_column_id        data:hasContentSimilarity         ?Foreign_column_id>> data:withCertainty ?Confidence_score	.
         # }
         # UNION
         # {
@@ -141,11 +143,11 @@ def search_enrichment_options(config, show_query):
                                     entity:name                                 ?Entity                                     ; 
                                     schema:name                                 ?join_key_name                              .    
         {
-        ?Primary_table_id           kgfarm:hasDefaultEntity                     ?Primary_column_id                          .
+        <<?Primary_table_id           kgfarm:hasDefaultEntity                     ?Primary_column_id >> ?p ?o                         .
         }
         UNION
         {
-        ?Primary_table_id           kgfarm:hasMultipleEntities                  ?Primary_column_id                          .   
+        <<?Primary_table_id           kgfarm:hasMultipleEntities                  ?Primary_column_id   >> ?p ?o                        .   
         }
         
         ?Primary_table_id           featureView:name                            ?Enrich_with                                ;
@@ -539,7 +541,7 @@ def detect_entities(config):
                 
         
         FILTER(?missing_values = 0)                     # i.e. no missing values                               
-        FILTER(?distinct_values/?total_values >= 0.95)  # high uniqueness         
+        FILTER(?distinct_values/?total_values >= 0.9)  # high uniqueness         
         FILTER(?Type != 'T_date')                       # avoid timestamps            
     
         # convert dtype in feast format
@@ -572,7 +574,7 @@ def get_number_of_relations(config, column_id: str):
         
         ?All_columns    data:hasPrimaryKeyForeignKeySimilarity  ?Foreign_column .
     }""" % column_id
-    return execute_query(config, query, return_type='json')
+    return execute_query(config, query)
 
 
 def get_pkfk_relations(config):
