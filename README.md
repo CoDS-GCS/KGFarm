@@ -60,7 +60,7 @@ KGFarm APIs are designed to promote seamless integration with conventional ML wo
 
 [//]: # (3. [Feature Engineering]&#40;experiments/results/feature_engineering.pdf&#41;)
 ## <img src="docs/graphics/icons/youtube.svg" alt="youtube" height="20" width="29"> KGFarm Demo
-<p align="center"><a href=""><img src="docs/graphics/icons/kgfarm_tutorial.png" width="73%"></a></p>
+<p align="center"><a href="https://youtu.be/fazT2TYTcdg"><img src="docs/graphics/icons/kgfarm_tutorial.png" width="73%"></a></p>
 
 ## 🏆Achievements
 
