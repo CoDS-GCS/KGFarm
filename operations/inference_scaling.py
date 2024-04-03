@@ -205,9 +205,9 @@ def graphSaint(dataset_name_script,df_train):
                 "operations/Models/kgfarm_gnn_GA_0_DBLP_conf_GSAINT_QM_e30_r3_s30_l1_hc128_w4_lr10_drop5_new_emb_1800.model"))
             out = model.inference(dataset_name_script,df_train, x_dict, edge_index_dict, key2int)
             out = out[key2int[subject_node]]
-            y_pred = out.argmax(dim=-1, keepdim=True).cpu()
-            pred_lst = torch.flatten(y_pred).tolist()
-            gsaint_Final_Test = pred_lst[0]
+            sorted_abs_indices = np.argsort(np.abs(out[0]))
+            flipped_tensor = torch.flip(sorted_abs_indices, [0])
+            gsaint_Final_Test = flipped_tensor.tolist()
 
     return gsaint_Final_Test
 

@@ -43,10 +43,9 @@ def check_for_uncleaned_features(df: pd.DataFrame):  # clean by recommendations
 
 
 def apply_cleaning(df, cleaning_op):
-    columns_to_be_cleaned = get_columns_to_be_cleaned(df)
+    # columns_to_be_cleaned = get_columns_to_be_cleaned(df)
     object_cols = df.select_dtypes(include=['object']).columns
     X_clean = pd.DataFrame()
-
     if cleaning_op == 'Fill':
         def fillna_mean(column):
             mean = column.mean()

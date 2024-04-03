@@ -92,9 +92,8 @@ def connect_to_stardog(port, db: str, show_status: bool):
         print('Connected to Stardog!\nAccess the Stardog UI at: https://cloud.stardog.com/')
     return conn
 
-def connect_to_graphdb(sparql_endpoint):
-    graphdb = SPARQLWrapper(sparql_endpoint)
-    graphdb.setReturnFormat(CSV)
+def connect_to_graphdb(endpoint, graphdb_repo):
+    graphdb = SPARQLWrapper(f'{endpoint}/repositories/{graphdb_repo}')
     return graphdb
 
 def execute_query_blazegraph(sparql: SPARQLWrapper, query: str):
@@ -104,6 +103,18 @@ def execute_query_blazegraph(sparql: SPARQLWrapper, query: str):
 
 
 # TODO: rename return_type to appropriate variable name to avoid confusion
+# def execute_query(graphdb_conn: SPARQLWrapper, query, return_type='csv'):
+#     graphdb_conn.setQuery(query)
+#     if return_type == 'csv':
+#         graphdb_conn.setReturnFormat(CSV)
+#         results = graphdb_conn.queryAndConvert()
+#         return pd.read_csv(io.BytesIO(results))
+#     elif return_type == 'json':
+#         graphdb_conn.setReturnFormat(JSON)
+#         results = graphdb_conn.queryAndConvert()
+#         return results['results']['bindings']
+#     else:
+#         raise ValueError(return_type, ' not supported')
 def execute_query(sparql, query):
     sparql.setQuery(PREFIXES + query)
     sparql.setReturnFormat(CSV)

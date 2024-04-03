@@ -1,24 +1,8 @@
-import os
-import copy
-import datetime
 import warnings
-import numpy as np
-import urllib.parse
 import pandas as pd
-import seaborn as sns
 from tqdm import tqdm
-from pathlib import Path
-from datetime import timedelta
 from sklearn.preprocessing import *
-# from pyspark.sql import SparkSession
-# from pyspark import SparkConf, SparkContext
-# from matplotlib import pyplot as plt
-# from stardog.exceptions import StardogException
-# from sklearn.feature_selection import SelectKBest, f_classif
-# from feature_discovery.src.graph_builder.governor import Governor
-# from helpers.helper import connect_to_stardog
 from operations.template import *
-# from operations.recommendation.recommender import Recommender
 from .Modeling.prepare_for_encoding import profile_to_csv, create_encoding_file
 from .Modeling.encoding import encode
 from .Modeling.embeddings_from_profile import *
@@ -31,22 +15,18 @@ from .inference_cleaning import graphSaint as graphSaint_cleaning
 from .inference_scaling import graphSaint as graphSaint_scaling
 from .inference_unary import graphSaint as graphSaint_unary
 from .apply_recommendation import apply_cleaning
-from helpers.helper import *
+from helpers import helper
 
 warnings.filterwarnings('ignore')
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_colwidth', None)
-import sys
 
 
 class KGFarm:
     def __init__(self, endpoint: str = 'http://localhost:7200', db: str = 'earthquake'):
-        # pass
-        self.config = connect_to_graphdb(endpoint + db)
-        # self.config = connect_to_graphdb(endpoint+'/'+db)
+        self.config = helper.connect_to_graphdb(endpoint, db)
 
     def build_cleaning_model(self, graph_name: str):
-        # profile_to_csv(graph_name)
         create_encoding_file(graph_name, 'cleaning')
         encode(graph_name, "http://kglids.org/ontology/pipeline/HasCleaningOperation", "2Table")
         get_table_embeddings_cleaning(graph_name)
@@ -75,11 +55,15 @@ class KGFarm:
         cleaning_op = graphSaint_cleaning(table, name)
         recommended_op = pd.DataFrame(index=cleaning_op, columns=['Operation'])
         recommended_op['Operation'] = recommended_op.index.map(cleaning_dict.get)
-        print('The recommended cleaning operation is: ', recommended_op)
+        data = {'Cleaning Operation': cleaning_op[:3],
+                'Feature': [[table.columns[table.isna().any()].tolist()],[table.columns[table.isna().any()].tolist()],[table.columns[table.isna().any()].tolist()]]}
+        recommended_op = pd.DataFrame(data)
+        recommended_op['Cleaning Operation'] = recommended_op[
+            'Cleaning Operation'].replace(cleaning_dict)
         return recommended_op
 
     def apply_cleaning_operations(self, operation: pd.Series, df: pd.DataFrame):
-        clean_df = apply_cleaning(df, operation['Operation'])
+        clean_df = apply_cleaning(df, operation['Cleaning Operation'])
         return clean_df
 
     def recommend_transformation_operations(self, table: pd.DataFrame, name: str = 'Transformation_dataset'):
@@ -90,25 +74,39 @@ class KGFarm:
         scaling_op = graphSaint_scaling(name, table)
         triplet_encoding(name, 'Column')
         unary_op = graphSaint_unary(name, table)
-        data = {'Recommended_transformation': [scaling_op],
-                'Feature': ['All']}
+        data = {'Recommended_transformation': scaling_op,
+                'Recommendation': ['rec1','rec2','rec3'],
+                'Feature': ['All','All','All']}
         recommended_scaling_transformations = pd.DataFrame(data)
         recommended_scaling_transformations['Recommended_transformation'] = recommended_scaling_transformations[
             'Recommended_transformation'].replace(scaling_dict)
 
-        df_unary_rec = pd.DataFrame(unary_op, columns=['Recommended_transformation'])
         df_unary_col = pd.read_csv(
             'operations/storage/' + name + '_gnn_Column/mapping/Column_entidx2name.csv')
-        df_unary_join = df_unary_col.join(df_unary_rec)
-        recommended_unary_transformations = df_unary_join.groupby('Recommended_transformation')['ent name'].apply(
-            list).reset_index()
-        recommended_unary_transformations.rename(columns={'ent name': 'Feature'}, inplace=True)
-        recommended_unary_transformations['Recommended_transformation'] = recommended_unary_transformations[
-            'Recommended_transformation'].replace(unary_dict)
 
+        unary_op_labels = np.array([[unary_dict[op] for op in row] for row in unary_op])
+        new_df = pd.concat([pd.DataFrame(unary_op_labels, columns=['rec1', 'rec2', 'rec3']), df_unary_col], axis=1)
+        grouped_entities_col1 = new_df.groupby(['rec1']).apply(lambda x: x['ent name'].tolist())
+        grouped_entities_col2 = new_df.groupby(['rec2']).apply(lambda x: x['ent name'].tolist())
+        grouped_entities_col3 = new_df.groupby(['rec3']).apply(lambda x: x['ent name'].tolist())
+        recommended_unary_transformations = pd.DataFrame({'Recommended_transformation': grouped_entities_col1.index,
+                                 'Recommendation': 'rec1',
+                                 'Feature': grouped_entities_col1.values})
+
+        recommended_unary_transformations = pd.concat([recommended_unary_transformations, pd.DataFrame({'Recommended_transformation': grouped_entities_col2.index,
+                                                      'Recommendation': 'rec2',
+                                                      'Feature': grouped_entities_col2.values})], ignore_index=True)
+
+        recommended_unary_transformations = pd.concat([recommended_unary_transformations, pd.DataFrame({'Recommended_transformation': grouped_entities_col3.index,
+                                                      'Recommendation': 'rec3',
+                                                      'Feature': grouped_entities_col3.values})], ignore_index=True)
         recommended_transformations = pd.concat(
             [recommended_scaling_transformations, recommended_unary_transformations], ignore_index=True)
-        return recommended_transformations
+        sorting_order = {"rec1": 1, "rec2": 2, "rec3": 3}
+        recommended_transformations["Sort_Order"] = recommended_transformations["Recommendation"].map(sorting_order)
+        recommended_transformations = recommended_transformations.sort_values(by="Sort_Order")
+        recommended_transformations = recommended_transformations.drop(columns=["Sort_Order"])
+        return recommended_transformations.reset_index(drop=True)
 
     def apply_transformation_operations(self, X: pd.DataFrame, recommended_transformations: pd.DataFrame,
                                         label_name: str = 'None'):

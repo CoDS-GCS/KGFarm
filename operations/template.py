@@ -1,6 +1,5 @@
 from helpers.helper import execute_query, display_query
 
-
 # --------------------------------------------KGFarm APIs (SELECT queries)----------------------------------------------
 
 def get_features_in_feature_views(config, feature_view, show_query):

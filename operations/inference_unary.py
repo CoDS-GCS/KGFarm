@@ -277,9 +277,9 @@ def graphSaint(dataset_name_script,df_train):
                 model.load_state_dict(torch.load("operations/Models/kgfarm_gnn_GA_0_DBLP_conf_GSAINT_QM_e10_r3_s10_lr005_layer1_w4_hc32_new_emb_v2_82split_3target.model"))
                 out = model.inference(x_dict, edge_index_dict, key2int, new_emb_dict=emb_dict)
                 out = out[key2int[subject_node]]
-                y_pred = out.argmax(dim=-1, keepdim=True).cpu()
-                pred_lst = torch.flatten(y_pred).tolist()
-                gsaint_Final_Test = pred_lst
+                sorted_abs_indices = np.argsort(np.abs(out))
+                flipped_tensor = torch.flip(sorted_abs_indices, [1])
+                gsaint_Final_Test = flipped_tensor.tolist()
 
     return gsaint_Final_Test
 
