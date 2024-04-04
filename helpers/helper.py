@@ -197,26 +197,24 @@ def plot_comparison(baseline_approach: dict, kgfarm_approach: dict):
 
     r1 = range(len(keys))
     r2 = [x + bar_width for x in r1]
-    offset = 0.65
-    values1_adjusted = [v - 0.65 for v in values1]
-    values2_adjusted = [v - 0.65 for v in values2]
+    offset = 0.7
+    values1_adjusted = [v - 0.7 for v in values1]
+    values2_adjusted = [v - 0.7 for v in values2]
     plt.bar(r1, values1_adjusted, color='#B3B3B3', width=bar_width, edgecolor='grey', label='baseline_approach',
-            bottom=offset, font=14)
+            bottom=offset)
     plt.bar(r2, values2_adjusted, color='#1AA260', width=bar_width, edgecolor='grey', label='kgfarm_approach',
-            bottom=offset, font=14)
-
+            bottom=offset)
     plt.xlabel('Models', fontweight='bold')
-    plt.xticks([r + bar_width / 2 for r in range(len(keys))], keys, rotation=45)
+    plt.xticks([r + bar_width / 2 for r in range(len(keys))], keys)
     plt.ylabel('R2 Score', fontweight='bold')
 
     for i, v in enumerate(values1):
-        plt.text(i, v, round(v, 2), ha='center', va='bottom')
+        plt.text(i, v, round(v, 2), ha='center', va='bottom', fontsize=14)
     for i, v in enumerate(values2):
-        plt.text(i + bar_width, v, round(v, 2), ha='center', va='bottom')
-
+        plt.text(i + bar_width, v, round(v, 2), ha='center', va='bottom', fontsize=14)
+    plt.ylim(0.7, 0.95)
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.show()
-
 
 def generate_column_id(profile_path: str, column_name: str):
     def url_encode(string):
