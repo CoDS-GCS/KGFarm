@@ -5,7 +5,6 @@ import SPARQLWrapper.Wrapper
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import stardog
 import yaml
 from urllib.parse import quote_plus
 from SPARQLWrapper import JSON, SPARQLWrapper, CSV
@@ -81,16 +80,16 @@ def connect_to_blazegraph(port, namespace, show_status: bool):
     return SPARQLWrapper(endpoint)
 
 
-def connect_to_stardog(port, db: str, show_status: bool):
-    connection_details = {
-        'endpoint': 'http://localhost:{}'.format(str(port)),
-        'username': 'admin',
-        'password': 'admin'
-    }
-    conn = stardog.Connection(db, **connection_details)
-    if show_status:
-        print('Connected to Stardog!\nAccess the Stardog UI at: https://cloud.stardog.com/')
-    return conn
+# def connect_to_stardog(port, db: str, show_status: bool):
+#     connection_details = {
+#         'endpoint': 'http://localhost:{}'.format(str(port)),
+#         'username': 'admin',
+#         'password': 'admin'
+#     }
+#     conn = stardog.Connection(db, **connection_details)
+#     if show_status:
+#         print('Connected to Stardog!\nAccess the Stardog UI at: https://cloud.stardog.com/')
+#     return conn
 
 def connect_to_graphdb(endpoint, graphdb_repo):
     graphdb = SPARQLWrapper(f'{endpoint}/repositories/{graphdb_repo}')
@@ -185,46 +184,37 @@ def plot_scores(conventional_approach: dict):
     plt.show()
 
 
-def plot_comparison(conventional_approach: dict, kgfarm_approach: dict):
-    plt.rcParams['figure.dpi'] = 300
-    sns.set_style("dark")
+def plot_comparison(baseline_approach: dict, kgfarm_approach: dict):
+    baseline_approach = {key: round(value, 2) for key, value in baseline_approach.items()}
+    kgfarm_approach = {key: round(value, 2) for key, value in kgfarm_approach.items()}
 
-    classifiers = []
-    conventional_scores = []
-    kgfarm_scores = []
-    for classifier in conventional_approach.keys():
-        classifiers.append(classifier)
-        conventional_scores.append(conventional_approach.get(classifier))
-        kgfarm_scores.append(kgfarm_approach.get(classifier))
+    # Extract keys and values from dictionaries
+    keys = list(baseline_approach.keys())
+    values1 = list(baseline_approach.values())
+    values2 = list(kgfarm_approach.values())
 
-    X = np.arange(len(classifiers))
-    fig, ax = plt.subplots(figsize=(8, 6))
+    bar_width = 0.35
 
-    rects1 = ax.bar(X + 0.00, conventional_scores, color='lightgreen', edgecolor='lightgreen', width=0.25,
-                    label='Conventional approach')
-    plt.axhline(y=max(conventional_scores), color='lightgreen', linestyle="--")
+    r1 = range(len(keys))
+    r2 = [x + bar_width for x in r1]
+    offset = 0.65
+    values1_adjusted = [v - 0.65 for v in values1]
+    values2_adjusted = [v - 0.65 for v in values2]
+    plt.bar(r1, values1_adjusted, color='#B3B3B3', width=bar_width, edgecolor='grey', label='baseline_approach',
+            bottom=offset, font=14)
+    plt.bar(r2, values2_adjusted, color='#1AA260', width=bar_width, edgecolor='grey', label='kgfarm_approach',
+            bottom=offset, font=14)
 
-    rects2 = ax.bar(X + 0.25, kgfarm_scores, color='darkgreen', edgecolor='darkgreen', width=0.25, label='Using KGFarm')
-    plt.axhline(y=max(kgfarm_scores), color='darkgreen', linestyle="--")
+    plt.xlabel('Models', fontweight='bold')
+    plt.xticks([r + bar_width / 2 for r in range(len(keys))], keys, rotation=45)
+    plt.ylabel('R2 Score', fontweight='bold')
 
-    def autolabel(rects):
-        for rect in rects:
-            h = rect.get_height()
-            ax.text(rect.get_x() + rect.get_width() / 2, h, float(h), ha='center', verticalalignment='bottom',
-                    fontsize=15)
+    for i, v in enumerate(values1):
+        plt.text(i, v, round(v, 2), ha='center', va='bottom')
+    for i, v in enumerate(values2):
+        plt.text(i + bar_width, v, round(v, 2), ha='center', va='bottom')
 
-    autolabel(rects1)
-    autolabel(rects2)
-
-    classifiers = list(map(lambda x: '                   ' + x, classifiers))
-    ax.set_ylabel('F1-score', fontsize=15)
-    ax.set_axisbelow(True)
-    ax.grid(color='gray', linestyle='dashed', axis='y')
-    ax.set_xticks(X)
-    ax.set_xticklabels(classifiers, fontsize=12)
-    ax.legend(fontsize=10, bbox_to_anchor=(1.0, 1.02))
-    fig.tight_layout()
-    plt.subplots_adjust(left=0.2, bottom=0.2, right=1.35)
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.show()
 
 
