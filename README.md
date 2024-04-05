@@ -54,7 +54,7 @@ We compared KGFarm to several related system. More information regarding our eva
 3. [Feature selection](experiments/results/evaluations%20KGFarm%20PVLDB%202023%20-%20Feature%20selection.pdf)
 
 ## <img src="docs/graphics/icons/youtube.svg" alt="youtube" height="20" width="29"> KGFarm Demo
-<a href="https://rebrand.ly/kgfarm"><img src="docs/graphics/thumbnails/demo_thumbnail.jpeg"/></a>
+<a href="https://youtu.be/b4cvc9hgt88"><img src="docs/graphics/thumbnails/kgfarm_tutorial.png"/></a>
 
 ## 🦾 Contributors
 <p float="left">
