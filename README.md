@@ -22,7 +22,7 @@
 
 ## ⚡ Quick Start
 
-Try the sample <a href="https://colab.research.google.com/drive/1u4z4EKGd8G1ju61Q3sPk5fH9BrMp8IRM?usp=sharing"><span style="color: orange;">KGFarm Colab Notebook</span></a>  for a quick hands-on! 
+Try the sample <a href="https://colab.research.google.com/drive/1rKkICA_7GONEWAdmdxtR-_gdhOoU3k4o#scrollTo=EwUujIx2q4jo"><span style="color: orange;">KGFarm Colab Notebook</span></a>  for a quick hands-on! 
 Alternatively run [setup.py](helpers/setup.py) to setup the demo in a local environment!
 
 1. Install [dependencies](requirements.txt)
